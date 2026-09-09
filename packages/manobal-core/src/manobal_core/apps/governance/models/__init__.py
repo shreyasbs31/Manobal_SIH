@@ -8,7 +8,7 @@ than it needs to be.
 
 from __future__ import annotations
 
-from .assessment import BaselineRecord, RiskAssessmentRecord, RulesetVersion
+from .assessment import BaselineRecord, RiskAssessmentRecord, RulesetProposal, RulesetVersion
 from .audit import GENESIS_HASH, AuditAnchor, AuditEvent, canonicalise
 from .casework import (
     MAX_GRANT_DAYS,
@@ -42,6 +42,7 @@ __all__ = [
     "OfficerProfile",
     "QuarantinedRecord",
     "RiskAssessmentRecord",
+    "RulesetProposal",
     "RulesetVersion",
     "Subject",
     "Unit",

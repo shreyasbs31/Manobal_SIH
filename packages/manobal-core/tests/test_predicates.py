@@ -142,6 +142,23 @@ class TestViewingAFlag:
         decision = may_view_flag(officer(), **flag_args(mfa_satisfied=False))  # type: ignore[arg-type]
         assert decision.reason == DENY_MFA
 
+    def test_a_medical_officer_cannot_see_a_t2_flag(self) -> None:
+        """§1.4. The medical officer is an escalation target, not a second
+        reviewer of the routine queue. A T2 case is a welfare conversation."""
+        decision = may_view_flag(
+            officer(role=Role.MEDICAL_OFFICER),
+            **flag_args(tier=Tier.T2),
+        )  # type: ignore[arg-type]
+        assert not decision
+        assert decision.reason == DENY_TIER
+
+    @pytest.mark.parametrize("tier", [Tier.T3, Tier.T4])
+    def test_a_medical_officer_may_see_an_escalated_flag(self, tier: Tier) -> None:
+        assert may_view_flag(
+            officer(role=Role.MEDICAL_OFFICER),
+            **flag_args(tier=tier),
+        )  # type: ignore[arg-type]
+
 
 class TestViewingATrend:
     """FR-4.4. A category name is not a chart, and the difference is the

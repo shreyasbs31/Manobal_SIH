@@ -55,7 +55,7 @@ ignore = [
 "**/settings/*.py" = ["RUF012"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["manobal_risk", "manobal_core", "manobal_synth", "manobal_identity"]
+known-first-party = ["manobal_risk", "manobal_core", "manobal_synth", "manobal_identity", "manobal_edge"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -73,7 +73,7 @@ plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
 django_settings_module = "manobal_core.settings.local"
 
 [[tool.mypy.overrides]]
-module = ["yaml.*", "nacl.*", "pytest_django.*", "factory.*", "hypothesis.*"]
+module = ["yaml.*", "nacl.*", "pytest_django.*", "factory.*", "hypothesis.*", "celery.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

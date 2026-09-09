@@ -144,3 +144,83 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PG_IDENTITY_SUPERUSER:-manobal_vault_admin} -d iam_vault"]
       <<: *postgres-health
+
+  # The only process on both networks. Zone 2 talks to this, never to the vault.
+  identity-resolver:
+    build:
+      context: ../..
+      dockerfile: packages/manobal-infra/docker/Dockerfile.identity
+    container_name: manobal-identity-resolver
+    environment:
+      MANOBAL_IDENTITY_DB_HOST: postgres-identity
+      MANOBAL_IDENTITY_DB_PORT: "5432"
+      MANOBAL_IDENTITY_DB_PASSWORD: ${PG_IDENTITY_PASSWORD:-dev_only_not_a_secret}
+      MANOBAL_IDENTITY_DB_SSLMODE: disable
+      MANOBAL_IDENTITY_ALLOWED_HOSTS: identity-resolver,localhost,127.0.0.1
+      MANOBAL_IDENTITY_REQUIRE_MTLS: "false"
+      MANOBAL_IDENTITY_GRANT_KEYS: core-dev=11l5O7wTooGagnx2rbb7qKSa7gB/SfLQmS2ZuCWtLEg=
+    ports:
+      - "${IDENTITY_RESOLVER_PORT:-8001}:8000"
+    networks: [manobal-analytics, manobal-identity]
+    depends_on:
+      postgres-identity:
+        condition: service_healthy
+
+  core-api:
+    build:
+      context: ../..
+      dockerfile: packages/manobal-infra/docker/Dockerfile.core
+    container_name: manobal-core-api
+    environment: &core-env
+      MANOBAL_DB_HOST: postgres-analytics
+      MANOBAL_DB_PORT: "5432"
+      MANOBAL_DB_PASSWORD: ${PG_CORE_PASSWORD:-dev_only_not_a_secret}
+      MANOBAL_DB_SSLMODE: disable
+      MANOBAL_ALLOWED_HOSTS: core-api,localhost,127.0.0.1
+      MANOBAL_IDENTITY_URL: http://identity-resolver:8000
+      MANOBAL_BROKER_URL: amqp://${RABBITMQ_USER:-manobal}:${RABBITMQ_PASSWORD:-dev_only_not_a_secret}@rabbitmq:5672//
+      MANOBAL_CELERY_EAGER: "0"
+      MANOBAL_AGENT_EDGE_URL: http://edge:8002
+    ports:
+      - "${CORE_API_PORT:-8000}:8000"
+    networks: [manobal-analytics]
+    depends_on:
+      postgres-analytics:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-resolver:
+        condition: service_started
+
+  core-worker:
+    build:
+      context: ../..
+      dockerfile: packages/manobal-infra/docker/Dockerfile.core
+    container_name: manobal-core-worker
+    command: ["celery", "-A", "manobal_core.celery", "worker", "-l", "info"]
+    environment: *core-env
+    networks: [manobal-analytics]
+    depends_on: [core-api, rabbitmq]
+
+  core-beat:
+    build:
+      context: ../..
+      dockerfile: packages/manobal-infra/docker/Dockerfile.core
+    container_name: manobal-core-beat
+    command: ["celery", "-A", "manobal_core.celery", "beat", "-l", "info"]
+    environment: *core-env
+    networks: [manobal-analytics]
+    depends_on: [core-api, rabbitmq]
+
+  edge:
+    build:
+      context: ../..
+      dockerfile: packages/manobal-infra/docker/Dockerfile.edge
+    container_name: manobal-edge
+    environment:
+      MANOBAL_CORE_URL: http://core-api:8000
+      MANOBAL_EDGE_HOST: 0.0.0.0
+    ports:
+      - "${EDGE_PORT:-8002}:8002"
+    networks: [manobal-analytics]
+    depends_on: [core-api]

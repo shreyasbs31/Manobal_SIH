@@ -105,6 +105,15 @@ class TestComputeDeviation:
         assert result is not None
         assert result.deviation == pytest.approx(1.0 / 3.0)
 
+    def test_a_zero_mad_and_zero_epsilon_is_excluded_not_divided(self) -> None:
+        """The last defence when a ruleset validator is bypassed. Returning None
+        is insufficient coverage; returning inf would be a silent scoring bug."""
+        result = compute_deviation(
+            spec(epsilon=0.0), baseline(mad=0.0), observed_value=999.0, z_divisor=3.0
+        )
+
+        assert result is None
+
     def test_insufficient_baseline_yields_no_deviation(self) -> None:
         """FR-3.1: below the minimum observation count the indicator is excluded,
         not defaulted to zero. Defaulting to zero would silently claim a person

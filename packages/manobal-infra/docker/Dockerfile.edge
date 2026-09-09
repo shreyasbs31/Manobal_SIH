@@ -1,0 +1,11 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
+COPY packages/manobal-edge /app/packages/manobal-edge
+RUN pip install --no-cache-dir -e packages/manobal-edge
+
+ENV MANOBAL_EDGE_HOST=0.0.0.0 MANOBAL_EDGE_PORT=8002
+EXPOSE 8002
+CMD ["python", "-m", "manobal_edge"]

@@ -29,7 +29,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
-from ..governance.enums import OFFICER_VISIBLE_TIERS, GrantScope, Role, Tier
+from ..governance.enums import (
+    MEDICAL_OFFICER_TIERS,
+    OFFICER_VISIBLE_TIERS,
+    GrantScope,
+    Role,
+    Tier,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -108,6 +114,13 @@ def may_view_flag(
         # The single most consequential line in this module. T1 exists precisely
         # so that a mild, uncorroborated drift is surfaced to the individual and
         # to nobody else, and the majority of assessments never reach an officer.
+        return Decision(False, DENY_TIER)
+    if principal.role is Role.MEDICAL_OFFICER and tier not in MEDICAL_OFFICER_TIERS:
+        # §1.4 makes the medical officer an *escalation target*, not a second
+        # reviewer of the routine queue. A T2 case is a welfare conversation;
+        # routing it to a clinician both medicalises ordinary distress and
+        # widens the circle of people who know, which is the specific harm
+        # §7.7 is written to prevent.
         return Decision(False, DENY_TIER)
     if not officer_is_certified:
         return Decision(False, DENY_UNCERTIFIED)

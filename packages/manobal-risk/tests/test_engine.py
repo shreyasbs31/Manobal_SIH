@@ -297,13 +297,18 @@ class TestNoScoreEscapes:
         probability of harm.
         """
         import dataclasses
+        import re
 
         from manobal_risk.types import RiskAssessment
 
+        # Scan for the numeric type appearing anywhere in the annotation rather
+        # than matching whole strings. An exact-match list would pass a field
+        # annotated `Optional[float]`, `float|None` without spaces, or
+        # `dict[str, float]` — each of which puts exactly the number FR-3.7
+        # forbids into the assessment, while looking nothing like `"float"`.
+        numeric_token = re.compile(r"\b(float|int|Decimal|complex)\b")
         numeric = [
-            f.name
-            for f in dataclasses.fields(RiskAssessment)
-            if f.type in {"float", "int", "float | None", "int | None"}
+            f.name for f in dataclasses.fields(RiskAssessment) if numeric_token.search(str(f.type))
         ]
 
         assert numeric == []

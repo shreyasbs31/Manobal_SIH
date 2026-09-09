@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -51,8 +51,16 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
+    "rest_framework",
     "manobal_identity.apps.vault",
 ]
+
+REST_FRAMEWORK: dict[str, Any] = {
+    "EXCEPTION_HANDLER": "manobal_identity.api.errors.problem_detail_handler",
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [],
+    "UNAUTHENTICATED_USER": None,
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

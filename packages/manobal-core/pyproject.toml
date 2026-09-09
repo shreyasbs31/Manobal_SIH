@@ -33,4 +33,4 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-manobal_core = ["py.typed"]
+manobal_core = ["py.typed", "apps/authz/dev_issuer.pem"]

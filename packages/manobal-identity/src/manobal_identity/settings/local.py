@@ -21,6 +21,11 @@ os.environ.setdefault(
 os.environ.setdefault(
     "MANOBAL_IDENTITY_INDEX_KEY", base64.b64encode(b"\x22" * 32).decode()
 )
+# Public half of the Zone 2 local seed (private bytes 0x44 * 32, key_id core-dev).
+os.environ.setdefault(
+    "MANOBAL_IDENTITY_GRANT_KEYS",
+    "core-dev=11l5O7wTooGagnx2rbb7qKSa7gB/SfLQmS2ZuCWtLEg=",
+)
 
 from manobal_identity.settings.base import *  # noqa: F403
 

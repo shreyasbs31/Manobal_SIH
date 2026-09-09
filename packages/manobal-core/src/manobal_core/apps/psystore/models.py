@@ -174,3 +174,22 @@ class AcuteSignal(models.Model):
 
     def __str__(self) -> str:
         return f"acute {self.signal_code} for {self.subject_token}"
+
+
+class AgentSession(models.Model):
+    """A time-boxed conversation with the on-device/server agent (§7.8).
+
+    The transcript is not stored. Turns are counted so the rate limit is a
+    fact about the session, not a guess, and so a crash mid-conversation does
+    not reset the budget.
+    """
+
+    session_id = models.CharField(max_length=64, primary_key=True)
+    subject_token = models.CharField(max_length=64, db_index=True)
+    started_at = models.DateTimeField(default=timezone.now)
+    last_turn_at = models.DateTimeField(default=timezone.now)
+    turn_count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "agent_session"
+        indexes = [models.Index(fields=["subject_token", "-last_turn_at"])]

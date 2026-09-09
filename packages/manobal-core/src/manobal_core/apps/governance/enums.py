@@ -28,6 +28,12 @@ class Tier(models.TextChoices):
 #: output create no officer interaction (SDD §4.5).
 OFFICER_VISIBLE_TIERS = frozenset({Tier.T2, Tier.T3, Tier.T4})
 
+#: Narrower still for the medical officer, who §1.4 defines as an escalation
+#: target rather than a reviewer of the routine queue. A T2 case is a welfare
+#: conversation; sending it to a clinician medicalises ordinary distress and
+#: widens the circle of people who know about it.
+MEDICAL_OFFICER_TIERS = frozenset({Tier.T3, Tier.T4})
+
 
 class DataType(models.TextChoices):
     """The consent granularity of FR-1.2 and §6.4.1.

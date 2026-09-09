@@ -80,7 +80,7 @@ REDACTED: Final = "[redacted]"
 _INLINE = re.compile(
     r"(?i)\b(" + "|".join(re.escape(k) for k in sorted(SENSITIVE_KEYS)) + r")\b"
     r"(\s*[:=]\s*)"
-    r"(\"[^\"]*\"|'[^']*'|[^\s,;}\)]+)"
+    r"(\"[^\"]*\"|'[^']*'|[^\s,;}\)]+(?:\s+(?![A-Za-z_][\w]*[:=])[^\s,;}\)]+)*)"
 )
 
 #: Depth limit for recursive scrubbing. A cyclic or pathologically nested

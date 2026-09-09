@@ -45,6 +45,14 @@ class TestScrubbing:
         """Catches messages that were formatted before reaching the filter."""
         assert "12345678" not in scrub("processing service_number=12345678 for unit 12BN")
 
+    def test_an_unquoted_multi_word_value_is_fully_masked(self) -> None:
+        """A surname after a space is still the value of ``full_name``.
+        Stopping at whitespace left ``Kumar`` in the log."""
+        scrubbed = scrub("enrolled full_name=Rajesh Kumar unit_code=12BN")
+        assert "Rajesh" not in scrubbed
+        assert "Kumar" not in scrubbed
+        assert "12BN" in scrubbed
+
     def test_scrubbing_does_not_mutate_the_callers_object(self) -> None:
         """A logger that altered the data it was asked to print would be a
         spectacular class of bug."""

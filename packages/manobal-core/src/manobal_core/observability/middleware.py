@@ -35,11 +35,14 @@ class RequestContextMiddleware:
         request.request_id = request_id  # type: ignore[attr-defined]
         try:
             response = self.get_response(request)
+            response["X-Request-Id"] = request_id
+            return response
         finally:
             # Reset on the way out so a pooled worker thread cannot leak one
             # request's correlation context into the next request it serves.
+            # The header is set above, inside the try: a view that raises must
+            # not leave ``response`` unbound, and must not leak this request's
+            # id into the next one either.
             request_id_var.reset(token)
             actor_id_var.set("")
             actor_role_var.set("")
-        response["X-Request-Id"] = request_id
-        return response

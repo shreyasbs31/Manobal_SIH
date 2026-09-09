@@ -14,7 +14,8 @@ RULESET := rulesets/manobal-ruleset-1.0.0.yaml
 
 .DEFAULT_GOAL := help
 .PHONY: help venv install lint format typecheck test test-risk coverage gates \
-        ruleset-keygen ruleset-sign ruleset-verify ruleset-show clean
+        ruleset-keygen ruleset-sign ruleset-verify ruleset-show clean \
+        migrate seed dev test-web test-mobile
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -23,9 +24,17 @@ help: ## Show this help
 venv: ## Create the workspace virtualenv (Python 3.12)
 	python3.12 -m venv .venv && $(PIP) install --upgrade pip
 
-install: venv ## Install every package editable into the workspace venv
+install: venv ## Install every Python package editable into the workspace venv
 	$(PIP) install -e packages/manobal-risk[dev]
-	$(PIP) install ruff mypy types-PyYAML
+	$(PIP) install -e packages/manobal-core[dev]
+	$(PIP) install -e packages/manobal-identity[dev]
+	$(PIP) install -e packages/manobal-synth[dev]
+	$(PIP) install -e packages/manobal-edge[dev]
+	$(PIP) install ruff mypy types-PyYAML django-stubs djangorestframework-stubs
+	@if command -v npm >/dev/null 2>&1; then \
+		(cd packages/manobal-web && npm install --cache ./.npm-cache); \
+		(cd packages/manobal-mobile && npm install --cache ./.npm-cache); \
+	fi
 
 lint: ## ruff check across every package (NFR-M2)
 	$(RUFF) check packages
@@ -37,7 +46,7 @@ format: ## ruff format in place
 # module and there is one per config file. The enclave's settings deliberately
 # do not know about the analytics apps, nor the reverse.
 typecheck: ## mypy --strict on the Python packages (NFR-M2)
-	$(MYPY) packages/manobal-risk/src packages/manobal-core/src packages/manobal-synth/src
+	$(MYPY) packages/manobal-risk/src packages/manobal-core/src packages/manobal-synth/src packages/manobal-edge/src
 	$(MYPY) --config-file packages/manobal-identity/mypy.ini packages/manobal-identity/src
 
 test: test-zone2 test-zone3 ## Run every fast test suite
@@ -94,4 +103,22 @@ db-extensions: ## Apply TimescaleDB/pgvector where available (unlocks bio + voic
 	@/opt/homebrew/opt/postgresql@16/bin/psql -p 55432 -d postgres \
 		-v ON_ERROR_STOP=1 -f packages/manobal-infra/postgres/analytics-extensions.sql
 
-.PHONY: db-up db-down db-reset db-status db-extensions
+.PHONY: db-up db-down db-reset db-status db-extensions migrate seed dev test-web test-mobile
+
+migrate: ## Apply Django migrations on both local clusters
+	$(PY) packages/manobal-core/manage.py migrate --noinput
+	$(PY) packages/manobal-identity/manage.py migrate --noinput
+
+seed: ## Enrol the demonstration cohort in both zones
+	$(PY) packages/manobal-identity/manage.py seed_vault
+	$(PY) packages/manobal-core/manage.py seed_local
+
+dev: ## Provision local stores, schema and seed data (SDD §8.2)
+	@chmod +x packages/manobal-infra/scripts/dev.sh
+	@packages/manobal-infra/scripts/dev.sh
+
+test-web: ## Zone 2 console unit tests
+	cd packages/manobal-web && npm test
+
+test-mobile: ## Zone 0 protocol tests
+	cd packages/manobal-mobile && npm test

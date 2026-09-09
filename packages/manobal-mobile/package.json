@@ -1,0 +1,14 @@
+{
+  "name": "manobal-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MANOBAL Zone 0 device protocol — capture batches, lock-screen copy, crisis triage.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  }
+}

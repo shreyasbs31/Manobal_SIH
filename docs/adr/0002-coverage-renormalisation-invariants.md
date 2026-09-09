@@ -1,6 +1,6 @@
 # ADR 0002 — What coverage renormalisation actually guarantees
 
-- **Status**: Accepted, with an open design question in §4 requiring a decision
+- **Status**: Accepted. Option B (withdrawal settling) is implemented.
 - **Date**: 2026-09-10
 - **Relates to**: SDD §4.5 step 4, FR-3.3, §7.7, §9.1, §12.3 P2, KPI K8/K10
 
@@ -86,13 +86,13 @@ the trust collapse K10 measures and §12.3 P2 warns about.
 | B | Suppress any tier *increase* attributable solely to reduced coverage, for a settling period after a withdrawal event | Service-layer work in `manobal-core`; the engine is stateless and cannot see withdrawal events. Preserves both promises |
 | C | Replace the mean with a coverage-renormalised high quantile or max-of-domains, so a benign domain never dilutes an adverse one | Recalibrates every threshold in the ruleset; changes the meaning of the weights |
 
-**Recommendation: B**, with the ruleset unchanged. It keeps the §4.5 formula, keeps
-the fairness property of §3, and makes the §7.7 promise true. Implemented as a
-`WithdrawalSettlingPolicy` in the core scoring orchestrator, it is auditable and
-removable without touching the safety-critical engine.
-
-**This decision is not yet made.** Until it is, the characterisation tests pin the
-current behaviour so a future change to it is deliberate.
+**Decision: B.** Implemented as `apply_withdrawal_settling` in
+`manobal_core.scoring.settling`. The engine still computes the §4.5 mean
+exactly; the orchestrator suppresses a tier *increase* that is attributable
+only to reduced coverage, for 14 days after a withdrawal. Acute signals and
+newly breaching categories pass through. The characterisation tests in
+`manobal-risk` still pin the engine's arithmetic so a future change to *that*
+is deliberate.
 
 ## 5. Consequences
 

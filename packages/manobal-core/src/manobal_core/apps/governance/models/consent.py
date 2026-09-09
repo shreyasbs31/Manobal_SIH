@@ -68,6 +68,16 @@ class ConsentEntry(models.Model):
     consent_text = models.ForeignKey(
         ConsentTextVersion, on_delete=models.PROTECT, related_name="entries"
     )
+    #: The checksum of the exact wording shown, copied here at write time.
+    #:
+    #: The foreign key alone was not enough. §7.7 promises that "what a person
+    #: agreed to is provable years later", and a foreign key proves only which
+    #: *row* they agreed to — an ``UPDATE consent_text_version SET body = ...``
+    #: would retroactively change the wording every linked entry points at,
+    #: without touching this table or its append-only trigger. Pinning the hash
+    #: on the entry itself, as the §5.2 ERD does, means a later edit to the
+    #: version row is detectable by comparison rather than invisible.
+    consent_text_sha256 = models.CharField(max_length=64, blank=True, default="")
     #: How the person expressed this: in-app, or on paper witnessed by an officer
     #: for personnel without a suitable device (FR-1.1 accessibility).
     method = models.CharField(
@@ -95,7 +105,20 @@ class ConsentEntry(models.Model):
         if not self._state.adding:
             msg = "consent entries are append-only; append a new entry instead"
             raise ValueError(msg)
+        if not self.consent_text_sha256:
+            self.consent_text_sha256 = self.consent_text.checksum
         super().save(*args, **kwargs)
+
+    @property
+    def consent_text_is_unaltered(self) -> bool:
+        """Does the referenced wording still hash to what was agreed to?
+
+        False means the ``consent_text_version`` row has been edited since this
+        consent was given. That is a governance incident, not a data-quality
+        one: it means the record of what somebody agreed to no longer matches
+        what they were shown.
+        """
+        return self.consent_text_sha256 == self.consent_text.checksum
 
     def delete(self, *args: Any, **kwargs: Any) -> Any:
         msg = "consent entries cannot be deleted"

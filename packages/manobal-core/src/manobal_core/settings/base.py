@@ -167,6 +167,19 @@ IDENTITY_RESOLVER = {
     "TIMEOUT_SECONDS": 5.0,
 }
 
+# Zone 2 signs grant assertions. The private key never travels to Zone 3;
+# only the matching public key is configured on the enclave.
+GRANT_ASSERTION = {
+    "ISSUER": "manobal-core",
+    "KEY_ID": os.environ.get("MANOBAL_GRANT_KEY_ID", "core-dev"),
+    "PRIVATE_KEY_B64": os.environ.get("MANOBAL_GRANT_SIGNING_KEY", ""),
+}
+
+ERASURE_RECEIPT = {
+    "KEY_ID": os.environ.get("MANOBAL_ERASURE_KEY_ID", "erasure-dev"),
+    "PRIVATE_KEY_B64": os.environ.get("MANOBAL_ERASURE_SIGNING_KEY", ""),
+}
+
 # ---------------------------------------------------------------- risk engine
 RULESET_PATH = os.environ.get(
     "MANOBAL_RULESET_PATH", str(REPO_ROOT / "rulesets" / "manobal-ruleset-1.0.0.yaml")
@@ -238,6 +251,14 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_BROKER_TRANSPORT_OPTIONS = {"confirm_publish": True}
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+# Beat entries live on the Celery app (crontab objects), not in this dict.
+
+INTERVENTIONS_PATH = os.environ.get(
+    "MANOBAL_INTERVENTIONS_PATH",
+    str(REPO_ROOT / "rulesets" / "interventions-1.0.0.yaml"),
+)
 
 # --------------------------------------------------------------------- DRF
 REST_FRAMEWORK = {

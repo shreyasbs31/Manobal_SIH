@@ -35,6 +35,21 @@ class DenyAll(BasePermission):
         return False
 
 
+def principal_of(request: Request) -> Principal | None:
+    """The authenticated actor, whichever attribute it was bound on.
+
+    Authentication writes both ``request.user`` (what DRF requires) and
+    ``request.principal`` (what the rest of this package reads). Tests that
+    call ``force_authenticate`` only set the first. A permission class that
+    looks at only one of them will deny everyone the other path admits.
+    """
+    for candidate in (getattr(request, "principal", None), getattr(request, "user", None)):
+        if isinstance(candidate, Principal):
+            request.principal = candidate  # type: ignore[attr-defined]
+            return candidate
+    return None
+
+
 class HasRole(BasePermission):
     """Allow an authenticated principal whose role is in ``allowed_roles``."""
 
@@ -42,8 +57,8 @@ class HasRole(BasePermission):
     message = "MB-4031: your role may not use this endpoint"
 
     def has_permission(self, request: Request, view: APIView) -> bool:
-        principal = getattr(request, "principal", None)
-        if not isinstance(principal, Principal):
+        principal = principal_of(request)
+        if principal is None:
             return False
         return principal.role in self.allowed_roles
 
@@ -58,6 +73,14 @@ class IsWelfareOfficer(HasRole):
     allowed_roles: ClassVar[frozenset[Role]] = frozenset({Role.WELFARE_OFFICER})
 
 
+class IsCaseOfficer(HasRole):
+    """Either kind of officer who may be shown an individual flag."""
+
+    allowed_roles: ClassVar[frozenset[Role]] = frozenset(
+        {Role.WELFARE_OFFICER, Role.MEDICAL_OFFICER}
+    )
+
+
 class IsMedicalOfficer(HasRole):
     allowed_roles: ClassVar[frozenset[Role]] = frozenset({Role.MEDICAL_OFFICER})
 
@@ -66,6 +89,14 @@ class IsCommander(HasRole):
     """Aggregates only. No endpoint guarded by this may return a subject token."""
 
     allowed_roles: ClassVar[frozenset[Role]] = frozenset({Role.COMMANDER})
+
+
+class IsRulesetReviewer(HasRole):
+    """Either signer on the dual-approval path may read the proposal queue."""
+
+    allowed_roles: ClassVar[frozenset[Role]] = frozenset(
+        {Role.WDEC_AUDITOR, Role.MEDICAL_OFFICER}
+    )
 
 
 class IsWDECAuditor(HasRole):

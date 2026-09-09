@@ -203,6 +203,16 @@ class TestComputeWsi:
 
         assert 0.1 <= wsi <= 0.9
 
+    def test_zero_total_weight_raises_rather_than_dividing(self) -> None:
+        """Unreachable via a validated ruleset, and that is why it is tested
+        by constructing the spec directly. A zero denominator here would
+        surface as a NaN tier rather than a refused score."""
+        zero = {
+            Domain.WORKLOAD: DomainSpec(Domain.WORKLOAD, weight=0.0, corroboration_threshold=0.55)
+        }
+        with pytest.raises(ManobalRiskError, match="weights sum to zero"):
+            compute_wsi([scored(Domain.WORKLOAD, 0.9)], zero)
+
     def test_no_active_domain_raises_rather_than_returning_zero(self) -> None:
         """Returning 0.0 would assert 'this person is fine'. We do not know that;
         we know we cannot see them. The engine must say so, and the caller marks

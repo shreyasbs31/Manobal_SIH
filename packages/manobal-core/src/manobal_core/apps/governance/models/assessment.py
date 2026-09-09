@@ -171,3 +171,44 @@ class RulesetVersion(models.Model):
 
     def __str__(self) -> str:
         return f"ruleset {self.version}"
+
+
+class RulesetProposal(models.Model):
+    """A signed ruleset waiting for the second signature (§10.5).
+
+    A ``RulesetVersion`` row is only written once both a clinical reviewer and
+    a WDEC auditor have approved the same digest. Until then the artefact is
+    a proposal, not a rule, and scoring continues on whatever is already active.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    version = models.CharField(max_length=32)
+    digest = models.CharField(max_length=64)
+    signature = models.TextField()
+    signing_key_id = models.CharField(max_length=64)
+    artefact_path = models.CharField(max_length=512, blank=True, default="")
+    shadow_report = models.JSONField(default=dict, blank=True)
+
+    proposed_by = models.CharField(max_length=128)
+    proposed_at = models.DateTimeField(default=timezone.now)
+    clinical_approver = models.CharField(max_length=128, blank=True, default="")
+    clinical_at = models.DateTimeField(null=True, blank=True)
+    wdec_approver = models.CharField(max_length=128, blank=True, default="")
+    wdec_at = models.DateTimeField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=16,
+        default="pending",
+        choices=[
+            ("pending", "Pending dual approval"),
+            ("rejected", "Rejected"),
+            ("registered", "Registered as a RulesetVersion"),
+        ],
+    )
+
+    class Meta:
+        db_table = "ruleset_proposal"
+        ordering = ("-proposed_at",)
+
+    def __str__(self) -> str:
+        return f"proposal {self.version} [{self.status}]"

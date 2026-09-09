@@ -34,10 +34,25 @@ os.environ.setdefault("MANOBAL_RULESET_REQUIRE_SIGNATURE", "false")
 # base.py already reads this variable, so one place decides the level instead of
 # two that can drift apart.
 os.environ.setdefault("MANOBAL_LOG_LEVEL", "DEBUG")
+# Fixed development seeds. They sign synthetic receipts and grant assertions.
+os.environ.setdefault(
+    "MANOBAL_ERASURE_SIGNING_KEY",
+    __import__("base64").b64encode(b"\x33" * 32).decode(),
+)
+os.environ.setdefault(
+    "MANOBAL_GRANT_SIGNING_KEY",
+    __import__("base64").b64encode(b"\x44" * 32).decode(),
+)
+os.environ.setdefault("MANOBAL_GRANT_KEY_ID", "core-dev")
+os.environ.setdefault("MANOBAL_IDENTITY_URL", "http://127.0.0.1:8001")
 
 from .base import *  # noqa: F403
 
 DEBUG = True
+LOCAL_ISSUER_ENABLED = True
+if os.environ.get("MANOBAL_CELERY_EAGER", "1") in {"1", "true", "yes"}:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 
 # TLS terminates at the ingress in a deployment; there is no ingress on a laptop.
 SECURE_SSL_REDIRECT = False
@@ -52,6 +67,12 @@ OIDC = {
     **OIDC,  # noqa: F405
     "ISSUER": "https://localhost/manobal-dev",
     "AUDIENCE": "manobal-core",
-    "JWKS_URL": "",
+    "JWKS_URL": "http://127.0.0.1:8000/dev/jwks",
     "ALGORITHMS": ["RS256"],
+}
+
+IDENTITY_RESOLVER = {
+    **IDENTITY_RESOLVER,  # noqa: F405
+    "BASE_URL": os.environ.get("MANOBAL_IDENTITY_URL", "http://127.0.0.1:8001"),
+    "CA_BUNDLE": "",
 }

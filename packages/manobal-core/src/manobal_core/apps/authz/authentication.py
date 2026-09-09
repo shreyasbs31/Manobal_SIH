@@ -15,9 +15,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import jwt
+from django.conf import settings
 from jwt import PyJWKClient
 from rest_framework import authentication, exceptions
 
+from ...observability.logging import actor_id_var, actor_role_var
 from .config import OIDCConfig
 from .predicates import mfa_is_satisfied
 from .principal import Principal
@@ -30,6 +32,13 @@ if TYPE_CHECKING:
 #: call would dominate the latency budget in NFR-P1.
 _jwks_client: PyJWKClient | None = None
 _config: OIDCConfig | None = None
+
+
+def reset_config() -> None:
+    """Drop cached OIDC state. Tests call this after mutating settings."""
+    global _config, _jwks_client
+    _config = None
+    _jwks_client = None
 
 
 def config() -> OIDCConfig:
@@ -85,6 +94,21 @@ class OIDCBearerAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed(
                 "MB-4012: this role requires a second authentication factor"
             )
+
+        # Bind the actor here, at the moment it becomes known, rather than in
+        # middleware after the response. DRF authenticates inside the view, so
+        # anything set after ``get_response`` returns arrives too late for every
+        # log line the view itself produced — the scoring run, the consent
+        # check, the identity resolution. Those are the lines an auditor
+        # actually needs an actor on. :class:`~.middleware.PrincipalMiddleware`
+        # clears the binding again once the request is done.
+        actor_id_var.set(principal.actor_id)
+        actor_role_var.set(principal.role.value)
+        # DRF stores the return value as ``request.user``. Permission classes
+        # and views look at ``request.principal``. Bind both so a forgotten
+        # alias cannot silently deny every authorised caller.
+        request.principal = principal  # type: ignore[attr-defined]
+
         return principal, claims
 
     def authenticate_header(self, request: Request) -> str:
@@ -95,7 +119,7 @@ class OIDCBearerAuthentication(authentication.BaseAuthentication):
     def _verify(self, token: str) -> dict[str, Any]:
         settings_ = config()
         try:
-            key = _client().get_signing_key_from_jwt(token).key
+            key = _signing_key(token, settings_)
             decoded: dict[str, Any] = jwt.decode(
                 token,
                 key,
@@ -118,3 +142,12 @@ class OIDCBearerAuthentication(authentication.BaseAuthentication):
         except jwt.PyJWTError as exc:
             raise exceptions.AuthenticationFailed("MB-4010: token verification failed") from exc
         return decoded
+
+
+def _signing_key(token: str, settings_: OIDCConfig) -> Any:
+    """Use the laptop issuer when it is enabled; otherwise the force JWKS."""
+    if getattr(settings, "LOCAL_ISSUER_ENABLED", False):
+        from .local_issuer import private_key
+
+        return private_key().public_key()
+    return _client().get_signing_key_from_jwt(token).key

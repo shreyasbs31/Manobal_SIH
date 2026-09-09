@@ -9,8 +9,9 @@ prevent. Administrative actions belong to purpose-built, audited endpoints.
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.http import HttpRequest, JsonResponse
-from django.urls import path
+from django.urls import include, path
 
 
 def healthz(_: HttpRequest) -> JsonResponse:
@@ -25,4 +26,14 @@ def healthz(_: HttpRequest) -> JsonResponse:
 
 urlpatterns = [
     path("healthz", healthz, name="healthz"),
+    path("", include("manobal_core.apps.api.urls")),
 ]
+
+if getattr(settings, "LOCAL_ISSUER_ENABLED", False):
+    from manobal_core.apps.api.views_dev import DevJwksView, DevSeedInfoView, DevTokenView
+
+    urlpatterns += [
+        path("dev/jwks", DevJwksView.as_view(), name="dev-jwks"),
+        path("dev/token", DevTokenView.as_view(), name="dev-token"),
+        path("dev/seed", DevSeedInfoView.as_view(), name="dev-seed"),
+    ]

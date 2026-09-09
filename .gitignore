@@ -15,6 +15,7 @@ htmlcov/
 node_modules/
 dist/
 .vite/
+.npm-cache/
 
 # Local state
 *.local
@@ -28,7 +29,9 @@ tmp/
 *.pem
 *.key
 !packages/manobal-infra/dev-keys/README.md
+!packages/manobal-core/src/manobal_core/apps/authz/dev_issuer.pem
 secrets/
+.local/
 
 # OS
 .DS_Store
