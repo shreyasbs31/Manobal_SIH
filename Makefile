@@ -61,3 +61,24 @@ clean: ## Remove caches and build artefacts
 	find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache \
 		-o -name .mypy_cache -o -name '*.egg-info' \) -prune -exec rm -rf {} + 2>/dev/null || true
 	rm -rf .coverage htmlcov coverage.xml
+
+# ------------------------------------------------------------ local stores --
+PG_SCRIPT := packages/manobal-infra/scripts/local_pg.sh
+
+db-up: ## Start the local analytics + identity PostgreSQL clusters
+	@$(PG_SCRIPT) up
+
+db-down: ## Stop both clusters
+	@$(PG_SCRIPT) down
+
+db-reset: ## Destroy and re-provision both clusters
+	@$(PG_SCRIPT) reset
+
+db-status: ## Show cluster state and zone assignment
+	@$(PG_SCRIPT) status
+
+db-extensions: ## Apply TimescaleDB/pgvector where available (unlocks bio + voice stores)
+	@/opt/homebrew/opt/postgresql@16/bin/psql -p 55432 -d postgres \
+		-v ON_ERROR_STOP=1 -f packages/manobal-infra/postgres/analytics-extensions.sql
+
+.PHONY: db-up db-down db-reset db-status db-extensions

@@ -1,0 +1,146 @@
+# MANOBAL local development stack — SDD §8.2 "Development".
+#
+# The topology here is not a convenience arrangement of containers. It is the
+# SDD §3.2 zone model expressed in Docker networks, because the system's central
+# privacy claim is a *structural* one and a structural claim that is only true in
+# production is not a structural claim.
+#
+#   manobal-analytics  (Zone 2)  core-api, workers, risk engine, the five
+#                                pseudonymous stores, broker, object store, OIDC
+#   manobal-identity   (Zone 3)  the identity resolver and iam_vault, and nothing
+#                                else
+#
+# `postgres-identity` is attached to the Zone 3 network only. No Zone 2 container
+# has a route to it. `identity-resolver` is the single container on both networks
+# and is therefore the only path between them — which is exactly what SDD §4.9
+# describes and what the §9.6 gate `test_analytics_plane_cannot_reach_identity_vault`
+# verifies by attempting the connection and requiring it to fail.
+#
+#   make dev   brings this up and seeds it.
+
+name: manobal
+
+x-postgres-health: &postgres-health
+  interval: 5s
+  timeout: 5s
+  retries: 20
+  start_period: 10s
+
+networks:
+  # Zone 2 — the analytics plane. Pseudonymous data only.
+  manobal-analytics:
+    name: manobal-analytics
+  # Zone 3 — the identity enclave. Deliberately `internal`, so containers on it
+  # have no route out to anything, including the internet.
+  manobal-identity:
+    name: manobal-identity
+    internal: true
+
+volumes:
+  pg-analytics-data:
+  pg-identity-data:
+  rabbitmq-data:
+  minio-data:
+
+services:
+  # ---------------------------------------------------------------- ZONE 2 ---
+  # One cluster, five databases, separate roles per SDD §5.1. TimescaleDB backs
+  # bio_store's hypertables (NFR-S3); pgvector backs voice_store and the RAG
+  # corpus.
+  postgres-analytics:
+    image: timescale/timescaledb-ha:pg16
+    container_name: manobal-pg-analytics
+    environment:
+      POSTGRES_USER: ${PG_SUPERUSER:-manobal_admin}
+      POSTGRES_PASSWORD: ${PG_SUPERUSER_PASSWORD:-dev_only_not_a_secret}
+      POSTGRES_DB: postgres
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=timescaledb
+      - -c
+      - log_statement=ddl
+    volumes:
+      - pg-analytics-data:/home/postgres/pgdata/data
+      - ./postgres/analytics-init.sql:/docker-entrypoint-initdb.d/10-analytics-init.sql:ro
+    ports:
+      - "${PG_ANALYTICS_PORT:-55432}:5432"
+    networks: [manobal-analytics]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_SUPERUSER:-manobal_admin} -d gov_store"]
+      <<: *postgres-health
+
+  # Durable broker. RabbitMQ rather than Redis because losing a T4 alert to an
+  # in-memory broker is not an acceptable failure mode (SDD §3.3).
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: manobal-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-manobal}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-dev_only_not_a_secret}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "${RABBITMQ_PORT:-55672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-55673}:15672"
+    networks: [manobal-analytics]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  # Object store for signed ruleset artefacts and opt-in journal audio only.
+  minio:
+    image: minio/minio:latest
+    container_name: manobal-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-manobal}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-dev_only_not_a_secret}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "${MINIO_PORT:-59000}:9000"
+      - "${MINIO_CONSOLE_PORT:-59001}:9001"
+    networks: [manobal-analytics]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # OIDC for every human and machine principal. SDD §3.3: do not hand-roll auth
+  # for a system holding mental-health data.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: manobal-keycloak
+    command: ["start-dev", "--import-realm", "--http-port=8080"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-dev_only_not_a_secret}
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/manobal-realm.json:/opt/keycloak/data/import/manobal-realm.json:ro
+    ports:
+      - "${KEYCLOAK_PORT:-58080}:8080"
+    networks: [manobal-analytics]
+
+  # ---------------------------------------------------------------- ZONE 3 ---
+  # The identity vault. Attached to the internal Zone 3 network and to nothing
+  # else. It publishes no host port: there is no way to reach it from the
+  # developer's machine either, which is the point.
+  postgres-identity:
+    image: postgres:16-alpine
+    container_name: manobal-pg-identity
+    environment:
+      POSTGRES_USER: ${PG_IDENTITY_SUPERUSER:-manobal_vault_admin}
+      POSTGRES_PASSWORD: ${PG_IDENTITY_SUPERUSER_PASSWORD:-dev_only_not_a_secret}
+      POSTGRES_DB: iam_vault
+    volumes:
+      - pg-identity-data:/var/lib/postgresql/data
+      - ./postgres/identity-init.sql:/docker-entrypoint-initdb.d/10-identity-init.sql:ro
+    networks: [manobal-identity]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_IDENTITY_SUPERUSER:-manobal_vault_admin} -d iam_vault"]
+      <<: *postgres-health
