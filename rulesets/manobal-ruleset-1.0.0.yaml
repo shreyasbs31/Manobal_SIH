@@ -1,0 +1,333 @@
+# MANOBAL scoring ruleset v1.0.0
+#
+# This file is DATA, not code (NFR-M5). It is reviewable by a clinical advisor or
+# a WDEC member without reading Python, it is signed, and the risk engine refuses
+# to start against an artefact whose signature does not verify.
+#
+# Every weight and threshold below is a CALIBRATION TARGET, not a validated
+# constant. SDD §12.2 R5 requires that the pilot launches in observation mode:
+# for the first eight weeks the engine scores but does not alert, and its output
+# is compared against welfare officers' independent judgement before it is
+# permitted to raise a case.
+#
+# Changing anything here requires a recorded reviewer, a diff, and a WDEC
+# acknowledgement (SDD §10.5). Re-sign with:
+#     make ruleset-sign
+version: "1.0.0"
+effective_from: "2026-09-08"
+status: observation_mode
+description: >
+  Phase 0 baseline ruleset. Personal-baseline deviation across seven domains with
+  coverage renormalisation, a two-domain corroboration gate and two-cycle
+  hysteresis on decreases.
+
+scoring:
+  # SDD §4.5 step 1. Ninety days of history, at least twenty-one observations.
+  baseline_window_days: 90
+  baseline_min_observations: 21
+
+  # An indicator whose latest reading is older than this is treated as absent
+  # rather than as normal, which lowers its domain's coverage.
+  current_value_max_age_days: 14
+
+  # SDD §4.5 step 4. A domain participates only if we can see at least 60% of it.
+  coverage_floor: 0.6
+
+  # SDD §4.5 step 2. Three robust sigma of adverse movement saturates the
+  # indicator at 1.0.
+  z_divisor: 3.0
+
+  # SDD §4.5 step 5. FR-3.4: nothing above T1 without two independent domains.
+  corroboration_min_domains: 2
+
+  # FR-3.5: a tier may only fall after two consecutive cycles below the boundary.
+  hysteresis_cycles: 2
+
+  tier_bounds:
+    t1: 0.35   # Watch    — visible to the individual only
+    t2: 0.55   # Elevated — UWO daily digest, review <= 7 days
+    t3: 0.75   # High     — UWO immediate push, review <= 48 h
+    # T4 is unreachable by score. It exists only via the acute override (§4.7).
+
+# SDD §4.5 domain weights. Must sum to 1.0 — coverage renormalisation assumes a
+# normalised weight vector.
+domains:
+  D5_self_report:
+    weight: 0.22
+    corroboration_threshold: 0.50
+    # Lowest bar of any domain: these are validated instruments measuring the
+    # construct directly rather than a proxy for it.
+
+  D1_workload:
+    weight: 0.18
+    corroboration_threshold: 0.55
+    # Objective, always available, requires no opt-in.
+
+  D4_physiological:
+    weight: 0.18
+    corroboration_threshold: 0.55
+    # Strong signal, but opt-in and dependent on wear compliance.
+
+  D2_leave:
+    weight: 0.15
+    corroboration_threshold: 0.55
+
+  D3_organisational:
+    weight: 0.12
+    corroboration_threshold: 0.55
+    # Slower-moving; these indicators are already deltas over long windows.
+
+  D6_vocal_acoustic:
+    weight: 0.08
+    corroboration_threshold: 0.70
+    # Deliberately the lowest weight and the highest bar. The evidence base is
+    # the weakest of the seven and the accent/language sensitivity is the
+    # highest (SDD §12.2 R9). A language that has not passed acoustic validation
+    # on IndicVoices runs structured-forms-only and never reaches this domain.
+
+  D7_engagement:
+    weight: 0.07
+    corroboration_threshold: 0.60
+    # A meta-signal. Weighted low because silence has many innocent causes — a
+    # posting with no signal, a broken phone, a week of leave.
+
+# Every indicator is a deviation from the individual's own history. `direction`
+# says which way is adverse; `epsilon` floors the denominator so that a subject
+# whose values never vary is not flagged for a trivial absolute change, and is
+# expressed in the indicator's own units.
+indicators:
+
+  # ---- D1 Workload (SDD §4.4) --------------------------------------------
+  duty_hours_7d:
+    domain: D1_workload
+    direction: rising_is_adverse
+    epsilon: 6.0            # hours
+    weight: 1.5
+    description: Rolling 7-day sum of rostered plus overtime hours.
+  duty_hours_28d:
+    domain: D1_workload
+    direction: rising_is_adverse
+    epsilon: 20.0
+    weight: 1.0
+    description: Rolling 28-day sum of rostered plus overtime hours.
+  consecutive_duty_days:
+    domain: D1_workload
+    direction: rising_is_adverse
+    epsilon: 2.0            # days
+    weight: 1.5
+    description: Days since the last full rest day.
+  roster_volatility:
+    domain: D1_workload
+    direction: rising_is_adverse
+    epsilon: 0.75           # hours of shift-start standard deviation
+    weight: 1.0
+    description: 28-day standard deviation of shift start times; circadian disruption proxy.
+  rest_denial_count:
+    domain: D1_workload
+    direction: rising_is_adverse
+    epsilon: 0.5            # occurrences
+    weight: 1.0
+    description: Scheduled rest days worked, trailing 28 days.
+
+  # ---- D2 Leave -----------------------------------------------------------
+  leave_apply_rate_delta:
+    domain: D2_leave
+    direction: rising_is_adverse
+    epsilon: 0.2            # ratio
+    weight: 1.0
+    description: Change in leave-application frequency, 28 d against 180 d.
+  short_leave_burstiness:
+    domain: D2_leave
+    direction: rising_is_adverse
+    epsilon: 0.3            # Fano factor
+    weight: 1.0
+    description: Fano factor of leave requests of two days or fewer, trailing 28 days.
+  leave_rejection_count:
+    domain: D2_leave
+    direction: rising_is_adverse
+    epsilon: 0.5
+    weight: 1.2
+    description: Denied leave applications, trailing 90 days.
+  unplanned_absence_count:
+    domain: D2_leave
+    direction: rising_is_adverse
+    epsilon: 0.5
+    weight: 1.2
+    description: Absences without prior application, trailing 28 days.
+
+  # ---- D3 Organisational --------------------------------------------------
+  transfer_request_count:
+    domain: D3_organisational
+    direction: rising_is_adverse
+    epsilon: 0.5
+    weight: 1.0
+    description: Voluntary transfer requests, trailing 180 days.
+  duty_swap_rate_delta:
+    domain: D3_organisational
+    direction: rising_is_adverse
+    epsilon: 0.2
+    weight: 1.0
+    description: Change in duty-swap request frequency, 28 d against 180 d.
+  training_participation_delta:
+    domain: D3_organisational
+    direction: falling_is_adverse
+    epsilon: 0.2
+    weight: 1.0
+    description: Change in optional-activity attendance, trailing 180 days. Withdrawal is adverse.
+  deployment_intensity:
+    domain: D3_organisational
+    direction: rising_is_adverse
+    epsilon: 15.0           # weighted days
+    weight: 1.0
+    description: Weighted days in high-intensity postings, trailing 365 days.
+  family_separation_days:
+    domain: D3_organisational
+    direction: rising_is_adverse
+    epsilon: 20.0           # days
+    weight: 1.0
+    description: Continuous days at a non-family station.
+
+  # ---- D4 Physiological (force-issued wearable, BLE, opt-in) --------------
+  resting_hr_nightly:
+    domain: D4_physiological
+    direction: rising_is_adverse
+    epsilon: 3.0            # bpm
+    weight: 1.2
+    description: Nightly resting heart rate.
+  hrv_rmssd_nightly:
+    domain: D4_physiological
+    direction: falling_is_adverse
+    epsilon: 5.0            # ms
+    weight: 1.5
+    description: Nightly RMSSD. Suppressed HRV is the most-replicated wearable stress marker.
+  sleep_duration_min:
+    domain: D4_physiological
+    direction: falling_is_adverse
+    epsilon: 30.0           # minutes
+    weight: 1.5
+    description: Total sleep time per night.
+  sleep_efficiency:
+    domain: D4_physiological
+    direction: falling_is_adverse
+    epsilon: 0.04           # fraction
+    weight: 1.2
+    description: Sleep time divided by time in bed.
+  sleep_onset_variability:
+    domain: D4_physiological
+    direction: rising_is_adverse
+    epsilon: 20.0           # minutes
+    weight: 1.0
+    description: 14-day standard deviation of sleep onset time.
+  daily_steps:
+    domain: D4_physiological
+    direction: falling_is_adverse
+    epsilon: 1200.0         # steps
+    weight: 0.8
+    description: Daily step count; behavioural withdrawal proxy.
+  spo2_nocturnal_min:
+    domain: D4_physiological
+    direction: falling_is_adverse
+    epsilon: 1.5            # percentage points
+    weight: 0.5
+    description: Nocturnal minimum SpO2. Low weight — altitude confounds it heavily in CAPF postings.
+
+  # ---- D5 Self-report (validated instruments, officially translated) ------
+  pss10_total:
+    domain: D5_self_report
+    direction: rising_is_adverse
+    epsilon: 3.0            # points (scale 0-40)
+    weight: 1.5
+    description: Perceived Stress Scale, 10 items.
+  phq9_total:
+    domain: D5_self_report
+    direction: rising_is_adverse
+    epsilon: 2.0            # points (scale 0-27)
+    weight: 1.5
+    description: >
+      PHQ-9 total. Used as an internal proxy signal only — never surfaced, never
+      stored as a diagnosis. Item 9 is handled separately as an acute trigger and
+      does not reach this indicator.
+  gad7_total:
+    domain: D5_self_report
+    direction: rising_is_adverse
+    epsilon: 2.0            # points (scale 0-21)
+    weight: 1.2
+    description: GAD-7 total.
+  ema_mood:
+    domain: D5_self_report
+    direction: falling_is_adverse
+    epsilon: 0.5            # points (scale 1-5)
+    weight: 1.0
+    description: Daily 5-point mood check-in.
+  ema_fatigue:
+    domain: D5_self_report
+    direction: rising_is_adverse
+    epsilon: 0.5
+    weight: 1.0
+    description: Daily 5-point fatigue check-in.
+  ema_sleep_quality:
+    domain: D5_self_report
+    direction: falling_is_adverse
+    epsilon: 0.5
+    weight: 1.0
+    description: Daily 5-point self-rated sleep quality.
+
+  # ---- D6 Vocal-acoustic (derived on-device from eGeMAPS v02) -------------
+  # Only aggregate prosodic derivatives are retained. Speaker-identifying
+  # features are excluded from the retained set (SDD §7.4 V13).
+  voice_f0_variability:
+    domain: D6_vocal_acoustic
+    direction: falling_is_adverse
+    epsilon: 0.8            # semitones
+    weight: 1.2
+    description: F0 standard deviation in semitones; reduced prosodic range.
+  voice_speech_rate:
+    domain: D6_vocal_acoustic
+    direction: falling_is_adverse
+    epsilon: 0.4            # syllables/second
+    weight: 1.0
+    description: Voiced-segment rate; psychomotor slowing proxy.
+  voice_pause_ratio:
+    domain: D6_vocal_acoustic
+    direction: rising_is_adverse
+    epsilon: 0.05           # fraction
+    weight: 1.0
+    description: Unvoiced time divided by total speech time.
+  voice_jitter_local:
+    domain: D6_vocal_acoustic
+    direction: rising_is_adverse
+    epsilon: 0.004
+    weight: 0.8
+    description: Local jitter; vocal-fold instability under tension.
+  voice_shimmer_local:
+    domain: D6_vocal_acoustic
+    direction: rising_is_adverse
+    epsilon: 0.03
+    weight: 0.8
+    description: Local shimmer.
+  voice_loudness_mean:
+    domain: D6_vocal_acoustic
+    direction: falling_is_adverse
+    epsilon: 0.08
+    weight: 0.8
+    description: Mean loudness of voiced segments.
+
+  # ---- D7 Engagement (meta-signal) ---------------------------------------
+  checkin_completion_rate_28d:
+    domain: D7_engagement
+    direction: falling_is_adverse
+    epsilon: 0.15           # fraction
+    weight: 1.5
+    description: Completed EMA check-ins over offered check-ins, trailing 28 days.
+  app_session_count_14d:
+    domain: D7_engagement
+    direction: falling_is_adverse
+    epsilon: 2.0            # sessions
+    weight: 1.0
+    description: App opens, trailing 14 days.
+  instrument_completion_latency_days:
+    domain: D7_engagement
+    direction: rising_is_adverse
+    epsilon: 2.0            # days
+    weight: 1.0
+    description: Days between an instrument being offered and completed.

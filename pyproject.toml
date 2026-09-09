@@ -1,0 +1,76 @@
+#
+# MANOBAL — root tool configuration.
+#
+# This file carries no package metadata. Each package under packages/ declares
+# its own dependencies and is installed editable into the single workspace venv.
+# Tool configuration lives here so that lint, type-check and test behaviour is
+# identical across every package (NFR-M2).
+#
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/migrations/**", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "N",         # pep8-naming
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "A",         # builtins shadowing
+    "C4",        # comprehensions
+    "DTZ",       # naive datetimes — every timestamp in this system is tz-aware
+    "T20",       # no print/pprint left behind
+    "SIM",       # simplify
+    "PTH",       # pathlib over os.path
+    "RUF",
+    "S",         # bandit
+]
+ignore = [
+    "S101",   # assert — used throughout the test suites
+    "B008",   # function call in default arg — DRF/Django idiom
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106", "S107", "S311"]
+"**/conftest.py" = ["S105", "S106", "S107"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["manobal_risk", "manobal_core", "manobal_synth", "manobal_identity"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+exclude = ["migrations/", "\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["yaml.*", "nacl.*", "pytest_django.*", "factory.*", "hypothesis.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+python_files = ["test_*.py"]
+addopts = "--strict-markers --strict-config -q"
+filterwarnings = ["error", "ignore::DeprecationWarning:pkg_resources.*"]
+markers = [
+    "integration: requires docker-compose services (postgres, rabbitmq, keycloak)",
+    "privacy_gate: SDD §9.6 release-gating privacy/fairness assertion",
+    "slow: excluded from the default fast loop",
+]
+
+[tool.coverage.run]
+branch = true
+omit = ["*/tests/*", "*/migrations/*", "*/conftest.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+    "class .*\\(Protocol\\):",
+]

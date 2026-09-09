@@ -1,0 +1,34 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Local state
+*.local
+.env
+.env.*
+!.env.example
+data/
+tmp/
+
+# Secrets — never commit key material
+*.pem
+*.key
+!packages/manobal-infra/dev-keys/README.md
+secrets/
+
+# OS
+.DS_Store
