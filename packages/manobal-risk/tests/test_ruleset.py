@@ -68,9 +68,7 @@ class TestShippedArtefact:
             s.corroboration_threshold for s in ruleset.domains.values()
         )
 
-    def test_the_two_weakest_signals_carry_the_two_smallest_weights(
-        self, ruleset: Ruleset
-    ) -> None:
+    def test_the_two_weakest_signals_carry_the_two_smallest_weights(self, ruleset: Ruleset) -> None:
         """Voice (weak evidence base) and engagement (silence has many innocent
         causes) sit below every objective or instrument-backed domain."""
         by_weight = sorted(ruleset.domains.values(), key=lambda s: s.weight)
@@ -115,9 +113,7 @@ class TestValidation:
         with pytest.raises(RulesetError, match="unknown domain"):
             parse(broken)
 
-    def test_a_weighted_domain_must_declare_indicators(
-        self, document: dict[str, Any]
-    ) -> None:
+    def test_a_weighted_domain_must_declare_indicators(self, document: dict[str, Any]) -> None:
         """Otherwise it sits permanently at zero coverage, quietly removing its
         weight from every composite while still appearing in the ruleset."""
         broken = copy.deepcopy(document)
@@ -137,18 +133,14 @@ class TestValidation:
         with pytest.raises(RulesetError, match="epsilon must be positive"):
             parse(broken)
 
-    def test_direction_must_be_one_of_the_two_known_values(
-        self, document: dict[str, Any]
-    ) -> None:
+    def test_direction_must_be_one_of_the_two_known_values(self, document: dict[str, Any]) -> None:
         broken = copy.deepcopy(document)
         broken["indicators"]["pss10_total"]["direction"] = "up"
 
         with pytest.raises(RulesetError, match="direction"):
             parse(broken)
 
-    def test_baseline_minimum_may_not_exceed_the_window(
-        self, document: dict[str, Any]
-    ) -> None:
+    def test_baseline_minimum_may_not_exceed_the_window(self, document: dict[str, Any]) -> None:
         broken = copy.deepcopy(document)
         broken["scoring"]["baseline_min_observations"] = 500
 
@@ -180,9 +172,7 @@ class TestValidation:
         with pytest.raises(RulesetError, match="corroboration_min_domains"):
             parse(broken)
 
-    def test_hysteresis_cycles_may_be_zero_but_not_negative(
-        self, document: dict[str, Any]
-    ) -> None:
+    def test_hysteresis_cycles_may_be_zero_but_not_negative(self, document: dict[str, Any]) -> None:
         allowed = copy.deepcopy(document)
         allowed["scoring"]["hysteresis_cycles"] = 0
         assert parse(allowed).hysteresis_cycles == 0
@@ -210,9 +200,7 @@ class TestValidation:
         with pytest.raises(RulesetError, match="mapping at the top level"):
             parse_ruleset(["not", "a", "mapping"], sha256="0" * 64)
 
-    def test_a_numeric_field_given_a_string_is_rejected(
-        self, document: dict[str, Any]
-    ) -> None:
+    def test_a_numeric_field_given_a_string_is_rejected(self, document: dict[str, Any]) -> None:
         broken = copy.deepcopy(document)
         broken["domains"]["D5_self_report"]["weight"] = "0.22"
 

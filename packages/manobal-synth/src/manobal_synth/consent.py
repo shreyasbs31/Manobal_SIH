@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 import numpy as np
+
 from manobal_risk import Domain
 
 from .config import ConsentProfile, GenerationConfig
@@ -58,6 +59,7 @@ _ENROLMENT_BY_RANK: Mapping[RankBand, float] = MappingProxyType(
         RankBand.GAZETTED: 1.26,
     }
 )
+
 
 @dataclass(frozen=True, slots=True)
 class ConsentState:

@@ -51,16 +51,31 @@ def rolling_mean(values: FloatArray, window: int) -> FloatArray:
     return rolling_sum(values, window) / span
 
 
-def masked_rolling_mean(values: FloatArray, mask: BoolArray, window: int) -> FloatArray:
+def masked_rolling_mean(
+    values: FloatArray,
+    mask: BoolArray,
+    window: int,
+    *,
+    min_count: int = 1,
+    default: float = 0.0,
+) -> FloatArray:
     """Trailing mean over the days where ``mask`` holds.
 
     Days where the mask is false are absent, not zero. Rest days must not drag a
     mean shift-start time towards midnight.
+
+    ``min_count`` and ``default`` matter more than they look. A window in which
+    almost every day is masked out produces a mean of one or two observations,
+    and a caller that standardises that mean against a personal reference gets an
+    enormous spurious deviation. Falling back to a caller-supplied default is
+    what stops a fortnight of leave from reading as the largest workload
+    excursion in a subject's history.
     """
     weights = mask.astype(np.float64)
     total = rolling_sum(values * weights, window)
     count = rolling_sum(weights, window)
-    return np.where(count > 0.0, total / np.maximum(count, 1.0), 0.0)
+    mean = total / np.maximum(count, 1.0)
+    return np.where(count >= float(min_count), mean, default)
 
 
 def masked_rolling_std(values: FloatArray, mask: BoolArray, window: int) -> FloatArray:
@@ -87,7 +102,14 @@ def run_length(flags: BoolArray) -> FloatArray:
     return (index - last_false).astype(np.float64)
 
 
-def rate_delta(events: BoolArray, short_days: int, long_days: int, floor: float) -> FloatArray:
+def rate_delta(
+    events: BoolArray,
+    short_days: int,
+    long_days: int,
+    floor: float,
+    *,
+    cap: float = 4.0,
+) -> FloatArray:
     """Short-window rate against long-window rate, as a proportional change.
 
     ``floor`` keeps a subject who has never applied for leave from producing an
@@ -95,10 +117,15 @@ def rate_delta(events: BoolArray, short_days: int, long_days: int, floor: float)
     a difference of rates because the SDD defines these indicators as a *change in
     frequency*, and a constable applying twice as often as usual is the signal
     regardless of whether their usual is monthly or weekly.
+
+    ``cap`` bounds the top. Once somebody is applying five times their usual rate
+    the distinction between five and fifty is noise in a rare-event count, and an
+    uncapped ratio would let a single sparse baseline dominate the robust
+    z-score for the whole domain.
     """
     short_rate = rolling_count(events, short_days) / float(short_days)
     long_rate = rolling_count(events, long_days) / float(long_days)
-    return short_rate / np.maximum(long_rate, floor) - 1.0
+    return np.minimum(short_rate / np.maximum(long_rate, floor) - 1.0, cap)
 
 
 def participation_delta(
@@ -150,7 +177,8 @@ def carry_forward(values: FloatArray, present: BoolArray) -> FloatArray:
     """
     index = np.arange(len(values), dtype=np.int64)
     last_present = np.maximum.accumulate(np.where(present, index, -1))
-    source = np.where(last_present < 0, int(np.argmax(present)) if present.any() else 0, last_present)
+    first = int(np.argmax(present)) if present.any() else 0
+    source = np.where(last_present < 0, first, last_present)
     return values[source].astype(np.float64, copy=False)
 
 

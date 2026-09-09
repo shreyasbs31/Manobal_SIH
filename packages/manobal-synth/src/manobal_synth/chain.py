@@ -32,6 +32,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
+import numpy as np
+
 from .arrays import BoolArray, FloatArray
 from .cohorts import Cohort
 from .config import GenerationConfig
@@ -103,6 +105,7 @@ def generate_subject_series(
         workload.strain,
         strain,
         workload.rest_day,
+        exogenous.planned_leave,
         missing.wearable_worn,
     )
     self_report = self_report_stage(
@@ -162,6 +165,7 @@ def generate_subject_series(
     latents = MappingProxyType(
         {
             "distress_strain": strain,
+            "unit_pressure": incident_pressure,
             "deployment_pressure": exogenous.pressure,
             "workload_strain": workload.strain,
             "sleep_debt": physiology.sleep_debt,
@@ -193,9 +197,9 @@ def _availability(
 
     The instrument channel is available from the first *answered* administration
     onwards, because a carried-forward value needs something to carry. Missing a
-    later administration does not remove the row — it staleness the value, which
-    is the SDD §4.5 ``current_value_max_age_days`` path rather than the coverage
-    path, and the two must not be conflated.
+    later administration does not remove the row, it makes the value stale — the
+    SDD §4.5 ``current_value_max_age_days`` path rather than the coverage path,
+    and the two must not be conflated.
     """
     answered = instrument_days & missing.instrument_answered
     instrument_available = _from_first_true(answered)
@@ -212,8 +216,6 @@ def _availability(
 
 
 def _from_first_true(flags: BoolArray) -> BoolArray:
-    import numpy as np
-
     if not flags.any():
         return np.zeros(len(flags), dtype=bool)
     first = int(np.argmax(flags))
@@ -223,6 +225,4 @@ def _from_first_true(flags: BoolArray) -> BoolArray:
 
 
 def _all_days(n_days: int) -> BoolArray:
-    import numpy as np
-
     return np.ones(n_days, dtype=bool)

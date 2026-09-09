@@ -42,42 +42,54 @@ from .arrays import FloatArray, IntArray
 from .config import DistressOnset
 
 #: Shape above one: an accumulating hazard rather than a constant one.
-ONSET_SHAPE = 1.6
+ONSET_SHAPE = 3.0
 #: Scale as a fraction of the run. Places the median onset around 55% of the way
 #: through, leaving a mix of long-established and recent declines at the end.
-ONSET_SCALE_FRACTION = 0.62
+ONSET_SCALE_FRACTION = 1.00
 MIN_PRE_ONSET_DAYS = 30
+#: Post-onset observation floor, as an absolute number of days and as a fraction
+#: of the run. The fraction is what matters: an onset three weeks before the
+#: window closes is real distress that no baseline-of-one system could yet see,
+#: and a corpus full of them would measure the truncation rule rather than the
+#: engine. Requiring roughly a ramp-length of post-onset history keeps the
+#: injected cohort answerable.
 MIN_OBSERVED_DAYS = 21
+MIN_OBSERVED_FRACTION = 0.17
 
 #: Ramp shape 2.2 gives a decline that is convex for most of its length. That
 #: convexity is what a trailing-median baseline can actually resolve: on a purely
 #: linear slide the median absolute deviation grows with the trend and the robust
 #: z-score saturates around 1.35 no matter how steep the slide gets.
-RAMP_SHAPE = 2.2
-RAMP_REFERENCE_FRACTION = 0.42
-RAMP_MIN_DAYS = 45.0
-RAMP_MAX_DAYS = 200.0
-RAMP_JITTER = (0.55, 1.05)
+RAMP_SHAPE = 2.8
+RAMP_REFERENCE_FRACTION = 0.28
+RAMP_MIN_DAYS = 40.0
+RAMP_MAX_DAYS = 130.0
+RAMP_JITTER = (0.70, 1.30)
 
 #: Additional severity per year once the ramp has saturated. Untreated decline
 #: does not simply stop, and without this an early-onset subject would be exactly
 #: flat and therefore exactly invisible.
 CREEP_PER_YEAR = 0.20
 
-SEVERITY_MEDIAN = 0.90
-SEVERITY_LOG_SD = 0.30
-SEVERITY_MIN = 0.35
-SEVERITY_MAX = 1.70
+SEVERITY_MEDIAN = 2.20
+SEVERITY_LOG_SD = 0.36
+SEVERITY_MIN = 0.60
+SEVERITY_MAX = 3.80
 
-#: Rise in severity over the trailing four weeks above which a subject counts as
-#: actively deteriorating at the end of the window.
+#: Rise over the trailing four weeks, *as a fraction of strain already reached*,
+#: above which a subject counts as actively deteriorating. Relative rather than
+#: absolute: a severe decline that saturated a year ago still creeps upward by
+#: more in absolute terms than a mild one that started last month, and an
+#: absolute test would file the wrong one as active.
 DETERIORATION_WINDOW_DAYS = 28
-DETERIORATION_THRESHOLD = 0.04
+DETERIORATION_THRESHOLD = 0.10
+DETERIORATION_FLOOR = 0.05
 
 
 def onset_bounds(duration_days: int) -> tuple[float, float]:
     """Earliest and latest onset day that leave usable history on both sides."""
-    latest = float(max(duration_days - MIN_OBSERVED_DAYS, MIN_PRE_ONSET_DAYS + 1))
+    observed = max(float(MIN_OBSERVED_DAYS), MIN_OBSERVED_FRACTION * duration_days)
+    latest = float(max(duration_days - observed, MIN_PRE_ONSET_DAYS + 1))
     return float(MIN_PRE_ONSET_DAYS), latest
 
 
@@ -128,7 +140,8 @@ def draw_ramp_days(rng: np.random.Generator, count: int, duration_days: int) -> 
     both producing declines that are mid-slide at the end rather than either
     invisible or instantaneous.
     """
-    reference = float(np.clip(RAMP_REFERENCE_FRACTION * duration_days, RAMP_MIN_DAYS, RAMP_MAX_DAYS))
+    scaled = RAMP_REFERENCE_FRACTION * duration_days
+    reference = float(np.clip(scaled, RAMP_MIN_DAYS, RAMP_MAX_DAYS))
     jitter = rng.uniform(RAMP_JITTER[0], RAMP_JITTER[1], size=count)
     return np.maximum(reference * jitter, 14.0)
 
@@ -177,7 +190,10 @@ def is_deteriorating(strain: FloatArray) -> bool:
     "the engine missed an active decline" from "the decline finished a year ago
     and the subject's own baseline has absorbed it".
     """
+    reached = float(strain[-1])
+    if reached <= DETERIORATION_FLOOR:
+        return False
     if len(strain) <= DETERIORATION_WINDOW_DAYS:
-        return bool(strain[-1] > DETERIORATION_THRESHOLD)
-    rise = float(strain[-1] - strain[-1 - DETERIORATION_WINDOW_DAYS])
-    return rise > DETERIORATION_THRESHOLD
+        return True
+    rise = reached - float(strain[-1 - DETERIORATION_WINDOW_DAYS])
+    return rise > DETERIORATION_THRESHOLD * reached

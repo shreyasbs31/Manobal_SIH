@@ -28,6 +28,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
+
 from manobal_risk import AcuteTriggerKind
 
 from .arrays import FloatArray
@@ -154,7 +155,7 @@ def _draw_gaming(
 ) -> np.ndarray:
     """Select suppressors, preferring subjects who are already deteriorating."""
     count = len(distressed)
-    target = int(round(config.gaming_cohort * count))
+    target = round(config.gaming_cohort * count)
     gaming = np.zeros(count, dtype=bool)
     if target <= 0:
         return gaming
@@ -178,11 +179,11 @@ def _draw_acute(
 ) -> tuple[dict[int, int], dict[int, AcuteTriggerKind]]:
     """Choose who has an acute event, when, and of which kind."""
     count = len(distressed)
-    target = int(round(config.acute_events * count))
+    target = round(config.acute_events * count)
     if target <= 0:
         return {}, {}
 
-    from_distressed = min(int(round(target * _ACUTE_DISTRESSED_SHARE)), int(distressed.sum()))
+    from_distressed = min(round(target * _ACUTE_DISTRESSED_SHARE), int(distressed.sum()))
     chosen = list(rng.permutation(np.flatnonzero(distressed))[:from_distressed])
     remaining = target - len(chosen)
     if remaining > 0:

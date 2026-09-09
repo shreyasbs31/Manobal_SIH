@@ -99,3 +99,34 @@ def scattered_spans(
 
 def bernoulli(rng: np.random.Generator, probabilities: FloatArray) -> BoolArray:
     return rng.random(len(probabilities)) < probabilities
+
+
+def graded_response(
+    drive: FloatArray,
+    *,
+    tolerance: float,
+    floor: float = -1.0,
+    ceiling: float = 4.0,
+) -> FloatArray:
+    """Pass a driver to the next stage through a tolerance band.
+
+    This is the single most consequential shape in the generator and it is worth
+    saying why it is not linear.
+
+    People absorb ordinary variation. A week two hours longer than usual costs a
+    constable nothing measurable; a month forty percent longer costs them their
+    sleep. A linear transfer cannot express that, and modelling it linearly has a
+    specific bad consequence: every subject's D1 and D4 series become strongly
+    correlated purely through roster *noise*, so a healthy cohort shows the same
+    cross-domain coupling as a deteriorating one, and the corroboration gate has
+    nothing to discriminate on. That is precisely the failure Appendix A.3 warns
+    about, arrived at from the opposite direction — correlations that exist for
+    the wrong reason are as useless as correlations that do not exist.
+
+    Implemented as ``x - t·tanh(x/t)``, which is smooth everywhere, cubic and
+    therefore nearly flat inside the band, and asymptotically ``x - t`` outside
+    it. The floor exists because relief saturates: a fortnight of leave does not
+    buy back an unbounded amount of sleep.
+    """
+    band = max(tolerance, 1e-9)
+    return np.clip(drive - band * np.tanh(drive / band), floor, ceiling)

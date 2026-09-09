@@ -34,13 +34,13 @@ from ..windows import fano_factor, lagged_smooth, rate_delta, rolling_count
 
 _AFFECT_TO_SEEKING = 0.60
 _WORKLOAD_TO_SEEKING = 0.26
-_DISTRESS_TO_SEEKING = 0.30
+_DISTRESS_TO_SEEKING = 0.45
 _SEEKING_LAG_DAYS = 10
 
 #: Multiplicative sensitivities of the three daily hazards. Unplanned absence
 #: responds hardest: it is the point at which somebody stops asking.
-_APPLY_SENSITIVITY = 0.68
-_ABSENCE_SENSITIVITY = 1.05
+_APPLY_SENSITIVITY = 0.85
+_ABSENCE_SENSITIVITY = 1.30
 
 #: Clustering modulator for short leave. Slow enough to produce runs of a week or
 #: two, which is the timescale the four-day Fano bins can resolve.
@@ -64,6 +64,13 @@ _BURSTINESS_BIN_DAYS = 4
 #: Floor on the long-run rate in the rate-delta denominator, in events per day.
 #: Roughly one application a year: below that the ratio is measuring noise.
 _RATE_FLOOR = 1.0 / 365.0
+
+#: Ceilings on the daily hazards, in events per day. Even a subject in severe
+#: decline does not apply for leave every other day; without these the
+#: exponential response runs away at high strain and produces counts that no
+#: HRMS extract would ever contain.
+_APPLY_HAZARD_CAP = 0.18
+_ABSENCE_HAZARD_CAP = 0.14
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,7 +120,7 @@ def _applications(
     seeking: FloatArray,
 ) -> BoolArray:
     hazard = person.trait("leave_apply_rate") * np.exp(_APPLY_SENSITIVITY * seeking)
-    return bernoulli(rng, np.clip(hazard, 0.0, 0.6))
+    return bernoulli(rng, np.clip(hazard, 0.0, _APPLY_HAZARD_CAP))
 
 
 def _short_leave(
@@ -123,9 +130,7 @@ def _short_leave(
     applications: BoolArray,
 ) -> BoolArray:
     cluster = ar1(rng, len(seeking), _CLUSTER_PHI, _CLUSTER_SD)
-    share = person.trait("short_leave_share") * np.exp(
-        _CLUSTER_SENSITIVITY * (cluster + seeking)
-    )
+    share = person.trait("short_leave_share") * np.exp(_CLUSTER_SENSITIVITY * (cluster + seeking))
     return applications & bernoulli(rng, np.clip(share, 0.0, 0.98))
 
 
@@ -147,4 +152,4 @@ def _absences(
     seeking: FloatArray,
 ) -> BoolArray:
     hazard = person.trait("unplanned_absence_rate") * np.exp(_ABSENCE_SENSITIVITY * seeking)
-    return bernoulli(rng, np.clip(hazard, 0.0, 0.4))
+    return bernoulli(rng, np.clip(hazard, 0.0, _ABSENCE_HAZARD_CAP))

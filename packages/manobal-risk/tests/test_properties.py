@@ -47,9 +47,7 @@ domains = st.sampled_from(list(Domain))
 
 @st.composite
 def domain_levels(draw: st.DrawFn, min_domains: int = 0, max_domains: int = 7) -> dict:
-    chosen = draw(
-        st.lists(domains, min_size=min_domains, max_size=max_domains, unique=True)
-    )
+    chosen = draw(st.lists(domains, min_size=min_domains, max_size=max_domains, unique=True))
     return {domain: draw(levels) for domain in chosen}
 
 
@@ -65,9 +63,7 @@ class TestCompositeInvariants:
 
     @given(spec=domain_levels(min_domains=1))
     @PROPERTY_SETTINGS
-    def test_wsi_is_bounded_by_the_active_domain_scores(
-        self, ruleset: Ruleset, spec: dict
-    ) -> None:
+    def test_wsi_is_bounded_by_the_active_domain_scores(self, ruleset: Ruleset, spec: dict) -> None:
         """A weighted mean cannot exceed its largest input. This is what stops a
         low-weight, low-evidence domain such as voice ever driving a tier on its
         own."""
@@ -188,9 +184,7 @@ class TestCorroborationGate:
 
 
 class TestHysteresisProperties:
-    @given(
-        sequence=st.lists(st.sampled_from([Tier.T0, Tier.T1, Tier.T2, Tier.T3]), min_size=2)
-    )
+    @given(sequence=st.lists(st.sampled_from([Tier.T0, Tier.T1, Tier.T2, Tier.T3]), min_size=2))
     @PROPERTY_SETTINGS
     def test_a_tier_never_falls_faster_than_the_ruleset_permits(
         self, ruleset: Ruleset, sequence: list[Tier]
@@ -291,9 +285,7 @@ class TestOutputDiscipline:
 
         result, trace = score_with_trace(history, ruleset, assessed_at=ASSESSED_AT)
 
-        assert {d for d, active in result.domain_coverage if active} == set(
-            trace.active_domains
-        )
+        assert {d for d, active in result.domain_coverage if active} == set(trace.active_domains)
 
     @given(spec=domain_levels(min_domains=1))
     @PROPERTY_SETTINGS

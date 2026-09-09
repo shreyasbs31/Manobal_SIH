@@ -61,12 +61,8 @@ CALM = {Domain.PHYSIOLOGICAL: 0.0, Domain.SELF_REPORT: 0.0}
 
 
 class TestWithdrawalCanRaiseATier:
-    def test_the_subject_is_invisible_while_sharing_everything(
-        self, ruleset: Ruleset
-    ) -> None:
-        result = score(
-            build_history(ruleset, ADVERSE | CALM), ruleset, assessed_at=ASSESSED_AT
-        )
+    def test_the_subject_is_invisible_while_sharing_everything(self, ruleset: Ruleset) -> None:
+        result = score(build_history(ruleset, ADVERSE | CALM), ruleset, assessed_at=ASSESSED_AT)
 
         assert result.corroborated is True
         assert result.tier is Tier.T1
@@ -80,9 +76,7 @@ class TestWithdrawalCanRaiseATier:
         answering questionnaires, and that alone moved them from a private T1 to
         a T3 with an immediate push to their welfare officer."""
         result = score(
-            build_history(
-                ruleset, ADVERSE | CALM, consented_domains=frozenset(ADVERSE)
-            ),
+            build_history(ruleset, ADVERSE | CALM, consented_domains=frozenset(ADVERSE)),
             ruleset,
             assessed_at=ASSESSED_AT,
         )
@@ -120,8 +114,6 @@ class TestTheConverseAlsoHolds:
             ruleset,
             assessed_at=ASSESSED_AT,
         )
-        sharing = score(
-            build_history(ruleset, ADVERSE | CALM), ruleset, assessed_at=ASSESSED_AT
-        )
+        sharing = score(build_history(ruleset, ADVERSE | CALM), ruleset, assessed_at=ASSESSED_AT)
 
         assert withdrawn.tier > sharing.tier

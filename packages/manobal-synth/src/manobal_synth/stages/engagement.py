@@ -34,7 +34,7 @@ from ..windows import carry_forward, lagged_smooth, rolling_count, rolling_sum
 
 _AFFECT_TO_DISENGAGEMENT = 0.52
 _CHURN_TO_DISENGAGEMENT = 0.34
-_DISTRESS_TO_DISENGAGEMENT = 0.34
+_DISTRESS_TO_DISENGAGEMENT = 0.50
 _DISENGAGEMENT_LAG_DAYS = 14
 
 #: A suppressor's withdrawal, as a fraction of an honest subject's. Not zero —
@@ -44,9 +44,11 @@ GAMING_ENGAGEMENT_RETENTION = 0.30
 
 #: Proportional reduction in completion probability and in app sessions per unit
 #: of disengagement, and the proportional stretch in response latency.
-_COMPLETION_DECAY = 0.30
-_SESSION_DECAY = 0.26
-_LATENCY_STRETCH = 0.75
+_COMPLETION_DECAY = 0.36
+#: A welfare app opened twenty times in one day is a stuck client, not use.
+_MAX_DAILY_SESSIONS = 20.0
+_SESSION_DECAY = 0.32
+_LATENCY_STRETCH = 0.95
 
 _COMPLETION_WINDOW = 28
 _SESSION_WINDOW = 14
@@ -89,17 +91,14 @@ def engagement_stage(
             0.99,
         ),
     )
-    sessions = rng.poisson(
-        np.clip(person.trait("app_sessions_mean") * (1.0 - _SESSION_DECAY * disengagement), 0.0, 20.0)
-    ).astype(np.float64)
+    intensity = person.trait("app_sessions_mean") * (1.0 - _SESSION_DECAY * disengagement)
+    sessions = rng.poisson(np.clip(intensity, 0.0, _MAX_DAILY_SESSIONS)).astype(np.float64)
 
     indicators = {
         "checkin_completion_rate_28d": rolling_count(completed, _COMPLETION_WINDOW)
         / np.minimum(np.arange(n_days, dtype=np.float64) + 1.0, float(_COMPLETION_WINDOW)),
         "app_session_count_14d": rolling_sum(sessions, _SESSION_WINDOW),
-        "instrument_completion_latency_days": _latency(
-            rng, person, disengagement, instrument_days
-        ),
+        "instrument_completion_latency_days": _latency(rng, person, disengagement, instrument_days),
     }
     return EngagementStage(indicators=indicators, checkin_completed=completed)
 

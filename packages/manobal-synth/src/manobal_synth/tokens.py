@@ -17,7 +17,7 @@ import hashlib
 #: read aloud or transcribed from a log cannot be confused with O, I, l or B.
 _ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
 
-TOKEN_PREFIX = "st_"
+TOKEN_PREFIX = "st_"  # noqa: S105 -- a pseudonym prefix, not a credential
 TOKEN_BODY_CHARS = 26
 
 _BITS_PER_CHAR = 5

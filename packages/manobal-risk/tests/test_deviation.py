@@ -30,9 +30,7 @@ def baseline(median: float = 40.0, mad: float = 4.0, sufficient: bool = True) ->
     )
 
 
-def spec(
-    direction: Direction = Direction.RISING_IS_ADVERSE, epsilon: float = 1.0
-) -> IndicatorSpec:
+def spec(direction: Direction = Direction.RISING_IS_ADVERSE, epsilon: float = 1.0) -> IndicatorSpec:
     return IndicatorSpec(
         code="duty_hours_7d",
         domain=Domain.WORKLOAD,

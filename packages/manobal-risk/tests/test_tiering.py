@@ -128,9 +128,7 @@ class TestAcuteOverride:
     def test_the_override_beats_the_corroboration_gate(self) -> None:
         """SDD §4.5: the acute override bypasses everything above it, including
         the requirement for two corroborating domains."""
-        gated, corroborated = apply_corroboration_gate(
-            Tier.T3, breaching_domain_count=0, minimum=2
-        )
+        gated, corroborated = apply_corroboration_gate(Tier.T3, breaching_domain_count=0, minimum=2)
         final, overridden = apply_acute_override(gated, (self._trigger(),))
 
         assert corroborated is False

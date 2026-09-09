@@ -19,12 +19,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Django's own exception, rather than a local class of the same name. Django
+# treats it specially during setup, so raising ours would have produced a bare
+# traceback where the framework would otherwise report a configuration error.
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parents[3]
 REPO_ROOT = BASE_DIR.parents[1]
-
-
-class ImproperlyConfigured(RuntimeError):
-    """A required setting is absent. The service must not start."""
 
 
 def _required(name: str) -> str:
@@ -82,6 +83,7 @@ TEMPLATES = [
         "OPTIONS": {"context_processors": []},
     }
 ]
+
 
 # ----------------------------------------------------------------- databases
 def _store(name: str, *, alias_env: str) -> dict[str, object]:

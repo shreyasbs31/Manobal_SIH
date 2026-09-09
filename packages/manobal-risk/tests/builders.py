@@ -53,9 +53,7 @@ def observations_for_domain(
                 )
             )
         current = BASE_VALUE + int(spec.direction) * ruleset.z_divisor * level * spec.epsilon
-        observations.append(
-            Observation(indicator_code=spec.code, observed_on=as_of, value=current)
-        )
+        observations.append(Observation(indicator_code=spec.code, observed_on=as_of, value=current))
 
     return observations
 

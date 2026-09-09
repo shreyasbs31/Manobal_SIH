@@ -24,6 +24,7 @@ import numpy as np
 
 from ..arrays import BoolArray, FloatArray
 from ..person import PersonModel
+from ..processes import graded_response
 from ..windows import lagged_smooth, masked_rolling_std
 
 #: Sleep integrates the week behind it; the autonomic system integrates the
@@ -35,14 +36,22 @@ _ONSET_VARIABILITY_WINDOW = 14
 #: Minutes of sleep lost per unit of workload strain, and the recovery on a rest
 #: day. A rest-day lie-in is not decoration: it is what makes rest denial cost
 #: sleep as well as hours, so two D1 indicators reach D4 by different routes.
-_SLEEP_MINUTES_PER_STRAIN = 74.0
-_REST_DAY_SLEEP_BONUS = 26.0
+_SLEEP_MINUTES_PER_STRAIN = 80.0
+_REST_DAY_SLEEP_BONUS = 16.0
+#: Rostered leave is modelled as its own effect rather than as a large negative
+#: workload deviation, so that a fortnight at home does not read as the inverse
+#: of a fortnight of overwork.
+_LEAVE_SLEEP_BONUS = 30.0
 
-_SLEEP_EFFICIENCY_PER_STRAIN = 0.052
+_SLEEP_EFFICIENCY_PER_STRAIN = 0.075
 #: Bedtime drifts later and, more importantly, becomes less predictable. The
 #: dispersion inflation is what ``sleep_onset_variability`` picks up.
-_SLEEP_ONSET_SHIFT_HOURS = 0.55
-_SLEEP_ONSET_DISPERSION_GAIN = 0.85
+_SLEEP_ONSET_SHIFT_HOURS = 0.80
+_SLEEP_ONSET_DISPERSION_GAIN = 1.25
+#: A fortnight's bedtime standard deviation of two and a half hours is already a
+#: completely shattered sleep schedule; beyond that the statistic stops
+#: discriminating and only inflates the domain's robust dispersion.
+_MAX_ONSET_VARIABILITY_MINUTES = 150.0
 
 #: Relative sleep deficit that counts as one unit of sleep debt, so that debt is
 #: comparable across subjects with very different sleep baselines.
@@ -53,20 +62,29 @@ _SLEEP_DEBT_SCALE = 0.10
 #: mediated by duty at all — grief, debt, a sick parent at home.
 _DEBT_TO_AUTONOMIC = 0.62
 _LOAD_TO_AUTONOMIC = 0.42
-_DISTRESS_TO_AUTONOMIC = 0.55
+_DISTRESS_TO_AUTONOMIC = 0.70
 
 #: Proportional HRV suppression per unit of autonomic load. Suppressed RMSSD is
 #: the most-replicated wearable stress marker and the effect in chronic stress
 #: cohorts is large, which is why it carries the highest weight in D4.
-_HRV_SUPPRESSION = 0.185
-_RESTING_HR_RISE = 4.1
-_STEPS_SUPPRESSION = 0.135
+_HRV_SUPPRESSION = 0.135
+_RESTING_HR_RISE = 4.6
+_STEPS_SUPPRESSION = 0.165
 #: Deliberately small. Nocturnal SpO2 in CAPF postings is dominated by altitude,
 #: not by affect, and the ruleset weights it at 0.5 for exactly that reason.
-_SPO2_DROP = 0.42
+_SPO2_DROP = 0.45
 
 _SLEEP_MIN_MINUTES = 90.0
 _SLEEP_MAX_MINUTES = 720.0
+
+#: Workload deviation a subject absorbs without measurable physiological cost.
+#: In the units of ``workload.py`` this is roughly a ten-percent swing in weekly
+#: hours — an ordinary fortnight. See ``processes.graded_response`` for why a
+#: linear transfer here would make the whole corpus untestable.
+_WORKLOAD_TOLERANCE = 1.90
+#: Relief saturates: a light fortnight buys back rest, not an unbounded amount
+#: of it.
+_RELIEF_FLOOR = -0.50
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,13 +101,18 @@ def physiology_stage(
     workload_strain: FloatArray,
     distress_strain: FloatArray,
     rest_day: BoolArray,
+    on_leave: BoolArray,
     worn: BoolArray,
 ) -> PhysiologyStage:
     """Generate sleep, then the autonomic and activity response to it."""
     reactivity = person.trait("reactivity")
-    sleep_pressure = reactivity * lagged_smooth(workload_strain, _SLEEP_LAG_DAYS)
+    sleep_pressure = reactivity * graded_response(
+        lagged_smooth(workload_strain, _SLEEP_LAG_DAYS),
+        tolerance=_WORKLOAD_TOLERANCE,
+        floor=_RELIEF_FLOOR,
+    )
 
-    sleep_duration = _sleep_duration(rng, person, sleep_pressure, rest_day)
+    sleep_duration = _sleep_duration(rng, person, sleep_pressure, rest_day, on_leave)
     sleep_debt = (person.trait("sleep_duration_mean") - sleep_duration) / (
         person.trait("sleep_duration_mean") * _SLEEP_DEBT_SCALE
     )
@@ -121,14 +144,17 @@ def _sleep_duration(
     person: PersonModel,
     sleep_pressure: FloatArray,
     rest_day: BoolArray,
+    on_leave: BoolArray,
 ) -> FloatArray:
     minutes = (
         person.trait("sleep_duration_mean")
         - _SLEEP_MINUTES_PER_STRAIN * sleep_pressure
         + _REST_DAY_SLEEP_BONUS * rest_day
+        + _LEAVE_SLEEP_BONUS * on_leave
         + rng.normal(0.0, person.trait("sleep_duration_sd"), size=len(sleep_pressure))
     )
-    return np.clip(minutes, _SLEEP_MIN_MINUTES, _SLEEP_MAX_MINUTES)
+    bounded: FloatArray = np.clip(minutes, _SLEEP_MIN_MINUTES, _SLEEP_MAX_MINUTES)
+    return bounded
 
 
 def _sleep_efficiency(
@@ -165,7 +191,8 @@ def _onset_variability(
         + _SLEEP_ONSET_SHIFT_HOURS * sleep_pressure
         + dispersion * rng.normal(0.0, 1.0, size=len(sleep_pressure))
     )
-    return masked_rolling_std(onset_hours * 60.0, worn, _ONSET_VARIABILITY_WINDOW)
+    spread_minutes = masked_rolling_std(onset_hours * 60.0, worn, _ONSET_VARIABILITY_WINDOW)
+    return np.minimum(spread_minutes, _MAX_ONSET_VARIABILITY_MINUTES)
 
 
 def _hrv(rng: np.random.Generator, person: PersonModel, autonomic_load: FloatArray) -> FloatArray:
@@ -185,7 +212,7 @@ def _resting_hr(
         + _RESTING_HR_RISE * autonomic_load
         + rng.normal(0.0, person.trait("resting_hr_sd"), size=len(autonomic_load))
     )
-    return np.clip(values, 35.0, 130.0)
+    return np.clip(values, 35.0, 110.0)
 
 
 def _steps(rng: np.random.Generator, person: PersonModel, autonomic_load: FloatArray) -> FloatArray:

@@ -116,6 +116,15 @@ bootstrap_analytics() {
   log "applying analytics-init.sql (5 databases, 3 roles, least-privilege grants)"
   "${PG_BIN}/psql" -q -p "${ANALYTICS_PORT}" -U "${SUPERUSER}" -d postgres \
     -v ON_ERROR_STOP=1 -f "${INFRA_DIR}/postgres/analytics-init.sql"
+
+  # Dev-only. pytest-django builds and drops a test_* copy of each store per
+  # run, which needs CREATEDB. This grant lives here rather than in
+  # analytics-init.sql on purpose: that file is the production-shaped artefact
+  # and is applied verbatim by docker-compose, where the application role
+  # creating databases at will would be a genuine privilege-escalation step.
+  log "granting CREATEDB to manobal_core (local test databases only)"
+  "${PG_BIN}/psql" -q -p "${ANALYTICS_PORT}" -U "${SUPERUSER}" -d postgres \
+    -v ON_ERROR_STOP=1 -c "ALTER ROLE manobal_core CREATEDB;"
 }
 
 bootstrap_identity() {

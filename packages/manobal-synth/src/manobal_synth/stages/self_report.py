@@ -34,7 +34,7 @@ import numpy as np
 
 from ..arrays import BoolArray, FloatArray
 from ..person import PersonModel
-from ..processes import ar1
+from ..processes import ar1, graded_response
 from ..windows import carry_forward, lagged_smooth
 
 #: Weights of affect's three parents.
@@ -43,7 +43,7 @@ _WORKLOAD_TO_AFFECT = 0.30
 #: The non-occupational share of distress. Larger than the workload term because
 #: a decline driven purely by duty would make D1 a sufficient statistic for
 #: everything, and the corroboration gate would be measuring one signal twice.
-_DISTRESS_TO_AFFECT = 1.15
+_DISTRESS_TO_AFFECT = 0.95
 _AFFECT_LAG_DAYS = 14
 
 #: Mood has its own weather independent of duty. Autocorrelated rather than white
@@ -51,17 +51,24 @@ _AFFECT_LAG_DAYS = 14
 _AFFECT_NOISE_PHI = 0.90
 _AFFECT_NOISE_SD = 0.22
 
+#: Recovery deficit a subject absorbs before it reaches their mood. A tired week
+#: is a tired week; it takes a sustained one to move a PSS-10. The same tolerance
+#: reasoning as ``physiology._WORKLOAD_TOLERANCE``, and it is what keeps the
+#: stable cohort's D5 from drifting upward on ordinary roster noise.
+_RECOVERY_TOLERANCE = 0.55
+_WORKLOAD_TOLERANCE = 0.70
+
 #: Instrument responses per unit of affect. PSS-10 moves most because it measures
 #: perceived stress directly; PHQ-9 and GAD-7 move less because they are asking
 #: about a narrower construct.
-_PSS10_PER_AFFECT = 6.6
-_PHQ9_PER_AFFECT = 5.1
-_GAD7_PER_AFFECT = 4.3
+_PSS10_PER_AFFECT = 5.0
+_PHQ9_PER_AFFECT = 3.1
+_GAD7_PER_AFFECT = 2.5
 
 #: Five-point daily scales.
-_MOOD_PER_AFFECT = 0.82
-_FATIGUE_PER_AFFECT = 0.92
-_SLEEP_QUALITY_PER_AFFECT = 0.80
+_MOOD_PER_AFFECT = 0.75
+_FATIGUE_PER_AFFECT = 0.80
+_SLEEP_QUALITY_PER_AFFECT = 0.72
 #: Fatigue also tracks acute sleep debt, not just affect — a person can be
 #: exhausted and in good spirits, and D5 should be able to say so.
 _FATIGUE_PER_SLEEP_DEBT = 0.16
@@ -105,8 +112,11 @@ def self_report_stage(
     n_days = len(distress_strain)
     reactivity = person.trait("reactivity")
     affect = reactivity * (
-        _RECOVERY_TO_AFFECT * recovery_deficit
-        + _WORKLOAD_TO_AFFECT * lagged_smooth(workload_strain, _AFFECT_LAG_DAYS)
+        _RECOVERY_TO_AFFECT * graded_response(recovery_deficit, tolerance=_RECOVERY_TOLERANCE)
+        + _WORKLOAD_TO_AFFECT
+        * graded_response(
+            lagged_smooth(workload_strain, _AFFECT_LAG_DAYS), tolerance=_WORKLOAD_TOLERANCE
+        )
         + _DISTRESS_TO_AFFECT * distress_strain
     ) + ar1(rng, n_days, _AFFECT_NOISE_PHI, _AFFECT_NOISE_SD)
 
@@ -138,7 +148,8 @@ def _administration_days(rng: np.random.Generator, n_days: int) -> BoolArray:
     phase = int(rng.integers(0, INSTRUMENT_INTERVAL_DAYS))
     days = np.arange(n_days)
     jitter = rng.integers(-2, 3, size=n_days)
-    return ((days - phase + jitter) % INSTRUMENT_INTERVAL_DAYS) == 0
+    due: BoolArray = ((days - phase + jitter) % INSTRUMENT_INTERVAL_DAYS) == 0
+    return due
 
 
 def _daily_indicators(

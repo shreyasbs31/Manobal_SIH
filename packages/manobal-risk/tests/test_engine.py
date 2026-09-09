@@ -149,9 +149,7 @@ class TestCoverage:
         assert result.tier is Tier.T0
         assert result.contributing_categories == ()
 
-    def test_a_domain_below_the_coverage_floor_does_not_participate(
-        self, ruleset: Ruleset
-    ) -> None:
+    def test_a_domain_below_the_coverage_floor_does_not_participate(self, ruleset: Ruleset) -> None:
         history = build_history(
             ruleset,
             {Domain.SELF_REPORT: 0.9, Domain.PHYSIOLOGICAL: 0.9},
@@ -268,9 +266,7 @@ class TestProvenanceAndReplay:
 
         assert first == second
 
-    def test_observations_after_the_assessment_date_are_invisible(
-        self, ruleset: Ruleset
-    ) -> None:
+    def test_observations_after_the_assessment_date_are_invisible(self, ruleset: Ruleset) -> None:
         history = build_history(ruleset, {Domain.SELF_REPORT: 0.1, Domain.WORKLOAD: 0.1})
         future = history.__class__(
             subject_token=history.subject_token,
@@ -312,9 +308,7 @@ class TestNoScoreEscapes:
 
         assert numeric == []
 
-    def test_no_scorelike_token_appears_in_a_serialised_assessment(
-        self, ruleset: Ruleset
-    ) -> None:
+    def test_no_scorelike_token_appears_in_a_serialised_assessment(self, ruleset: Ruleset) -> None:
         import dataclasses
         import json
         import re

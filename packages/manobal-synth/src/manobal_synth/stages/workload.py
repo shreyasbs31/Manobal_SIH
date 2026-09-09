@@ -31,16 +31,16 @@ from ..arrays import BoolArray, FloatArray
 from ..person import PersonModel
 from ..processes import bernoulli
 from ..windows import (
+    masked_rolling_mean,
     masked_rolling_std,
     rolling_count,
-    rolling_mean,
     rolling_sum,
     run_length,
 )
 from .deployment import Exogenous
 
 #: How much of the distress strain expresses itself as harder duty.
-STRAIN_TO_LOAD = 1.15
+STRAIN_TO_LOAD = 2.60
 
 #: Proportional rise in shift length per unit of load.
 _HOURS_SENSITIVITY = 0.155
@@ -52,7 +52,7 @@ _DENIAL_SENSITIVITY = 0.80
 _START_VOLATILITY_SENSITIVITY = 0.60
 
 _MIN_SHIFT_HOURS = 2.5
-_MAX_SHIFT_HOURS = 22.0
+_MAX_SHIFT_HOURS = 18.0
 
 #: Nominal duty days per week, used to turn a per-shift trait into the subject's
 #: own expected weekly load. Referencing the person's own norm rather than a
@@ -68,6 +68,23 @@ _DENIAL_STRAIN_WEIGHT = 0.35
 
 _VOLATILITY_WINDOW = 28
 _DENIAL_WINDOW = 28
+
+#: Window for the workload latent, and the minimum number of rostered days it
+#: needs before it will report a deviation at all. Fourteen days rather than
+#: seven because a fortnight straddling a leave block still contains enough duty
+#: to be meaningful, where a week may not.
+_STRAIN_WINDOW = 14
+_STRAIN_MIN_ROSTER_DAYS = 6
+
+#: Ceilings on the roster indicators. Long stretches without a weekly off are a
+#: documented CAPF grievance and the generator must reproduce them, but an
+#: unbounded exponential response to load produces denial probabilities near one
+#: and therefore duty runs of most of a year, which is not a roster — it is a
+#: missing rest day in the model. Capping the denial hazard keeps the run length
+#: heavy-tailed without letting it diverge.
+_DENIAL_PROBABILITY_CAP = 0.75
+_MAX_CONSECUTIVE_DUTY_DAYS = 90.0
+_MAX_ROSTER_VOLATILITY_HOURS = 8.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,7 +109,9 @@ def workload_stage(
 
     scheduled_rest = (np.arange(n_days) % 7) == person.rest_weekday
     denial_probability = np.clip(
-        person.trait("rest_denial_base") * np.exp(_DENIAL_SENSITIVITY * load), 0.0, 0.95
+        person.trait("rest_denial_base") * np.exp(_DENIAL_SENSITIVITY * load),
+        0.0,
+        _DENIAL_PROBABILITY_CAP,
     )
     rest_denied = scheduled_rest & ~exogenous.planned_leave & bernoulli(rng, denial_probability)
     on_duty = ~exogenous.planned_leave & (~scheduled_rest | rest_denied)
@@ -103,13 +122,21 @@ def workload_stage(
     indicators = {
         "duty_hours_7d": rolling_sum(duty_hours, 7),
         "duty_hours_28d": rolling_sum(duty_hours, 28),
-        "consecutive_duty_days": run_length(on_duty),
-        "roster_volatility": masked_rolling_std(shift_start, on_duty, _VOLATILITY_WINDOW),
+        "consecutive_duty_days": np.minimum(run_length(on_duty), _MAX_CONSECUTIVE_DUTY_DAYS),
+        "roster_volatility": np.minimum(
+            masked_rolling_std(shift_start, on_duty, _VOLATILITY_WINDOW),
+            _MAX_ROSTER_VOLATILITY_HOURS,
+        ),
         "rest_denial_count": rolling_count(rest_denied, _DENIAL_WINDOW),
     }
     return WorkloadStage(
         indicators=indicators,
-        strain=_workload_strain(person, duty_hours, indicators["rest_denial_count"]),
+        strain=_workload_strain(
+            person,
+            duty_hours,
+            indicators["rest_denial_count"],
+            available=~exogenous.planned_leave,
+        ),
         on_duty=on_duty,
         rest_day=scheduled_rest & ~rest_denied,
     )
@@ -143,15 +170,28 @@ def _workload_strain(
     person: PersonModel,
     duty_hours: FloatArray,
     rest_denial_count: FloatArray,
+    *,
+    available: BoolArray,
 ) -> FloatArray:
     """Standardise realised duty against this subject's own expected load.
 
     Expressed against an analytic personal reference rather than against the
     run's own mean, so that no downstream stage can be driven by a statistic that
     depends on days it has not reached yet.
+
+    Rostered leave is excluded from the average rather than counted as zero
+    hours. Approved leave is rest, not a workload deviation, and averaging it in
+    made a fortnight's leave read as a strain of minus six — which then dominated
+    every downstream physiological series and gave a perfectly healthy cohort the
+    same D1/D4 coupling as a deteriorating one. The ``duty_hours_7d`` *indicator*
+    still collapses during leave, because that is what the HRMS derivation in SDD
+    §4.4 actually computes; it is only the latent that ignores it.
     """
     reference = person.trait("shift_hours_mean") * _DUTY_DAY_SHARE
-    hours_term = (rolling_mean(duty_hours, 7) - reference) / (_HOURS_STRAIN_SCALE * reference)
+    on_roster = masked_rolling_mean(
+        duty_hours, available, _STRAIN_WINDOW, min_count=_STRAIN_MIN_ROSTER_DAYS, default=reference
+    )
+    hours_term = (on_roster - reference) / (_HOURS_STRAIN_SCALE * reference)
     expected_denials = (_DENIAL_WINDOW / 7.0) * person.trait("rest_denial_base")
     denial_term = (rest_denial_count - expected_denials) / _DENIAL_STRAIN_SCALE
     return hours_term + _DENIAL_STRAIN_WEIGHT * denial_term

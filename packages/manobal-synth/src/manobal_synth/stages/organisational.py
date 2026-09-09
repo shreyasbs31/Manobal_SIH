@@ -39,14 +39,14 @@ from ..windows import (
 
 _AFFECT_TO_CHURN = 0.50
 _SEEKING_TO_CHURN = 0.38
-_DISTRESS_TO_CHURN = 0.28
+_DISTRESS_TO_CHURN = 0.42
 _CHURN_LAG_DAYS = 21
 
-_TRANSFER_SENSITIVITY = 0.95
+_TRANSFER_SENSITIVITY = 1.20
 _SWAP_SENSITIVITY = 0.72
 #: Withdrawal from optional activity, as a multiplicative reduction in the odds
 #: of attending. Negative sign is applied at the call site.
-_WITHDRAWAL_SENSITIVITY = 0.80
+_WITHDRAWAL_SENSITIVITY = 1.00
 
 #: Two optional activities a week — sport, unit welfare events, voluntary
 #: training. Frequent enough that a 28-day attendance rate is not dominated by
@@ -61,6 +61,13 @@ _PARTICIPATION_LONG_WINDOW = 180
 _DEPLOYMENT_WINDOW = 365
 
 _RATE_FLOOR = 1.0 / 365.0
+
+#: Ceilings on the daily hazards, in events per day. A transfer application is a
+#: formal act with a paper trail; roughly one a month is already an extreme
+#: reading, and the 180-day count must stay in single figures for the indicator
+#: to mean what SDD §4.4 says it means.
+_TRANSFER_HAZARD_CAP = 0.035
+_SWAP_HAZARD_CAP = 0.20
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,12 +99,16 @@ def organisational_stage(
         np.clip(
             person.trait("transfer_request_rate") * np.exp(_TRANSFER_SENSITIVITY * churn),
             0.0,
-            0.3,
+            _TRANSFER_HAZARD_CAP,
         ),
     )
     swaps = bernoulli(
         rng,
-        np.clip(person.trait("duty_swap_rate") * np.exp(_SWAP_SENSITIVITY * churn), 0.0, 0.5),
+        np.clip(
+            person.trait("duty_swap_rate") * np.exp(_SWAP_SENSITIVITY * churn),
+            0.0,
+            _SWAP_HAZARD_CAP,
+        ),
     )
     offered = rng.random(n_days) < _ACTIVITY_PROBABILITY
     attended = offered & _attendance(rng, person, churn)

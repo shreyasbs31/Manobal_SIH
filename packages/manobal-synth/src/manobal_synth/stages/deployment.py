@@ -32,8 +32,8 @@ from ..processes import ar1, block_boundaries, block_series, scattered_spans
 #: Slow enough to produce runs of hard weeks, fast enough that it contributes
 #: little rank correlation over a ninety-day window — which is what keeps the
 #: stable cohort's cross-domain correlations weak, as they should be.
-_PRESSURE_PHI = 0.82
-_PRESSURE_SD = 0.24
+_PRESSURE_PHI = 0.60
+_PRESSURE_SD = 0.13
 
 #: Posting tours. Rotation is the largest legitimate step change in the data and
 #: the generator keeps it, because the corroboration gate has to cope with a
@@ -53,9 +53,9 @@ _LEAVE_MAX_DAYS = 22
 #: Pressure offset per posting class, applied as a deviation from the mix mean so
 #: that a subject who never rotates carries an offset of roughly zero.
 _CLASS_PRESSURE: dict[PostingClass, float] = {
-    PostingClass.HIGH_INTENSITY: 0.62,
-    PostingClass.MODERATE: 0.10,
-    PostingClass.STATIC: -0.34,
+    PostingClass.HIGH_INTENSITY: 0.42,
+    PostingClass.MODERATE: 0.07,
+    PostingClass.STATIC: -0.23,
 }
 
 

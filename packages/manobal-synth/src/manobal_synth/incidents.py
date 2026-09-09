@@ -75,9 +75,7 @@ def draw_incidents(config: GenerationConfig, units: Sequence[Unit]) -> tuple[Inc
     if count == 0 or not units:
         return ()
 
-    weights = np.array(
-        [POSTING_INTENSITY[unit.posting_class] for unit in units], dtype=np.float64
-    )
+    weights = np.array([POSTING_INTENSITY[unit.posting_class] for unit in units], dtype=np.float64)
     weights /= weights.sum()
     unit_draws = rng.choice(len(units), size=count, p=weights)
     day_draws = rng.integers(0, config.duration_days, size=count)

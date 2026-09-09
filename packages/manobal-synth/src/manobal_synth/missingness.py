@@ -140,4 +140,5 @@ def _wear_mask(
         min_length=_DROPOUT_MIN_DAYS,
         max_length=_DROPOUT_MAX_DAYS,
     )
-    return (rng.random(n_days) >= np.clip(nightly, 0.0, 0.98)) & ~dropouts
+    worn: BoolArray = (rng.random(n_days) >= np.clip(nightly, 0.0, 0.98)) & ~dropouts
+    return worn

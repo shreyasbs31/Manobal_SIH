@@ -9,7 +9,16 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["**/migrations/**", ".venv"]
+extend-exclude = [
+    ".venv",
+    # Django writes these; they are a record of schema history rather than
+    # code under authorship, and reformatting them obscures what changed.
+    # The hand-written RunSQL migrations are reviewed as part of the schema.
+    "**/migrations/**",
+    # Vendored agent tooling, not project source. Linting it produces hundreds
+    # of findings nobody in this repository can act on.
+    ".cursor",
+]
 
 [tool.ruff.lint]
 select = [
@@ -36,6 +45,14 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S105", "S106", "S107", "S311"]
 "**/conftest.py" = ["S105", "S106", "S107"]
+# RUF012 wants ClassVar on mutable class attributes. Django's Meta options
+# (indexes, constraints, ordering) and model field `choices` are declarative
+# configuration read by the ORM at class-construction time, not shared mutable
+# state, and annotating them ClassVar is neither idiomatic nor accepted by
+# Django's own checks.
+"**/models.py" = ["RUF012"]
+"**/models/*.py" = ["RUF012"]
+"**/settings/*.py" = ["RUF012"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["manobal_risk", "manobal_core", "manobal_synth", "manobal_identity"]
@@ -46,7 +63,14 @@ strict = true
 warn_unreachable = true
 show_error_codes = true
 pretty = true
-exclude = ["migrations/", "\\.venv/"]
+exclude = ["migrations/", "\\.venv/", "\\.cursor/"]
+# django-stubs resolves model field types (a CharField reads as str, a
+# ForeignKey as the related model) instead of Any, which is what makes strict
+# mode worth running over an ORM codebase at all.
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "manobal_core.settings.local"
 
 [[tool.mypy.overrides]]
 module = ["yaml.*", "nacl.*", "pytest_django.*", "factory.*", "hypothesis.*"]
@@ -55,13 +79,22 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["packages"]
 python_files = ["test_*.py"]
-addopts = "--strict-markers --strict-config -q"
+# --reuse-db keeps the five test databases between runs. Creating them costs
+# several seconds, which is enough to discourage running the suite on every
+# change — and a suite that is not run is not a control. Use --create-db after
+# a migration.
+addopts = "--strict-markers --strict-config -q --reuse-db --import-mode=importlib"
+# importlib import mode is required in a monorepo: every package has a
+# `tests/` directory, and under the default prepend mode they all resolve to
+# the module name `tests.conftest` and collide on collection.
+consider_namespace_packages = true
 filterwarnings = ["error", "ignore::DeprecationWarning:pkg_resources.*"]
 markers = [
     "integration: requires docker-compose services (postgres, rabbitmq, keycloak)",
     "privacy_gate: SDD §9.6 release-gating privacy/fairness assertion",
     "slow: excluded from the default fast loop",
 ]
+DJANGO_SETTINGS_MODULE = "manobal_core.settings.test"
 
 [tool.coverage.run]
 branch = true

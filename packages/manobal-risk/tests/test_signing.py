@@ -37,9 +37,7 @@ def artefact(tmp_path: Path, ruleset_path: Path) -> Path:
 
 
 class TestSignAndVerify:
-    def test_a_signed_artefact_verifies(
-        self, artefact: Path, keypair: tuple[str, str]
-    ) -> None:
+    def test_a_signed_artefact_verifies(self, artefact: Path, keypair: tuple[str, str]) -> None:
         signing_key, verify_key = keypair
 
         sign_artefact(artefact, signing_key)
@@ -121,9 +119,7 @@ class TestLoadingASignedArtefact:
 
 
 class TestCli:
-    def test_keygen_emits_both_environment_lines(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_keygen_emits_both_environment_lines(self, capsys: pytest.CaptureFixture[str]) -> None:
         assert main(["keygen"]) == 0
 
         out = capsys.readouterr().out
