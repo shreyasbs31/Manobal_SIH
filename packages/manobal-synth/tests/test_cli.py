@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from manobal_synth.cli import main
+from manobal_synth.config import DEFAULT_SEED
 from manobal_synth.indicators import INDICATORS
 
 EXPECTED_FILES = (
@@ -28,6 +29,14 @@ SMOKE = ["generate", "--personnel", "50", "--duration-days", "120", "--seed", "2
 def test_smoke_run_writes_every_file(tmp_path: Path) -> None:
     assert main([*SMOKE, "--output", str(tmp_path)]) == 0
     assert {path.name for path in tmp_path.iterdir()} == set(EXPECTED_FILES)
+
+
+def test_seed_defaults_so_the_smoke_command_is_two_flags_long(tmp_path: Path) -> None:
+    """A default seed, not an entropy draw — an unseeded run would be useless."""
+    argv = ["generate", "--personnel", "50", "--duration-days", "120", "--output", str(tmp_path)]
+    assert main(argv) == 0
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["parameters"]["seed"] == DEFAULT_SEED
 
 
 def test_observation_rows_have_the_engine_contract(tmp_path: Path) -> None:

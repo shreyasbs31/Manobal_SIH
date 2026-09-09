@@ -23,15 +23,28 @@ from manobal_synth.population import RankBand
 FOUR_FIFTHS = 0.8
 
 
-def _distress_rate_by_rank(profile: FairnessProfile) -> dict[str, float]:
+#: Rank bands rarer than this are excluded from the parity comparison. The CRPF
+#: pyramid puts under two percent of the force above inspector, and at any
+#: tractable corpus size their flag rate is a coin flip that would make either
+#: profile look arbitrary. A real §9.6 gate faces the same small-cell problem and
+#: has to suppress the same cells.
+MIN_GROUP_SIZE = 200
+
+DISTRESS_FRACTION = 0.25
+
+
+def _rates(profile: FairnessProfile) -> tuple[dict[str, float], float]:
+    """Per-rank-band distress rate, and the overall rate.
+
+    Only cohort assignment is exercised, which happens before any series is
+    generated — so this runs a large population at the minimum duration rather
+    than a small one over eighteen months.
+    """
     config = GenerationConfig(
         seed=515,
-        personnel=1600,
-        # One day of history: this measures cohort *assignment*, which happens
-        # before any series is generated, so paying for 540 days of chain would
-        # buy nothing.
-        duration_days=40,
-        distress_cohort=0.25,
+        personnel=9000,
+        duration_days=60,
+        distress_cohort=DISTRESS_FRACTION,
         gaming_cohort=0.0,
         acute_events=0.0,
         fairness_profile=profile,
@@ -43,14 +56,10 @@ def _distress_rate_by_rank(profile: FairnessProfile) -> dict[str, float]:
         band = str(subject.rank_band)
         totals[band] += 1
         distressed[band] += int(cohort.distressed)
-    return {
-        band: distressed[band] / count
-        for band, count in totals.items()
-        # Gazetted officers are a fraction of a percent of the force; at this
-        # sample size their rate is a coin flip and would make either profile
-        # look arbitrary.
-        if count >= 40
+    by_band = {
+        band: distressed[band] / count for band, count in totals.items() if count >= MIN_GROUP_SIZE
     }
+    return by_band, sum(distressed.values()) / sum(totals.values())
 
 
 def _impact_ratio(rates: dict[str, float]) -> float:
@@ -60,32 +69,34 @@ def _impact_ratio(rates: dict[str, float]) -> float:
 
 
 def test_neutral_profile_passes_the_four_fifths_rule() -> None:
-    ratio = _impact_ratio(_distress_rate_by_rank(FairnessProfile.NEUTRAL))
+    by_band, _ = _rates(FairnessProfile.NEUTRAL)
+    ratio = _impact_ratio(by_band)
     assert ratio >= FOUR_FIFTHS, f"neutral fixture shows a rank disparity ({ratio:.2f})"
 
 
 def test_skewed_profile_fails_the_four_fifths_rule() -> None:
-    ratio = _impact_ratio(_distress_rate_by_rank(FairnessProfile.SKEWED))
+    by_band, _ = _rates(FairnessProfile.SKEWED)
+    ratio = _impact_ratio(by_band)
     assert ratio < FOUR_FIFTHS, f"skewed fixture is not skewed enough to fail ({ratio:.2f})"
 
 
 def test_skew_runs_in_the_declared_direction() -> None:
-    rates = _distress_rate_by_rank(FairnessProfile.SKEWED)
-    assert rates[str(RankBand.CONSTABLE)] > rates[str(RankBand.SI)]
+    by_band, _ = _rates(FairnessProfile.SKEWED)
+    assert by_band[str(RankBand.CONSTABLE)] > by_band[str(RankBand.SI)]
 
 
 @pytest.mark.parametrize("profile", list(FairnessProfile))
-def test_overall_distress_rate_stays_close_to_the_requested_fraction(
+def test_overall_distress_rate_matches_the_requested_fraction(
     profile: FairnessProfile,
 ) -> None:
     """Skew redistributes risk between subgroups; it must not inflate the total.
 
     Otherwise ``--fairness-profile skewed`` would silently also mean "more
-    distress", and any comparison between the two corpora would confound the
-    two effects.
+    distress", and any comparison between the two corpora would confound the two
+    effects.
     """
-    rates = _distress_rate_by_rank(profile)
-    assert 0.15 <= sum(rates.values()) / len(rates) <= 0.40
+    _, overall = _rates(profile)
+    assert overall == pytest.approx(DISTRESS_FRACTION, abs=0.02)
 
 
 def test_neutral_multipliers_are_all_one() -> None:

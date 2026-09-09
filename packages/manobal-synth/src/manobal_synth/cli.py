@@ -14,6 +14,7 @@ from datetime import date
 from pathlib import Path
 
 from .config import (
+    DEFAULT_SEED,
     DEFAULT_START_DATE,
     ConsentProfile,
     DeploymentModel,
@@ -77,7 +78,7 @@ def _add_generate_arguments(parser: argparse.ArgumentParser, *, require_output: 
         default=str(FairnessProfile.NEUTRAL),
         help="skewed injects a rank-band disparity so the SDD 9.6 parity test can fail",
     )
-    parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--output", type=Path, required=require_output, default=None)
     parser.add_argument(
         "--format",

@@ -20,6 +20,13 @@ from .errors import SynthConfigError
 #: Reading the clock here would break the determinism guarantee outright.
 DEFAULT_START_DATE = date(2025, 3, 1)
 
+#: The seed from the SDD Appendix A.3 example invocation, used when ``--seed`` is
+#: omitted. A default rather than a required flag so that the smoke command is
+#: two flags long, and a constant rather than an entropy draw for the same reason
+#: as the start date: an unseeded run would be irreproducible, which is the one
+#: property this generator is not allowed to lose.
+DEFAULT_SEED = 20260908
+
 #: Below this the risk engine cannot form a baseline at all (ninety-day window,
 #: twenty-one observations) and the output would be untestable rather than small.
 MIN_DURATION_DAYS = 60

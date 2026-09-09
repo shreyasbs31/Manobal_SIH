@@ -5,6 +5,15 @@
 -- renormalisation already handles correctly.
 --
 -- Apply with:  make db-extensions
+--
+-- TimescaleDB additionally requires `shared_preload_libraries = 'timescaledb'`
+-- and a cluster restart; CREATE EXTENSION alone fails, because the extension
+-- installs planner hooks that can only be registered at startup. local_pg.sh
+-- writes that setting when it initialises the analytics cluster.
+--
+-- Neither extension is installed on the identity cluster. Zone 3 stores no time
+-- series and no embeddings, and every preloaded library is more code running
+-- inside the enclave.
 
 \set ON_ERROR_STOP on
 

@@ -75,7 +75,11 @@ def cohort_config() -> GenerationConfig:
         personnel=COHORT_PERSONNEL,
         duration_days=COHORT_DURATION_DAYS,
         distress_cohort=0.30,
-        gaming_cohort=0.06,
+        # Well above the 2% the SDD example uses. Roughly half of any injected
+        # cohort has plateaued by the end of the window, so a realistic gaming
+        # fraction would leave single figures of actively-suppressing subjects
+        # and the corroboration assertion would be measuring noise.
+        gaming_cohort=0.10,
         acute_events=0.01,
         # Full consent and realistic missingness: the causal and tiering suites
         # are asking whether the signal exists, not whether consent removes it.

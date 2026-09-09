@@ -58,6 +58,15 @@ port = ${ANALYTICS_PORT}
 listen_addresses = '127.0.0.1'
 log_statement = 'ddl'
 log_min_duration_statement = 500
+
+# TimescaleDB must be preloaded; it installs hooks that cannot be added by
+# CREATE EXTENSION alone. Loaded only on the analytics cluster — the identity
+# enclave stores no time series and gets no extension it does not need, since
+# every loaded library is additional code running next to the vault.
+shared_preload_libraries = 'timescaledb'
+# Off because it phones home with version and usage data. A welfare system for
+# uniformed personnel should not be making unsolicited outbound connections.
+timescaledb.telemetry_level = off
 EOF
 }
 
