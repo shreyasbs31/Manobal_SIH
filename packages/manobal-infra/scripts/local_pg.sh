@@ -96,6 +96,16 @@ local   all             ${SUPERUSER}                            trust
 local   all             manobal_identity                        trust
 host    iam_vault       manobal_identity        127.0.0.1/32    scram-sha-256
 host    iam_vault       manobal_identity        ::1/128         scram-sha-256
+# Dev-only, and only these two. pytest-django connects to the maintenance
+# database to issue CREATE DATABASE test_iam_vault, then connects to the copy.
+# Neither line exists in the production hba, where the enclave role reaches
+# exactly one database and holds no CREATEDB. They are listed explicitly rather
+# than as a wildcard so that widening this file stays a visible act.
+host    postgres        manobal_identity        127.0.0.1/32    scram-sha-256
+host    test_iam_vault  manobal_identity        127.0.0.1/32    scram-sha-256
+# manobal_core and manobal_risk are rejected before a password is considered.
+# They are not merely unlisted above — they do not exist as roles in this
+# cluster at all.
 host    all             all                     0.0.0.0/0       reject
 host    all             all                     ::0/0           reject
 EOF
@@ -141,6 +151,13 @@ bootstrap_identity() {
   "${PG_BIN}/createdb" -p "${IDENTITY_PORT}" -U "${SUPERUSER}" iam_vault
   "${PG_BIN}/psql" -q -p "${IDENTITY_PORT}" -U "${SUPERUSER}" -d iam_vault \
     -v ON_ERROR_STOP=1 -f "${INFRA_DIR}/postgres/identity-init.sql"
+
+  # Dev-only, for the same reason as the analytics grant above: pytest-django
+  # builds and drops test_iam_vault on each run. In production the enclave's
+  # runtime role holds neither CREATEDB nor DDL rights.
+  log "granting CREATEDB to manobal_identity (local test database only)"
+  "${PG_BIN}/psql" -q -p "${IDENTITY_PORT}" -U "${SUPERUSER}" -d postgres \
+    -v ON_ERROR_STOP=1 -c "ALTER ROLE manobal_identity CREATEDB;"
 }
 
 cmd_up() {

@@ -33,17 +33,30 @@ lint: ## ruff check across every package (NFR-M2)
 format: ## ruff format in place
 	$(RUFF) format packages
 
+# Two invocations, because django-stubs resolves model types from a settings
+# module and there is one per config file. The enclave's settings deliberately
+# do not know about the analytics apps, nor the reverse.
 typecheck: ## mypy --strict on the Python packages (NFR-M2)
-	$(MYPY) packages/manobal-risk/src
+	$(MYPY) packages/manobal-risk/src packages/manobal-core/src packages/manobal-synth/src
+	$(MYPY) --config-file packages/manobal-identity/mypy.ini packages/manobal-identity/src
 
-test: ## Run every fast test suite
+test: test-zone2 test-zone3 ## Run every fast test suite
+
+test-zone2: ## Analytics plane, plus the enclave's pure-logic suites
 	$(PYTEST) packages -m "not integration and not slow"
+
+# Django settings are process-global, so Zone 3 cannot share a session with
+# Zone 2. Its database-backed tests run here, against test_iam_vault.
+test-zone3: ## Identity enclave, against its own vault database
+	$(PYTEST) packages/manobal-identity/tests/enclave \
+		-o DJANGO_SETTINGS_MODULE=manobal_identity.settings.test \
+		-p no:cacheprovider
 
 test-risk: ## Risk engine only, with its 90% gate (NFR-M3)
 	$(PYTEST) packages/manobal-risk --cov=manobal_risk \
 		--cov-report=term-missing --cov-fail-under=90
 
-gates: lint typecheck test-risk ## Everything CI runs before a merge
+gates: lint typecheck test-risk test ## Everything CI runs before a merge
 
 ruleset-keygen: ## Generate a development ruleset signing keypair
 	$(PY) -m manobal_risk.cli keygen

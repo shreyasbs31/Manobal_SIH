@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "manobal-identity"
+version = "0.1.0"
+description = "MANOBAL Zone 3 identity enclave — the only component that can map a token to a person."
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<5.3",
+    "djangorestframework>=3.15",
+    "psycopg[binary]>=3.2",
+    "cryptography>=43",
+    "pyjwt[crypto]>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.112",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+manobal_identity = ["py.typed"]

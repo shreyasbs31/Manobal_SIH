@@ -83,7 +83,15 @@ python_files = ["test_*.py"]
 # several seconds, which is enough to discourage running the suite on every
 # change — and a suite that is not run is not a control. Use --create-db after
 # a migration.
-addopts = "--strict-markers --strict-config -q --reuse-db --import-mode=importlib"
+# The Zone 3 enclave is a second Django project with its own settings module
+# and its own database. Django's settings are process-global, so it cannot share
+# a pytest session with Zone 2 — `make test` runs it as a separate invocation
+# (see the `test-identity` target). Its pure-logic suites have no such
+# constraint and are collected here with everything else.
+addopts = """\
+    --strict-markers --strict-config -q --reuse-db --import-mode=importlib \
+    --ignore=packages/manobal-identity/tests/enclave\
+"""
 # importlib import mode is required in a monorepo: every package has a
 # `tests/` directory, and under the default prepend mode they all resolve to
 # the module name `tests.conftest` and collide on collection.
