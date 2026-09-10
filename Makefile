@@ -103,7 +103,7 @@ db-extensions: ## Apply TimescaleDB/pgvector where available (unlocks bio + voic
 	@/opt/homebrew/opt/postgresql@16/bin/psql -p 55432 -d postgres \
 		-v ON_ERROR_STOP=1 -f packages/manobal-infra/postgres/analytics-extensions.sql
 
-.PHONY: db-up db-down db-reset db-status db-extensions migrate seed dev test-web test-mobile
+.PHONY: db-up db-down db-reset db-status db-extensions migrate seed load-synth dev test-web test-mobile
 
 migrate: ## Apply Django migrations on both local clusters
 	$(PY) packages/manobal-core/manage.py migrate --noinput
@@ -112,6 +112,9 @@ migrate: ## Apply Django migrations on both local clusters
 seed: ## Enrol the demonstration cohort in both zones
 	$(PY) packages/manobal-identity/manage.py seed_vault
 	$(PY) packages/manobal-core/manage.py seed_local
+
+load-synth: ## Load a tiny synthetic observation cohort into the analytics stores
+	$(PY) packages/manobal-core/manage.py load_synth --personnel 12 --days 60
 
 dev: ## Provision local stores, schema and seed data (SDD §8.2)
 	@chmod +x packages/manobal-infra/scripts/dev.sh

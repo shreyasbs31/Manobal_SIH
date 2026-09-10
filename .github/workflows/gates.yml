@@ -1,0 +1,43 @@
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python-lint-risk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install risk engine and ruff
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/manobal-risk[dev] ruff
+      - name: Lint
+        run: ruff check packages
+      - name: Risk suite
+        run: pytest packages/manobal-risk --cov=manobal_risk --cov-fail-under=90
+
+  consoles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Web
+        working-directory: packages/manobal-web
+        run: |
+          npm ci
+          npm test
+          npx tsc --noEmit
+      - name: Mobile protocol
+        working-directory: packages/manobal-mobile
+        run: |
+          npm ci
+          npm test
+          npx tsc --noEmit
