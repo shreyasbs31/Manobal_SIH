@@ -2,7 +2,9 @@ import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, createClient } from "../api/client";
 import type { JournalEntry, Session } from "../api/types";
+import { EmptyState } from "../components/EmptyState";
 import { Notice } from "../components/Notice";
+import { formatWhen } from "../ui/format";
 
 type Props = { session: Session };
 
@@ -11,14 +13,17 @@ export function PersonnelJournal({ session }: Props) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   async function refresh() {
     const next = await api.journal();
     setEntries(next.entries);
+    setLoaded(true);
   }
 
   useEffect(() => {
     void refresh().catch((err: unknown) => {
+      setLoaded(true);
       setError(err instanceof ApiError ? err.message : "journal unavailable");
     });
   }, [session.token]);
@@ -37,7 +42,7 @@ export function PersonnelJournal({ session }: Props) {
   }
 
   return (
-    <section className="panel">
+    <section className="panel anchor" id="journal">
       <h2>Private journal</h2>
       <p className="muted">Encrypted for you. Officers never see this. It is never scored.</p>
       {error ? <Notice tone="error">{error}</Notice> : null}
@@ -53,20 +58,24 @@ export function PersonnelJournal({ session }: Props) {
             rows={4}
           />
         </label>
-        <label htmlFor="journal-crisis" className="row">
+        <label htmlFor="journal-crisis" className="check">
           <input id="journal-crisis" name="crisis" type="checkbox" />
           I want help now
         </label>
         <button type="submit">Save entry</button>
       </form>
-      <ul>
-        {entries.map((row) => (
-          <li key={row.id}>
-            {row.created_at} — {row.body}
-            {row.crisis_referred ? " (help requested)" : ""}
-          </li>
-        ))}
-      </ul>
+      {loaded && !entries.length ? (
+        <EmptyState title="No entries yet">Write privately. This never reaches the risk engine.</EmptyState>
+      ) : (
+        <ul>
+          {entries.map((row) => (
+            <li key={row.id}>
+              {formatWhen(row.created_at)} — {row.body}
+              {row.crisis_referred ? " (help requested)" : ""}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

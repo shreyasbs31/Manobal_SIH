@@ -4,6 +4,9 @@ import { useParams } from "react-router-dom";
 import { ApiError, createClient } from "../api/client";
 import type { CaseDetail, ResolvedIdentity, Session } from "../api/types";
 import { Notice } from "../components/Notice";
+import { PageHeader } from "../components/PageHeader";
+import { TierMark } from "../components/TierMark";
+import { categoryList, formatWhen, humanize, shortToken } from "../ui/format";
 import { OfficerFollowup } from "./OfficerFollowup";
 
 type Props = { session: Session };
@@ -20,9 +23,12 @@ export function OfficerCase({ session }: Props) {
 
   useEffect(() => {
     if (!id) return;
-    void api.caseDetail(id).then(setDetail).catch((err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "case unavailable");
-    });
+    void api
+      .caseDetail(id)
+      .then(setDetail)
+      .catch((err: unknown) => {
+        setError(err instanceof ApiError ? err.message : "case unavailable");
+      });
   }, [id, session.token]);
 
   useEffect(() => {
@@ -41,32 +47,56 @@ export function OfficerCase({ session }: Props) {
   }, [identity]);
 
   async function onResolve() {
-    const person = await api.resolve(id);
-    setIdentity(person);
+    try {
+      const person = await api.resolve(id);
+      setError("");
+      setIdentity(person);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "resolve refused");
+    }
+  }
+
+  async function onContact() {
+    try {
+      const next = await api.contact(id);
+      setError("");
+      setDetail(next);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "could not record contact");
+    }
   }
 
   async function onDecide(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const next = await api.decide(
-      id,
-      String(form.get("outcome_code")),
-      String(form.get("rationale")),
-      String(form.get("status")),
-    );
-    setDetail(next);
+    try {
+      const next = await api.decide(
+        id,
+        String(form.get("outcome_code")),
+        String(form.get("rationale")),
+        String(form.get("status")),
+      );
+      setError("");
+      setDetail(next);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "could not record the decision");
+    }
   }
 
   if (!detail) {
-    return error ? <Notice tone="error">{error}</Notice> : <p>Loading…</p>;
+    return error ? <Notice tone="error">{error}</Notice> : <p className="muted">Loading the case…</p>;
   }
 
   return (
-    <>
-      <h1>Case {detail.id}</h1>
-      <p className={`tier ${detail.tier}`}>{detail.tier}</p>
-      <p>{detail.contributing_categories.join(", ")}</p>
-      <p className="muted">Token {detail.subject_token} · {detail.status}</p>
+    <div className="stack">
+      <PageHeader
+        eyebrow={consultOnly ? "Clinical consult" : "Welfare case"}
+        title={`Case ${detail.id}`}
+        lede={`${shortToken(detail.subject_token)} · ${detail.status}${detail.first_contact_at ? ` · contacted ${formatWhen(detail.first_contact_at)}` : ""}`}
+      />
+      <TierMark tier={detail.tier} />
+      <p>{categoryList(detail.contributing_categories)}</p>
+      {error ? <Notice tone="error">{error}</Notice> : null}
       {detail.contested_at ? <Notice>Contested: {detail.contest_note}</Notice> : null}
 
       {identity ? (
@@ -84,13 +114,11 @@ export function OfficerCase({ session }: Props) {
         <Notice>Consult only. You are not the assigned welfare officer and cannot close this case.</Notice>
       ) : (
         <div className="row">
-          <button type="button" className="ghost" onClick={() => void api.contact(id).then(setDetail)}>
+          <button type="button" className="ghost" onClick={() => void onContact()}>
             Record contact
           </button>
           {detail.tier === "T4" ? (
-            <button type="button" className="danger" onClick={() => void onResolve().catch((err: unknown) => {
-              setError(err instanceof ApiError ? err.message : "resolve refused");
-            })}>
+            <button type="button" className="danger" onClick={() => void onResolve()}>
               Reveal identity
             </button>
           ) : null}
@@ -99,13 +127,17 @@ export function OfficerCase({ session }: Props) {
 
       <section className="panel">
         <h2>Recommended next steps</h2>
-        <ul>
-          {detail.recommendations.map((row) => (
-            <li key={row.code}>
-              <strong>{row.code}</strong> — {row.rationale}
-            </li>
-          ))}
-        </ul>
+        {detail.recommendations.length ? (
+          <ul>
+            {detail.recommendations.map((row) => (
+              <li key={row.code}>
+                <strong>{humanize(row.code)}</strong> — {row.rationale}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">No recommendations on this case.</p>
+        )}
       </section>
 
       {consultOnly ? null : (
@@ -134,6 +166,6 @@ export function OfficerCase({ session }: Props) {
           <OfficerFollowup session={session} caseId={detail.id} />
         </>
       )}
-    </>
+    </div>
   );
 }

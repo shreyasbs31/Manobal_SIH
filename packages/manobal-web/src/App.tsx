@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import type { Role, Session } from "./api/types";
@@ -105,7 +105,7 @@ function Require({
 }: {
   session: Session;
   roles: Role[];
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   if (!roles.includes(session.role)) {
     return <Navigate to={homeFor(session.role)} replace />;

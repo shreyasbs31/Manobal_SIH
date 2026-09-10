@@ -17,6 +17,7 @@ export function PersonnelInstruments({ session }: Props) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setCatalogue(null);
     void api
       .instrumentCatalogue(code, lang)
       .then(setCatalogue)
@@ -46,7 +47,7 @@ export function PersonnelInstruments({ session }: Props) {
   }
 
   return (
-    <section className="panel">
+    <section className="panel anchor" id="instruments">
       <h2>Validated questionnaire</h2>
       <p className="muted">A total is kept. Individual answers are not stored.</p>
       {error ? <Notice tone="error">{error}</Notice> : null}
@@ -76,24 +77,28 @@ export function PersonnelInstruments({ session }: Props) {
           {catalogue.items.map((item, index) => (
             <fieldset key={`${catalogue.code}-${index}`}>
               <legend>{item}</legend>
-              {catalogue.options.map((label, value) => (
-                <label key={label} htmlFor={`item-${index}-${value}`}>
-                  <input
-                    id={`item-${index}-${value}`}
-                    type="radio"
-                    name={`item-${index}`}
-                    value={value}
-                    required={value === 0}
-                    aria-required={value === 0 ? "true" : undefined}
-                  />
-                  {label}
-                </label>
-              ))}
+              <div className="choice-row">
+                {catalogue.options.map((label, value) => (
+                  <label key={label} htmlFor={`item-${index}-${value}`}>
+                    <input
+                      id={`item-${index}-${value}`}
+                      type="radio"
+                      name={`item-${index}`}
+                      value={value}
+                      required={value === 0}
+                      aria-required={value === 0 ? "true" : undefined}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
             </fieldset>
           ))}
           <button type="submit">Submit</button>
         </form>
-      ) : null}
+      ) : (
+        <p className="muted">Loading the official items…</p>
+      )}
       {total !== null ? <Notice>Recorded total: {total}. Item answers were discarded.</Notice> : null}
     </section>
   );

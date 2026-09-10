@@ -2,7 +2,9 @@ import { FormEvent, useState } from "react";
 
 import { ApiError, createClient } from "../api/client";
 import type { Session, TrendPoint } from "../api/types";
+import { EmptyState } from "../components/EmptyState";
 import { Notice } from "../components/Notice";
+import { formatWhen } from "../ui/format";
 
 type Props = { session: Session; caseId: number };
 
@@ -81,13 +83,17 @@ export function OfficerFollowup({ session, caseId }: Props) {
           <button type="submit">Show presence</button>
         </form>
         {points ? (
-          <ul>
-            {points.map((point) => (
-              <li key={point.assessed_at}>
-                {point.assessed_at} · {point.present ? "present" : "absent"}
-              </li>
-            ))}
-          </ul>
+          points.length ? (
+            <ul>
+              {points.map((point) => (
+                <li key={point.assessed_at}>
+                  {formatWhen(point.assessed_at)} · {point.present ? "present" : "absent"}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title="No points in this window">Presence only. No scores are shown.</EmptyState>
+          )
         ) : null}
       </section>
       <section className="panel">

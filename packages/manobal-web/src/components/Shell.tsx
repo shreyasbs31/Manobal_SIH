@@ -1,47 +1,71 @@
+import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
 import type { Session } from "../api/types";
 import { clearSession, homeFor } from "../auth/session";
+import { roleLabel, shortToken } from "../ui/format";
 
 type Props = {
   session: Session;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function Shell({ session, children }: Props) {
   const links = linksFor(session.role);
   return (
     <div className="shell">
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
       <aside className="rail">
-        <div className="brand">MANOBAL</div>
-        <div className="zone">Zone 2 · analytics plane</div>
+        <div>
+          <div className="brand">MANOBAL</div>
+          <div className="zone">Zone 2 · analytics</div>
+        </div>
         <nav aria-label="Console">
           {links.map((link) => (
             <NavLink key={link.to} to={link.to} end={link.to === homeFor(session.role)}>
               {link.label}
             </NavLink>
           ))}
+          {session.role === "personnel"
+            ? PERSONNEL_JUMPS.map((link) => (
+                <a key={link.href} href={link.href}>
+                  {link.label}
+                </a>
+              ))
+            : null}
         </nav>
-        <p className="muted">
-          {session.role.replace("_", " ")}
+        <div className="who">
+          <strong>{roleLabel(session.role)}</strong>
+          {session.unitCode}
           <br />
-          {session.actorId}
-        </p>
-        <button
-          className="ghost"
-          type="button"
-          onClick={() => {
-            clearSession();
-            window.location.assign("/");
-          }}
-        >
-          End session
-        </button>
+          {session.actorId.length > 18 ? shortToken(session.actorId) : session.actorId}
+          <button
+            className="ghost"
+            type="button"
+            onClick={() => {
+              clearSession();
+              window.location.assign("/");
+            }}
+          >
+            End session
+          </button>
+        </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main" id="main">
+        {children}
+      </main>
     </div>
   );
 }
+
+const PERSONNEL_JUMPS = [
+  { href: "#journal", label: "Journal" },
+  { href: "#instruments", label: "Questionnaires" },
+  { href: "#flags", label: "Flags" },
+  { href: "#devices", label: "Devices" },
+];
 
 function linksFor(role: Session["role"]): { to: string; label: string }[] {
   if (role === "personnel") {

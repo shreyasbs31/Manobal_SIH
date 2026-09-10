@@ -2,7 +2,9 @@ import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, createClient, fairnessPayloadHasNoToken } from "../api/client";
 import type { AuditRow, FairnessReport, ResolvedIdentity, Session } from "../api/types";
+import { EmptyState } from "../components/EmptyState";
 import { Notice } from "../components/Notice";
+import { formatWhen, humanize, shortToken } from "../ui/format";
 
 type Props = { session: Session };
 
@@ -14,12 +16,17 @@ export function WdecOversight({ session }: Props) {
   const [identity, setIdentity] = useState<ResolvedIdentity | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [error, setError] = useState("");
+  const [auditLoaded, setAuditLoaded] = useState(false);
 
   useEffect(() => {
     void api
       .audit()
-      .then((body) => setEvents(body.events))
+      .then((body) => {
+        setEvents(body.events);
+        setAuditLoaded(true);
+      })
       .catch((err: unknown) => {
+        setAuditLoaded(true);
         setError(err instanceof ApiError ? err.message : "audit unavailable");
       });
   }, [session.token]);
@@ -83,36 +90,47 @@ export function WdecOversight({ session }: Props) {
           <button type="submit">Load</button>
         </form>
         {fairness ? (
-          <ul>
-            {fairness.cells.map((cell) => (
-              <li key={cell.rank_band}>
-                {cell.rank_band}: {cell.suppressed ? "withheld" : `${cell.elevated_band} · ${cell.dominant_category}`}
-              </li>
-            ))}
-          </ul>
+          fairness.cells.length ? (
+            <div className="cells">
+              {fairness.cells.map((cell) => (
+                <div className={`cell ${cell.suppressed ? "withheld" : ""}`} key={cell.rank_band}>
+                  <strong>{cell.rank_band}</strong>
+                  {cell.suppressed ? "withheld" : `${cell.elevated_band} · ${humanize(cell.dominant_category ?? "")}`}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No rank-band cells">Try a parent unit if companies sit below the threshold.</EmptyState>
+          )
         ) : null}
       </section>
       <section className="panel">
         <h2>Audit browser</h2>
         <p className="muted">Pseudonymous tokens only. Identifying detail is stripped.</p>
-        <table>
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Action</th>
-              <th>Token</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((row) => (
-              <tr key={row.id}>
-                <td>{row.occurred_at}</td>
-                <td>{row.action}</td>
-                <td>{row.subject_token || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {auditLoaded && !events.length ? (
+          <EmptyState title="No audit rows">Access events from this plane will list here.</EmptyState>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Action</th>
+                  <th>Token</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((row) => (
+                  <tr key={row.id}>
+                    <td>{formatWhen(row.occurred_at)}</td>
+                    <td>{row.action}</td>
+                    <td className="mono">{row.subject_token ? shortToken(row.subject_token) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
       <section className="panel">
         <h2>Break-glass resolve</h2>
