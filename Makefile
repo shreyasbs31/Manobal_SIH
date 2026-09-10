@@ -62,10 +62,8 @@ test-zone3: ## Identity enclave, against its own vault database
 		-p no:cacheprovider
 
 test-risk: ## Risk engine only, with its 90% gate (NFR-M3)
-	$(PYTEST) packages/manobal-risk --cov=manobal_risk \
-		--cov-report=term-missing --cov-fail-under=90 \
-		-o addopts='--strict-markers --strict-config -q --import-mode=importlib' \
-		-o DJANGO_SETTINGS_MODULE=
+	$(PYTEST) -c packages/manobal-risk/pytest.ini packages/manobal-risk \
+		--cov=manobal_risk --cov-report=term-missing --cov-fail-under=90
 
 gates: lint typecheck test-risk test ## Everything CI runs before a merge
 

@@ -20,10 +20,9 @@ jobs:
       - name: Lint
         run: ruff check packages
       - name: Risk suite
-        run: |
-          pytest packages/manobal-risk --cov=manobal_risk --cov-fail-under=90 \
-            -o addopts='--strict-markers --strict-config -q --import-mode=importlib' \
-            -o DJANGO_SETTINGS_MODULE=
+        run: >
+          pytest -c packages/manobal-risk/pytest.ini packages/manobal-risk
+          --cov=manobal_risk --cov-fail-under=90
 
   consoles:
     runs-on: ubuntu-latest
