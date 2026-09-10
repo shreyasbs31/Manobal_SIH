@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 
-import { createClient } from "../api/client";
+import { ApiError, createClient } from "../api/client";
 import type { Session, TrendPoint } from "../api/types";
 import { Notice } from "../components/Notice";
 
@@ -10,38 +10,55 @@ export function OfficerFollowup({ session, caseId }: Props) {
   const api = createClient(session);
   const [points, setPoints] = useState<TrendPoint[] | null>(null);
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
 
   async function onDisclosure(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await api.requestDisclosure(
-      caseId,
-      String(form.get("category")),
-      String(form.get("rationale")),
-    );
-    setNotice("Disclosure requested. Nothing is visible until the person grants it.");
+    try {
+      await api.requestDisclosure(
+        caseId,
+        String(form.get("category")),
+        String(form.get("rationale")),
+      );
+      setError("");
+      setNotice("Disclosure requested. Nothing is visible until the person grants it.");
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "could not request disclosure");
+    }
   }
 
   async function onTrend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const body = await api.categoryTrend(caseId, String(form.get("trend_category")));
-    setPoints(body.points);
+    try {
+      const body = await api.categoryTrend(caseId, String(form.get("trend_category")));
+      setError("");
+      setPoints(body.points);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "trend is not available");
+    }
   }
 
   async function onRefer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const result = await api.referClinical(
-      caseId,
-      String(form.get("medical_actor_id")),
-      String(form.get("clinical_rationale")),
-    );
-    setNotice(`Clinical grant ${result.grant_id} opened. The medical officer is not the assignee.`);
+    try {
+      const result = await api.referClinical(
+        caseId,
+        String(form.get("medical_actor_id")),
+        String(form.get("clinical_rationale")),
+      );
+      setError("");
+      setNotice(`Clinical grant ${result.grant_id} opened. The medical officer is not the assignee.`);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "referral refused");
+    }
   }
 
   return (
     <>
+      {error ? <Notice tone="error">{error}</Notice> : null}
       {notice ? <Notice>{notice}</Notice> : null}
       <section className="panel">
         <h2>Ask for a category trend</h2>

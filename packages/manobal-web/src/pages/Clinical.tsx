@@ -38,7 +38,18 @@ export function Clinical({ session }: Props) {
             <button
               type="button"
               className="ghost"
-              onClick={() => void api.approveRuleset(row.id, true)}
+              onClick={() =>
+                void api
+                  .approveRuleset(row.id, true)
+                  .then(() => api.rulesets())
+                  .then((body) => {
+                    setError("");
+                    setProposals(body.proposals);
+                  })
+                  .catch((err: unknown) => {
+                    setError(err instanceof ApiError ? err.message : "approval refused");
+                  })
+              }
             >
               Clinical approve
             </button>

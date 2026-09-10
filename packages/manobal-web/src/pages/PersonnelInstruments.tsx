@@ -31,13 +31,18 @@ export function PersonnelInstruments({ session }: Props) {
     const form = new FormData(event.currentTarget);
     const answers = catalogue.items.map((_, index) => Number(form.get(`item-${index}`)));
     const started = Number(form.get("started_at"));
-    const result = await api.submitInstrument(
-      code,
-      lang,
-      answers,
-      Math.max(1, Math.round((Date.now() - started) / 1000)),
-    );
-    setTotal(result.total);
+    try {
+      const result = await api.submitInstrument(
+        code,
+        lang,
+        answers,
+        Math.max(1, Math.round((Date.now() - started) / 1000)),
+      );
+      setError("");
+      setTotal(result.total);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "could not record the questionnaire");
+    }
   }
 
   return (

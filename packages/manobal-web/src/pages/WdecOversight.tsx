@@ -41,22 +41,32 @@ export function WdecOversight({ session }: Props) {
 
   async function loadFairness(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const report = await api.fairness(unit);
-    if (!fairnessPayloadHasNoToken(report)) {
-      throw new Error("fairness report contained a subject token");
+    try {
+      const report = await api.fairness(unit);
+      if (!fairnessPayloadHasNoToken(report)) {
+        throw new Error("fairness report contained a subject token");
+      }
+      setError("");
+      setFairness(report);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "fairness report unavailable");
     }
-    setFairness(report);
   }
 
   async function onBreakGlass(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const person = await api.invokeBreakGlass(
-      Number(form.get("case_id")),
-      String(form.get("justification")),
-      String(form.get("second_approver_id")),
-    );
-    setIdentity(person);
+    try {
+      const person = await api.invokeBreakGlass(
+        Number(form.get("case_id")),
+        String(form.get("justification")),
+        String(form.get("second_approver_id")),
+      );
+      setError("");
+      setIdentity(person);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "break-glass refused");
+    }
   }
 
   return (

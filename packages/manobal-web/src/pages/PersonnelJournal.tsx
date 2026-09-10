@@ -26,9 +26,14 @@ export function PersonnelJournal({ session }: Props) {
   async function onWrite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await api.writeJournal(body, form.get("crisis") === "on");
-    setBody("");
-    await refresh();
+    try {
+      await api.writeJournal(body, form.get("crisis") === "on");
+      setBody("");
+      setError("");
+      await refresh();
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "could not save the entry");
+    }
   }
 
   return (
