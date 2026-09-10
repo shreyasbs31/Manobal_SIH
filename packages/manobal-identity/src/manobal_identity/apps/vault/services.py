@@ -28,7 +28,7 @@ from manobal_identity.apps.vault.models import (
     ResolutionAudit,
     SubjectIdentity,
 )
-from manobal_identity.crypto.blind_index import blind_index
+from manobal_identity.crypto.blind_index import blind_index, blind_index_mobile
 from manobal_identity.crypto.envelope import EnvelopeCipher, SealedValue, field_aad
 from manobal_identity.crypto.kms import KeyManagementService
 from manobal_identity.crypto.tokens import mint_subject_token
@@ -116,6 +116,11 @@ class IdentityVault:
         self._replay_guard = replay_guard
         self._trusted_keys = trusted_keys
 
+    @property
+    def kms(self) -> KeyManagementService:
+        """The key boundary this vault uses. Callers may MAC; they cannot unwrap."""
+        return self._kms
+
     # ---------------------------------------------------------------- write
 
     def tokenise(
@@ -181,6 +186,7 @@ class IdentityVault:
         SubjectIdentity.objects.create(
             subject_token=token,
             service_no_index=index,
+            mobile_e164_index=blind_index_mobile(person.mobile_e164, self._kms),
             wrapped_key=key.wrapped,
             key_version=key.kek_version,
             current_unit_code=person.unit_code,
@@ -190,6 +196,15 @@ class IdentityVault:
             **sealed,
         )
         return token
+
+    def token_for_mobile(self, mobile_e164: str) -> str | None:
+        """Return the token for a mobile, or None. Never decrypts a name."""
+        index = blind_index_mobile(mobile_e164, self._kms)
+        return (
+            SubjectIdentity.objects.filter(mobile_e164_index=index)
+            .values_list("subject_token", flat=True)
+            .first()
+        )
 
     # ----------------------------------------------------------------- read
 

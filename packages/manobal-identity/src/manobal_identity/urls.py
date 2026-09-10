@@ -6,6 +6,7 @@ from django.http import HttpRequest, JsonResponse
 from django.urls import path
 
 from manobal_identity.api.views import BreakGlassView, ResolveView, TokeniseView
+from manobal_identity.api.views_enrolment import EnrolmentOtpRequestView, EnrolmentOtpVerifyView
 
 
 def healthz(_: HttpRequest) -> JsonResponse:
@@ -18,4 +19,14 @@ urlpatterns = [
     path("v1/identity/tokenise", TokeniseView.as_view(), name="identity-tokenise"),
     path("v1/identity/resolve", ResolveView.as_view(), name="identity-resolve"),
     path("v1/identity/break-glass", BreakGlassView.as_view(), name="identity-break-glass"),
+    path(
+        "v1/enrolment/otp/request",
+        EnrolmentOtpRequestView.as_view(),
+        name="enrolment-otp-request",
+    ),
+    path(
+        "v1/enrolment/otp/verify",
+        EnrolmentOtpVerifyView.as_view(),
+        name="enrolment-otp-verify",
+    ),
 ]

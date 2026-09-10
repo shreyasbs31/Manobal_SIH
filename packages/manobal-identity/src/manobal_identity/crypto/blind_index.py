@@ -46,3 +46,21 @@ def blind_index(service_no: str, kms: KeyManagementService) -> str:
     """Return the hex lookup index for a service number."""
     canonical = normalise_service_no(service_no)
     return kms.compute_mac(_DOMAIN + b"\x00" + canonical.encode()).hex()
+
+
+_MOBILE_DOMAIN: Final = b"manobal/identity/mobile-e164/v1"
+_MOBILE = re.compile(r"[^\d+]")
+
+
+def normalise_mobile(mobile_e164: str) -> str:
+    """Keep digits and a leading plus. Two writings of one number are one index."""
+    cleaned = _MOBILE.sub("", mobile_e164.strip())
+    if not cleaned or cleaned == "+":
+        raise ValueError("A mobile number cannot be empty once normalised.")
+    return cleaned
+
+
+def blind_index_mobile(mobile_e164: str, kms: KeyManagementService) -> str:
+    """Return the hex lookup index for a mobile number. Never leaves Zone 3."""
+    canonical = normalise_mobile(mobile_e164)
+    return kms.compute_mac(_MOBILE_DOMAIN + b"\x00" + canonical.encode()).hex()

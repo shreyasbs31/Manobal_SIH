@@ -68,6 +68,12 @@ class SubjectIdentity(models.Model):
     #: a row without the database ever holding the plaintext. Never leaves
     #: Zone 3 — its determinism is exactly what would make it a correlation key.
     service_no_index = models.CharField(max_length=64, unique=True, db_index=True)
+    #: Blind index of the mobile. Enrolment OTP looks up a token without
+    #: decrypting a name. Nullable so rows enrolled before this column existed
+    #: remain valid.
+    mobile_e164_index = models.CharField(
+        max_length=64, unique=True, null=True, blank=True, db_index=True
+    )
 
     #: The row's data key, encrypted under the KMS key-encryption key.
     wrapped_key = models.BinaryField()
@@ -257,3 +263,27 @@ class DatabaseReplayGuard:
         """
         deleted, _ = SpentAssertion.objects.filter(expires_at__lt=now).delete()
         return deleted
+
+
+class EnrolmentChallenge(models.Model):
+    """A hashed OTP bound to a mobile index. The plaintext code is never stored."""
+
+    id = models.BigAutoField(primary_key=True)
+    mobile_index = models.CharField(max_length=64, db_index=True)
+    code_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "enrolment_challenge"
+        indexes = [
+            models.Index(
+                fields=["mobile_index", "-created_at"],
+                name="enrolment_c_mobile__idx",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"otp {self.pk}"

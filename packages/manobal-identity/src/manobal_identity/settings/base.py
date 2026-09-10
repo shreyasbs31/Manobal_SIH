@@ -110,6 +110,11 @@ GRANT_ISSUER_KEYS: dict[str, str] = dict(
 
 REQUIRE_MTLS = _flag("MANOBAL_IDENTITY_REQUIRE_MTLS", True)
 
+ENROLMENT = {
+    "otp_per_mobile_hour": int(os.environ.get("MANOBAL_ENROLMENT_OTP_HOUR", "3")),
+    "otp_per_mobile_day": int(os.environ.get("MANOBAL_ENROLMENT_OTP_DAY", "10")),
+}
+
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31_536_000
 SECURE_CONTENT_TYPE_NOSNIFF = True

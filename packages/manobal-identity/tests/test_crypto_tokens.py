@@ -15,7 +15,12 @@ from __future__ import annotations
 
 import pytest
 
-from manobal_identity.crypto.blind_index import blind_index, normalise_service_no
+from manobal_identity.crypto.blind_index import (
+    blind_index,
+    blind_index_mobile,
+    normalise_mobile,
+    normalise_service_no,
+)
 from manobal_identity.crypto.kms import LocalKeyManagementService
 from manobal_identity.crypto.tokens import SUBJECT_TOKEN_PREFIX, mint_subject_token
 
@@ -129,3 +134,22 @@ class TestBlindIndex:
         index = blind_index(SERVICE_NO, kms)
         assert len(index) == 64
         assert all(c in "0123456789abcdef" for c in index)
+
+
+class TestMobileBlindIndex:
+    def test_the_mobile_index_uses_a_different_domain(
+        self, kms: LocalKeyManagementService
+    ) -> None:
+        mobile = "+919812345670"
+        assert blind_index_mobile(mobile, kms) != blind_index(mobile, kms)
+
+    def test_formatting_differences_collapse(
+        self, kms: LocalKeyManagementService
+    ) -> None:
+        assert blind_index_mobile("+91 98123 45670", kms) == blind_index_mobile(
+            "+919812345670", kms
+        )
+
+    def test_an_empty_mobile_is_rejected(self) -> None:
+        with pytest.raises(ValueError, match="empty"):
+            normalise_mobile("   ")
