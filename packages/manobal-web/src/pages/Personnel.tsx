@@ -3,6 +3,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { ApiError, createClient } from "../api/client";
 import type { AgentTurn, Assessment, Checkin, ConsentState, Session } from "../api/types";
 import { Notice } from "../components/Notice";
+import { PersonnelCases } from "./PersonnelCases";
+import { PersonnelDevices } from "./PersonnelDevices";
+import { PersonnelInstruments } from "./PersonnelInstruments";
+import { PersonnelJournal } from "./PersonnelJournal";
 
 const DATA_TYPES = [
   ["org", "Duty and leave records the force already holds"],
@@ -158,6 +162,11 @@ export function Personnel({ session }: Props) {
           <button type="submit">Send</button>
         </form>
       </section>
+
+      <PersonnelJournal session={session} />
+      <PersonnelInstruments session={session} />
+      <PersonnelCases session={session} />
+      <PersonnelDevices session={session} />
     </>
   );
 }

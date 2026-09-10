@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { ApiError, createClient } from "../api/client";
 import type { CaseDetail, ResolvedIdentity, Session } from "../api/types";
 import { Notice } from "../components/Notice";
+import { OfficerFollowup } from "./OfficerFollowup";
 
 type Props = { session: Session };
 
@@ -11,6 +12,7 @@ export function OfficerCase({ session }: Props) {
   const { caseId } = useParams();
   const id = Number(caseId);
   const api = createClient(session);
+  const consultOnly = session.role === "medical_officer";
   const [detail, setDetail] = useState<CaseDetail | null>(null);
   const [identity, setIdentity] = useState<ResolvedIdentity | null>(null);
   const [remaining, setRemaining] = useState(0);
@@ -65,6 +67,7 @@ export function OfficerCase({ session }: Props) {
       <p className={`tier ${detail.tier}`}>{detail.tier}</p>
       <p>{detail.contributing_categories.join(", ")}</p>
       <p className="muted">Token {detail.subject_token} · {detail.status}</p>
+      {detail.contested_at ? <Notice>Contested: {detail.contest_note}</Notice> : null}
 
       {identity ? (
         <div className="identity-flash" role="dialog" aria-label="Resolved identity, ephemeral">
@@ -77,18 +80,22 @@ export function OfficerCase({ session }: Props) {
         </div>
       ) : null}
 
-      <div className="row">
-        <button type="button" className="ghost" onClick={() => void api.contact(id).then(setDetail)}>
-          Record contact
-        </button>
-        {detail.tier === "T4" ? (
-          <button type="button" className="danger" onClick={() => void onResolve().catch((err: unknown) => {
-            setError(err instanceof ApiError ? err.message : "resolve refused");
-          })}>
-            Reveal identity
+      {consultOnly ? (
+        <Notice>Consult only. You are not the assigned welfare officer and cannot close this case.</Notice>
+      ) : (
+        <div className="row">
+          <button type="button" className="ghost" onClick={() => void api.contact(id).then(setDetail)}>
+            Record contact
           </button>
-        ) : null}
-      </div>
+          {detail.tier === "T4" ? (
+            <button type="button" className="danger" onClick={() => void onResolve().catch((err: unknown) => {
+              setError(err instanceof ApiError ? err.message : "resolve refused");
+            })}>
+              Reveal identity
+            </button>
+          ) : null}
+        </div>
+      )}
 
       <section className="panel">
         <h2>Recommended next steps</h2>
@@ -101,27 +108,32 @@ export function OfficerCase({ session }: Props) {
         </ul>
       </section>
 
-      <section className="panel">
-        <h2>Close the case</h2>
-        <form className="grid" onSubmit={(event) => void onDecide(event)}>
-          <label htmlFor="outcome_code">
-            Outcome
-            <input id="outcome_code" name="outcome_code" required aria-required="true" />
-          </label>
-          <label htmlFor="rationale">
-            Rationale
-            <textarea id="rationale" name="rationale" required aria-required="true" rows={3} />
-          </label>
-          <label htmlFor="status">
-            Status
-            <select id="status" name="status" defaultValue="resolved">
-              <option value="resolved">Resolved</option>
-              <option value="no_action">No action needed</option>
-            </select>
-          </label>
-          <button type="submit">Record decision</button>
-        </form>
-      </section>
+      {consultOnly ? null : (
+        <>
+          <section className="panel">
+            <h2>Close the case</h2>
+            <form className="grid" onSubmit={(event) => void onDecide(event)}>
+              <label htmlFor="outcome_code">
+                Outcome
+                <input id="outcome_code" name="outcome_code" required aria-required="true" />
+              </label>
+              <label htmlFor="rationale">
+                Rationale
+                <textarea id="rationale" name="rationale" required aria-required="true" rows={3} />
+              </label>
+              <label htmlFor="status">
+                Status
+                <select id="status" name="status" defaultValue="resolved">
+                  <option value="resolved">Resolved</option>
+                  <option value="no_action">No action needed</option>
+                </select>
+              </label>
+              <button type="submit">Record decision</button>
+            </form>
+          </section>
+          <OfficerFollowup session={session} caseId={detail.id} />
+        </>
+      )}
     </>
   );
 }

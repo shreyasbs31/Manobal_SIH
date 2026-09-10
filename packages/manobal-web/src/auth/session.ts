@@ -25,7 +25,8 @@ export function clearSession(): void {
 
 export function homeFor(role: Role): string {
   if (role === "personnel") return "/me";
-  if (role === "welfare_officer" || role === "medical_officer") return "/officer";
+  if (role === "welfare_officer") return "/officer";
+  if (role === "medical_officer") return "/clinical";
   if (role === "commander") return "/commander";
   if (role === "wdec_auditor") return "/wdec";
   return "/";

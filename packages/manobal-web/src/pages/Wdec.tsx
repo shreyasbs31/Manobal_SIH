@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ApiError, createClient } from "../api/client";
 import type { Anchor, BreakGlassGrant, RulesetProposal, Session } from "../api/types";
 import { Notice } from "../components/Notice";
+import { WdecOversight } from "./WdecOversight";
 
 type Props = { session: Session };
 
@@ -113,6 +114,8 @@ export function Wdec({ session }: Props) {
           <button type="submit">Propose</button>
         </form>
       </section>
+
+      <WdecOversight session={session} />
     </>
   );
 }

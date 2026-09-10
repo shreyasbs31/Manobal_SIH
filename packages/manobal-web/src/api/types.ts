@@ -57,7 +57,86 @@ export type CaseDetail = CaseSummary & {
   closed_at: string | null;
   outcome_code: string;
   officer_rationale: string;
+  contested_at: string | null;
+  contest_note: string;
   recommendations: Recommendation[];
+};
+
+export type JournalEntry = {
+  id: number;
+  created_at: string;
+  body: string;
+  crisis_referred: boolean;
+};
+
+export type InstrumentCatalogue = {
+  code: string;
+  version: string;
+  language: string;
+  stem: string;
+  items: string[];
+  options: string[];
+  launch: { title: string; body: string; acute: string };
+};
+
+export type InstrumentHistory = {
+  code: string;
+  completed_at: string;
+  total: number;
+  acute: boolean;
+};
+
+export type OwnCase = {
+  id: number;
+  tier: string;
+  status: string;
+  contributing_categories: string[];
+  contested_at: string | null;
+};
+
+export type DisclosureRow = {
+  id: number;
+  case_id: number;
+  category: string;
+  rationale: string;
+  expires_at: string;
+  responded_at: string | null;
+  granted: boolean | null;
+};
+
+export type PairedDevice = {
+  id: number;
+  device_id: string;
+  paired_at: string;
+  revoked_at: string | null;
+};
+
+export type FairnessReport = {
+  unit: string;
+  k_threshold: number;
+  cells: Array<{
+    rank_band: string;
+    suppressed: boolean;
+    elevated_band?: string;
+    dominant_category?: string;
+  }>;
+};
+
+export type AuditRow = {
+  id: number;
+  occurred_at: string;
+  actor_role: string;
+  action: string;
+  purpose_code: string;
+  outcome: string;
+  subject_token: string;
+  detail: Record<string, unknown>;
+};
+
+export type TrendPoint = {
+  assessed_at: string;
+  tier_visible: boolean;
+  present: boolean;
 };
 
 export type Aggregate = {

@@ -47,7 +47,7 @@ export function App() {
         <Route
           path="/officer"
           element={
-            <Require session={session} roles={["welfare_officer", "medical_officer"]}>
+            <Require session={session} roles={["welfare_officer"]}>
               <OfficerQueue session={session} />
             </Require>
           }
@@ -55,7 +55,15 @@ export function App() {
         <Route
           path="/officer/cases/:caseId"
           element={
-            <Require session={session} roles={["welfare_officer", "medical_officer"]}>
+            <Require session={session} roles={["welfare_officer"]}>
+              <OfficerCase session={session} />
+            </Require>
+          }
+        />
+        <Route
+          path="/clinical/cases/:caseId"
+          element={
+            <Require session={session} roles={["medical_officer"]}>
               <OfficerCase session={session} />
             </Require>
           }

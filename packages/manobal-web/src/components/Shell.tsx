@@ -47,11 +47,11 @@ function linksFor(role: Session["role"]): { to: string; label: string }[] {
   if (role === "personnel") {
     return [{ to: "/me", label: "My record" }];
   }
-  if (role === "welfare_officer" || role === "medical_officer") {
-    return [
-      { to: "/officer", label: "Case queue" },
-      ...(role === "medical_officer" ? [{ to: "/clinical", label: "Rulesets" }] : []),
-    ];
+  if (role === "welfare_officer") {
+    return [{ to: "/officer", label: "Case queue" }];
+  }
+  if (role === "medical_officer") {
+    return [{ to: "/clinical", label: "Clinical" }];
   }
   if (role === "commander") {
     return [{ to: "/commander", label: "Unit picture" }];

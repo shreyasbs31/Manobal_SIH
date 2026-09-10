@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { commanderPayloadHasNoToken } from "./client";
+import { commanderPayloadHasNoToken, fairnessPayloadHasNoToken } from "./client";
 
 describe("commander payload guard", () => {
   it("accepts a k-anonymised rollup", () => {
@@ -26,6 +26,18 @@ describe("commander payload guard", () => {
         suppressed: false,
         subject_token: "tok_secret",
       } as never),
+    ).toBe(false);
+  });
+});
+
+describe("fairness payload guard", () => {
+  it("rejects a cell list that smuggles a token", () => {
+    expect(
+      fairnessPayloadHasNoToken({
+        unit: "12BN_A",
+        k_threshold: 10,
+        cells: [{ rank_band: "constable", suppressed: false, subject_token: "tok_secret" } as never],
+      }),
     ).toBe(false);
   });
 });

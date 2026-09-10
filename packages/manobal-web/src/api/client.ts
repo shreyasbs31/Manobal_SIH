@@ -3,14 +3,23 @@ import type {
   Aggregate,
   Anchor,
   Assessment,
+  AuditRow,
   BreakGlassGrant,
   CaseDetail,
   CaseSummary,
   Checkin,
   ConsentState,
+  DisclosureRow,
+  FairnessReport,
+  InstrumentCatalogue,
+  InstrumentHistory,
+  JournalEntry,
+  OwnCase,
+  PairedDevice,
   ResolvedIdentity,
   RulesetProposal,
   Session,
+  TrendPoint,
 } from "./types";
 
 export class ApiError extends Error {
@@ -96,6 +105,68 @@ export function createClient(session: Session | null) {
         clinical ? `/v1/clinical/rulesets/${id}/approve` : `/v1/wdec/rulesets/${id}/approve`,
         { method: "POST", body: "{}" },
       ),
+    journal: () => request<{ entries: JournalEntry[] }>("/v1/me/journal"),
+    writeJournal: (body: string, crisis_accepted = false) =>
+      request<JournalEntry>("/v1/me/journal", {
+        method: "POST",
+        body: JSON.stringify({ body, crisis_accepted }),
+      }),
+    instrumentCatalogue: (code: string, lang: string) =>
+      request<InstrumentCatalogue>(
+        `/v1/me/instruments/catalogue?code=${encodeURIComponent(code)}&lang=${encodeURIComponent(lang)}`,
+      ),
+    instruments: () => request<{ history: InstrumentHistory[] }>("/v1/me/instruments"),
+    submitInstrument: (code: string, language: string, answers: number[], duration_seconds?: number) =>
+      request<{ code: string; total: number; acute: boolean; straight_lined: boolean }>(
+        "/v1/me/instruments",
+        {
+          method: "POST",
+          body: JSON.stringify({ code, language, answers, duration_seconds }),
+        },
+      ),
+    myCases: () => request<{ cases: OwnCase[] }>("/v1/me/cases"),
+    contestCase: (id: number, note: string) =>
+      request<{ id: number; status: string }>(`/v1/me/cases/${id}/contest`, {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      }),
+    disclosures: () => request<{ requests: DisclosureRow[] }>("/v1/me/disclosures"),
+    answerDisclosure: (id: number, granted: boolean) =>
+      request<DisclosureRow>(`/v1/me/disclosures/${id}`, {
+        method: "POST",
+        body: JSON.stringify({ granted }),
+      }),
+    devices: () => request<{ devices: PairedDevice[] }>("/v1/me/devices"),
+    pairDevice: (device_id: string, public_key: string) =>
+      request<PairedDevice>("/v1/me/devices", {
+        method: "POST",
+        body: JSON.stringify({ device_id, public_key }),
+      }),
+    revokeDevice: (id: number) =>
+      request<PairedDevice>(`/v1/me/devices/${id}/revoke`, { method: "POST", body: "{}" }),
+    requestDisclosure: (id: number, category: string, rationale: string) =>
+      request<{ id: number; category: string; expires_at: string; granted: boolean | null }>(
+        `/v1/officer/cases/${id}/disclosure`,
+        { method: "POST", body: JSON.stringify({ category, rationale }) },
+      ),
+    categoryTrend: (id: number, category: string) =>
+      request<{ category: string; points: TrendPoint[] }>(
+        `/v1/officer/cases/${id}/trend?category=${encodeURIComponent(category)}`,
+      ),
+    referClinical: (id: number, medical_actor_id: string, rationale: string) =>
+      request<{ grant_id: number; scope: string; assigned: false }>(
+        `/v1/officer/cases/${id}/refer-clinical`,
+        { method: "POST", body: JSON.stringify({ medical_actor_id, rationale }) },
+      ),
+    clinicalQueue: () => request<{ cases: CaseSummary[] }>("/v1/clinical/queue"),
+    fairness: (unit: string) =>
+      request<FairnessReport>(`/v1/wdec/fairness?unit=${encodeURIComponent(unit)}`),
+    audit: () => request<{ events: AuditRow[] }>("/v1/wdec/audit"),
+    invokeBreakGlass: (case_id: number, justification: string, second_approver_id: string) =>
+      request<ResolvedIdentity>("/v1/wdec/break-glass", {
+        method: "POST",
+        body: JSON.stringify({ case_id, justification, second_approver_id }),
+      }),
   };
 }
 
@@ -122,5 +193,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export function commanderPayloadHasNoToken(payload: Aggregate): boolean {
+  return !JSON.stringify(payload).includes("tok_") && !("subject_token" in payload);
+}
+
+export function fairnessPayloadHasNoToken(payload: FairnessReport): boolean {
   return !JSON.stringify(payload).includes("tok_") && !("subject_token" in payload);
 }

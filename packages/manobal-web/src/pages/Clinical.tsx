@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ApiError, createClient } from "../api/client";
 import type { RulesetProposal, Session } from "../api/types";
 import { Notice } from "../components/Notice";
+import { ClinicalQueue } from "./ClinicalQueue";
 
 type Props = { session: Session };
 
@@ -29,6 +30,7 @@ export function Clinical({ session }: Props) {
       <h1>Clinical approval</h1>
       <p className="muted">A ruleset is not live until both this desk and WDEC have signed.</p>
       {error ? <Notice tone="error">{error}</Notice> : null}
+      {session.role === "medical_officer" ? <ClinicalQueue session={session} /> : null}
       <ul>
         {proposals.map((row) => (
           <li key={row.id}>
