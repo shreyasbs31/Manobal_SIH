@@ -57,6 +57,46 @@ class TestFairness:
         assert cells["officer"]["suppressed"] is True
         assert "elevated_band" not in cells["officer"]
 
+    def test_unassessed_people_count_toward_k(
+        self, unit_tree: dict[str, Unit], officer: OfficerProfile
+    ) -> None:
+        del officer
+        unit = unit_tree["company"]
+        cohort = make_subjects(unit, 5, established=True)
+        persist_assessment(
+            engine_assessment(cohort[0].subject_token, tier=EngineTier.T2), cohort[0]
+        )
+        with override_settings(PRIVACY=_privacy(k=5)):
+            response = client_for(wdec_principal()).get(
+                "/v1/wdec/fairness", {"unit": unit.code}
+            )
+        assert response.status_code == 200
+        cell = response.json()["cells"][0]
+        assert cell["suppressed"] is False
+        assert cell["elevated_band"] == "1-4"
+
+    def test_a_parent_unit_includes_its_companies(
+        self, unit_tree: dict[str, Unit], officer: OfficerProfile
+    ) -> None:
+        del officer
+        company = unit_tree["company"]
+        cohort = make_subjects(company, 5, established=True)
+        persist_assessment(
+            engine_assessment(cohort[0].subject_token, tier=EngineTier.T2), cohort[0]
+        )
+        with override_settings(PRIVACY=_privacy(k=5)):
+            response = client_for(wdec_principal()).get(
+                "/v1/wdec/fairness", {"unit": unit_tree["battalion"].code}
+            )
+        assert response.status_code == 200
+        cell = response.json()["cells"][0]
+        assert cell["suppressed"] is False
+        sibling = client_for(wdec_principal()).get(
+            "/v1/wdec/fairness", {"unit": unit_tree["sibling"].code}
+        )
+        assert sibling.status_code == 200
+        assert sibling.json()["cells"] == []
+
     def test_a_commander_cannot_read_fairness(
         self, unit_tree: dict[str, Unit]
     ) -> None:
