@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCheckin, validateBatch } from "../src/protocol";
-import { LOCK_SCREEN_BODY, LOCK_SCREEN_URGENT, lockScreenBody } from "../src/screens";
+import {
+  buildCheckin,
+  buildInstrumentTotal,
+  buildJournalCiphertext,
+  enrolmentHoldsTokenOnly,
+  validateBatch,
+} from "../src/protocol";
+import { LOCK_SCREEN_BODY, LOCK_SCREEN_URGENT, SCREENS, lockScreenBody } from "../src/screens";
 import { syncBatch } from "../src/sync";
 import { triage } from "../src/triage";
 
@@ -39,6 +45,44 @@ describe("device protocol", () => {
     const result = triage("I want to die");
     expect(result.crisis).toBe(true);
     expect(result.holdOnDevice).toBe(true);
+  });
+
+  it("syncs a journal as ciphertext only", () => {
+    const batch = buildJournalCiphertext({
+      subject_token: "tok_1",
+      client_batch_id: "j1",
+      ciphertext: "YWJj",
+      nonce: "bm9uY2U",
+      key_id: "jk_1",
+    });
+    expect(validateBatch(batch)).toBeNull();
+    expect(JSON.stringify(batch)).not.toMatch(/body|plaintext|private/);
+  });
+
+  it("refuses instrument item answers on the wire", () => {
+    const reason = validateBatch({
+      subject_token: "tok_1",
+      client_batch_id: "i1",
+      items: [{ kind: "instrument", answers: [1, 2, 3] } as never],
+    });
+    expect(reason).toBeTruthy();
+    const total = buildInstrumentTotal({
+      subject_token: "tok_1",
+      client_batch_id: "i2",
+      instrument_code: "phq9",
+      language: "hi",
+      total: 4,
+    });
+    expect(validateBatch(total)).toBeNull();
+    expect(JSON.stringify(total)).not.toMatch(/answers/);
+  });
+
+  it("keeps enrolment to a token", () => {
+    expect(enrolmentHoldsTokenOnly({ subject_token: "st_abc" })).toBe(true);
+    expect(enrolmentHoldsTokenOnly({ subject_token: "st_abc", service_no: "CRPF-1" } as never)).toBe(
+      false,
+    );
+    expect(SCREENS.enrolment.collects).toMatch(/never a service number/);
   });
 
   it("does not sync a dirty batch", async () => {

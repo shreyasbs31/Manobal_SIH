@@ -9,6 +9,9 @@ export type Screen =
   | "sos"
   | "agent"
   | "journal"
+  | "instruments"
+  | "contest"
+  | "enrolment"
   | "assessment";
 
 export const SCREENS: Record<Screen, { title: string; collects: string }> = {
@@ -17,6 +20,12 @@ export const SCREENS: Record<Screen, { title: string; collects: string }> = {
   sos: { title: "Need help now", collects: "accepted flag only" },
   agent: { title: "Talk", collects: "ephemeral turn; crisis never reaches a model" },
   journal: { title: "Journal", collects: "ciphertext on device until sync; never scored" },
+  instruments: {
+    title: "Questionnaire",
+    collects: "item answers stay on device until scored; only a total is sent",
+  },
+  contest: { title: "Contest a flag", collects: "case id and a note; the assessment is not rewritten" },
+  enrolment: { title: "Pair this phone", collects: "OTP against Zone 3; the device stores a token, never a service number" },
   assessment: { title: "Your picture", collects: "tier and category names only" },
 };
 
