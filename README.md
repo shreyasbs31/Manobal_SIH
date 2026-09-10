@@ -1,5 +1,7 @@
 # MANOBAL
 
+[![gates](https://github.com/shreyasbs31/Manobal_SIH/actions/workflows/gates.yml/badge.svg)](https://github.com/shreyasbs31/Manobal_SIH/actions/workflows/gates.yml)
+
 AI-based predictive personnel stress and welfare monitoring for uniformed forces.
 The analytics plane never holds a name, service number, or rank. The identity
 enclave never sees a risk score. Those two planes have no route to each other
@@ -69,6 +71,17 @@ make gates         # lint, typecheck, risk coverage, both zones
 Zone 2/3 Django tests talk to the local PostgreSQL clusters. That is
 deliberate: append-only triggers, check constraints, and the Zone 2/3
 air-gap are enforced by the database.
+
+GitHub Actions runs **gates** on every push to `main`: ruff, the risk
+engine (90% coverage), and the web/mobile suites. That is the only check
+this repository defines.
+
+Railway, Vercel, Cursor and Greptile may also appear as queued or failed
+on a commit. Those are GitHub Apps installed on the account for every
+repository. This project is not deployed on Railway or Vercel, and those
+suites never start a job here. Restrict them to selected repositories at
+[GitHub → Settings → Applications](https://github.com/settings/installations)
+so they stop attaching empty check suites to this repo.
 
 ## What this repo does not ship
 
