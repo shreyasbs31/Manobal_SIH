@@ -57,6 +57,7 @@ _FEATURE_KEYS: Final = frozenset(
         "unit_code",
         "unit_path",
         "force_code",
+        "employment_status",
     }
 )
 

@@ -19,6 +19,7 @@ from .casework import (
     OfficerProfile,
 )
 from .consent import ConsentEntry, ConsentTextVersion, DisclosureRequest, ErasureRequest
+from .enrolment import JournalKey, PairedDevice
 from .ingest import CaptureReceipt, DataQualityReport, IngestBatch, QuarantinedRecord
 from .org import Subject, Unit, UnitAggregate
 
@@ -39,7 +40,9 @@ __all__ = [
     "ErasureRequest",
     "IngestBatch",
     "InterventionRecommendation",
+    "JournalKey",
     "OfficerProfile",
+    "PairedDevice",
     "QuarantinedRecord",
     "RiskAssessmentRecord",
     "RulesetProposal",

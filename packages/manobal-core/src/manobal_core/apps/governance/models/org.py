@@ -81,6 +81,8 @@ class Subject(models.Model):
 
     enrolled_at = models.DateTimeField(null=True, blank=True)
     withdrawn_at = models.DateTimeField(null=True, blank=True)
+    #: FR-7.4 clock. The purge beat reads this, not ``updated_at``.
+    separated_at = models.DateTimeField(null=True, blank=True)
 
     #: Set once the trailing window holds enough observations for a personal
     #: baseline. Until then the person is scored at T0 regardless of their

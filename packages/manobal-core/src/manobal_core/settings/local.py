@@ -45,6 +45,10 @@ os.environ.setdefault(
 )
 os.environ.setdefault("MANOBAL_GRANT_KEY_ID", "core-dev")
 os.environ.setdefault("MANOBAL_IDENTITY_URL", "http://127.0.0.1:8001")
+os.environ.setdefault(
+    "MANOBAL_JOURNAL_MASTER_KEY",
+    __import__("base64").b64encode(b"\x55" * 32).decode(),
+)
 
 from .base import *  # noqa: F403
 

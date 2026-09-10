@@ -25,6 +25,7 @@ from manobal_core.apps.authz.permissions import (
     IsIntegration,
     IsPersonnel,
     IsWDECAuditor,
+    IsWelfareOfficer,
     principal_of,
 )
 from manobal_core.apps.authz.predicates import (
@@ -45,6 +46,7 @@ from manobal_core.apps.governance.enums import (
     GrantScope,
     LegalBasis,
     PurposeCode,
+    Role,
     Tier,
 )
 from manobal_core.apps.governance.models import (
@@ -69,6 +71,12 @@ class Unprocessable(APIException):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
     default_detail = "MB-4220: the request could not be processed"
     default_code = "MB-4220"
+
+
+class TooMany(APIException):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    default_detail = "MB-4290: too many requests"
+    default_code = "MB-4290"
 
 
 def _actor(request: Request) -> Principal:
@@ -322,7 +330,7 @@ class OfficerCaseView(APIView):
 
 
 class OfficerContactView(APIView):
-    permission_classes = [IsCaseOfficer]  # noqa: RUF012
+    permission_classes = [IsWelfareOfficer]  # noqa: RUF012
 
     def post(self, request: Request, case_id: int) -> Response:
         principal, case = _authorised_case(request, case_id)
@@ -346,7 +354,7 @@ class OfficerContactView(APIView):
 
 
 class OfficerDecisionView(APIView):
-    permission_classes = [IsCaseOfficer]  # noqa: RUF012
+    permission_classes = [IsWelfareOfficer]  # noqa: RUF012
 
     def post(self, request: Request, case_id: int) -> Response:
         principal, case = _authorised_case(request, case_id)
@@ -427,6 +435,11 @@ class CommanderAggregateView(APIView):
 
 class WdecBreakGlassView(APIView):
     permission_classes = [IsWDECAuditor]  # noqa: RUF012
+
+    def post(self, request: Request) -> Response:
+        from manobal_core.apps.api.views_oversight import WdecBreakGlassInvokeView
+
+        return WdecBreakGlassInvokeView().post(request)
 
     def get(self, request: Request) -> Response:
         principal = _actor(request)
@@ -557,12 +570,25 @@ def _authorised_case(request: Request, case_id: int) -> tuple[Principal, Case]:
     return principal, case
 
 
+def _flag_grant_scopes(principal: Principal) -> tuple[str, ...]:
+    """A clinical referral is a live grant for the medical officer only.
+
+    Welfare officers keep working from FLAG grants created at case open. A
+    medical officer is never the assignee; their window is the referral grant
+    itself (or a T4 FLAG page). Treating only FLAG as live left referred T3
+    cases visible in the clinical queue and 403 on the case they just opened.
+    """
+    if principal.role is Role.MEDICAL_OFFICER:
+        return (GrantScope.FLAG, GrantScope.CLINICAL_REFERRAL)
+    return (GrantScope.FLAG,)
+
+
 def _case_flag_decision(principal: Principal, case: Case) -> Decision:
     profile = OfficerProfile.objects.filter(actor_id=principal.actor_id).first()
     grant_live = AccessGrant.objects.filter(
         grantee_id=principal.actor_id,
         subject_token=case.subject_token,
-        scope=GrantScope.FLAG,
+        scope__in=_flag_grant_scopes(principal),
         revoked_at__isnull=True,
         expires_at__gt=timezone.now(),
     ).exists()
@@ -600,6 +626,8 @@ def _case_detail(case: Case) -> dict[str, object]:
             "closed_at": case.closed_at.isoformat() if case.closed_at else None,
             "outcome_code": case.outcome_code,
             "officer_rationale": case.officer_rationale,
+            "contested_at": case.contested_at.isoformat() if case.contested_at else None,
+            "contest_note": case.contest_note,
             "recommendations": [
                 {
                     "code": row.code,

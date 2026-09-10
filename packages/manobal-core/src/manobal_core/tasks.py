@@ -26,6 +26,13 @@ def resume_pending_erasures() -> int:
     return resume_pending()
 
 
+@app.task(name="manobal_core.tasks.purge_separated")  # type: ignore[untyped-decorator]
+def purge_separated_task() -> int:
+    from manobal_core.erasure.separation import purge_separated
+
+    return purge_separated()
+
+
 @app.task(name="manobal_core.tasks.advance_erasure")  # type: ignore[untyped-decorator]
 def advance_erasure_task(request_id: int) -> int:
     from manobal_core.apps.governance.models import ErasureRequest

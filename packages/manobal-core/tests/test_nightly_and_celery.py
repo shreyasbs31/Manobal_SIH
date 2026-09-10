@@ -74,3 +74,4 @@ def test_beat_schedule_covers_scoring_escalation_and_erasure() -> None:
     assert "nightly-score" in names
     assert "escalate-unacked-t4" in names
     assert "resume-erasures" in names
+    assert "purge-separated" in names

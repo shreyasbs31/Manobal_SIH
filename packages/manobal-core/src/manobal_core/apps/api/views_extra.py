@@ -25,12 +25,12 @@ from manobal_core.apps.api.views import (
     _payload,
 )
 from manobal_core.apps.authz.permissions import (
-    IsCaseOfficer,
     IsIntegration,
     IsMedicalOfficer,
     IsPersonnel,
     IsRulesetReviewer,
     IsWDECAuditor,
+    IsWelfareOfficer,
 )
 from manobal_core.apps.authz.predicates import (
     may_resolve_identity,
@@ -59,7 +59,7 @@ from manobal_core.ruleset.registry import approve_proposal, register_proposal
 
 
 class OfficerResolveView(APIView):
-    permission_classes = [IsCaseOfficer]  # noqa: RUF012
+    permission_classes = [IsWelfareOfficer]  # noqa: RUF012
 
     def post(self, request: Request, case_id: int) -> Response:
         principal, case = _authorised_case(request, case_id)

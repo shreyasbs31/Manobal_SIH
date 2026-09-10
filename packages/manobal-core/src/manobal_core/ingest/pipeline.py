@@ -103,7 +103,7 @@ def ingest_hrms_batch(
 
 def _apply_row(token: str, payload: dict[str, Any], batch_id: int) -> None:
     unit = _unit_of(payload)
-    Subject.objects.update_or_create(
+    subject, _ = Subject.objects.update_or_create(
         subject_token=token,
         defaults={
             "unit": unit,
@@ -112,6 +112,10 @@ def _apply_row(token: str, payload: dict[str, Any], batch_id: int) -> None:
             "service_years_bucket": str(payload.get("service_years_bucket") or "unknown"),
         },
     )
+    if str(payload.get("employment_status") or "").lower() == "separated":
+        from manobal_core.erasure.separation import mark_separated
+
+        mark_separated(subject)
     observed = date.fromisoformat(str(payload["observed_on"]))
     hours = _optional_float(payload.get("duty_hours"))
     DutyObservation.objects.update_or_create(

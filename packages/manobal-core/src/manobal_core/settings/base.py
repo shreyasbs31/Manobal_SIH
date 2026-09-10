@@ -205,6 +205,14 @@ PRIVACY = {
     "ERASURE_SLA_HOURS": 24,
     #: FR-7.4. Separation from service.
     "SEPARATION_PURGE_DAYS": 30,
+    #: FR-4.4. An unanswered disclosure request expires and grants nothing.
+    "DISCLOSURE_TTL_DAYS": 7,
+}
+
+JOURNAL = {
+    #: AES-256 master key that wraps per-subject journal data keys. Empty in
+    #: base so production must set it; local.py supplies a development seed.
+    "MASTER_KEY_B64": os.environ.get("MANOBAL_JOURNAL_MASTER_KEY", ""),
 }
 
 ALERTING = {

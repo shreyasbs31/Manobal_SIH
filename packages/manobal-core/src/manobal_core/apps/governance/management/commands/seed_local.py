@@ -149,6 +149,7 @@ def _grant_all(subject: Subject, text: ConsentTextVersion) -> None:
         DataType.SELF_REPORT,
         DataType.BIOMETRIC,
         DataType.VOICE_FEATURES,
+        DataType.JOURNAL,
     ):
         if ConsentEntry.current_for(subject.subject_token).get(data_type):
             continue

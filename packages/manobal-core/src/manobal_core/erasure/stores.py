@@ -68,12 +68,17 @@ def purge_voice_store(request: ErasureRequest) -> None:
 
 
 def purge_object_store(request: ErasureRequest) -> None:
-    """Journal ciphertext lives on the psy row. There is no separate object yet.
+    """Destroy journal keys. Ciphertext without a key is not readable.
 
-    The step still exists so a crash after psy and before MinIO would resume
-    here once an object store is wired, rather than inventing a sixth status.
+    MinIO is still a no-op until an object store is wired. The key wipe is
+    the part that must not wait on that work: a restored psy backup must not
+    resurrect a withdrawn journal.
     """
-    del request
+    from manobal_core.apps.governance.enums import DataType
+    from manobal_core.journal.crypto import destroy_keys
+
+    if request.data_type in {None, "", DataType.JOURNAL}:
+        destroy_keys(request.subject_token)
 
 
 def revoke_live_grants(request: ErasureRequest) -> None:

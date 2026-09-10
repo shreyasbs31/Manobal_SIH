@@ -31,6 +31,27 @@ def sign_resolve_assertion(
     now: datetime | None = None,
 ) -> str:
     """Sign a five-minute resolve assertion for ``grant``."""
+    return sign_grant_assertion(
+        case=case,
+        grant=grant,
+        principal=principal,
+        operation="resolve",
+        purpose="acute_response",
+        now=now,
+    )
+
+
+def sign_grant_assertion(
+    *,
+    case: Case,
+    grant: AccessGrant,
+    principal: Principal,
+    operation: str,
+    purpose: str,
+    second_approver_id: str | None = None,
+    now: datetime | None = None,
+) -> str:
+    """Sign a five-minute grant assertion. Wire format matches Zone 3."""
     moment = now or datetime.now(tz=UTC)
     cfg = cast(dict[str, Any], settings.GRANT_ASSERTION)
     payload = {
@@ -39,17 +60,17 @@ def sign_resolve_assertion(
         "issuer": str(cfg["ISSUER"]),
         "issued_at": moment.isoformat(),
         "expires_at": (moment + MAX_ASSERTION_LIFETIME).isoformat(),
-        "operation": "resolve",
+        "operation": operation,
         "grant_id": str(grant.id),
         "grant_expires_at": grant.expires_at.astimezone(UTC).isoformat(),
         "case_id": str(case.id),
         "subject_token": case.subject_token,
-        "purpose": "acute_response",
+        "purpose": purpose,
         "actor_id": principal.actor_id,
         "actor_role": principal.role,
         "actor_unit_code": principal.unit_code or "",
         "actor_force_code": principal.force_code,
-        "second_approver_id": None,
+        "second_approver_id": second_approver_id,
     }
     encoded = _b64(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())
     body = f"{FORMAT_PREFIX}.{encoded}"

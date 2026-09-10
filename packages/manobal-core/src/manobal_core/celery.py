@@ -31,4 +31,8 @@ app.conf.beat_schedule = {
         "task": "manobal_core.tasks.resume_pending_erasures",
         "schedule": crontab(minute="*/10"),
     },
+    "purge-separated": {
+        "task": "manobal_core.tasks.purge_separated",
+        "schedule": crontab(hour=3, minute=10),
+    },
 }
