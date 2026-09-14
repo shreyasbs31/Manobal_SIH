@@ -5,26 +5,40 @@ recommendations:
     - code: rest_day_review
       rationale: Review rostered rest days and consecutive duty load.
       priority: 1
+      min_tier: T2
+      max_tier: T3
     - code: overtime_cap
       rationale: Cap overtime for the next roster cycle.
       priority: 2
+      min_tier: T2
+      max_tier: T3
   leave_and_time_off:
     - code: leave_application_review
       rationale: Review denied or deferred leave applications with the person.
       priority: 1
+      min_tier: T2
+      max_tier: T3
   sleep_and_recovery:
     - code: sleep_hygiene
       rationale: Offer a sleep-hygiene conversation; do not interpret wearable numbers.
       priority: 1
+      min_tier: T2
+      max_tier: T3
   self_reported_wellbeing:
     - code: welfare_conversation
       rationale: Open a non-clinical welfare conversation within the SLA.
       priority: 1
+      min_tier: T2
+      max_tier: T3
   immediate_safety_indicator:
     - code: safety_check
       rationale: Make contact now. Do not wait for the next parade.
       priority: 0
+      min_tier: T4
+      max_tier: T4
   default:
     - code: welfare_check_in
       rationale: A structured welfare check-in is the default next step.
       priority: 3
+      min_tier: T2
+      max_tier: T4

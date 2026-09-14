@@ -121,6 +121,9 @@ class TestEnsureAggregate:
         assert payload["dominant_category"] == SLEEP
         assert "headcount" not in payload
         assert "subject_token" not in payload
+        assert "briefing" in payload
+        assert "1-4" in str(payload["briefing"])
+        assert "tok_" not in str(payload["briefing"])
 
     def test_a_second_call_returns_the_stored_row(self, unit_tree: dict[str, Unit]) -> None:
         make_subjects(unit_tree["company"], 3, established=True)

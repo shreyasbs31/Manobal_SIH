@@ -95,9 +95,30 @@ export function OfficerCase({ session }: Props) {
         lede={`${shortToken(detail.subject_token)} · ${detail.status}${detail.first_contact_at ? ` · contacted ${formatWhen(detail.first_contact_at)}` : ""}`}
       />
       <TierMark tier={detail.tier} />
+      {detail.headline ? <p className="lede-call">{detail.headline}</p> : null}
       <p>{categoryList(detail.contributing_categories)}</p>
       {error ? <Notice tone="error">{error}</Notice> : null}
       {detail.contested_at ? <Notice>Contested: {detail.contest_note}</Notice> : null}
+
+      {detail.briefing ? (
+        <section className="panel">
+          <h2>How to open this conversation</h2>
+          {detail.briefing.settled_note ? <Notice>{detail.briefing.settled_note}</Notice> : null}
+          <ol className="openers">
+            {detail.briefing.openers.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ol>
+          {detail.briefing.why.length ? (
+            <ul>
+              {detail.briefing.why.map((row) => (
+                <li key={row.category}>{row.meaning}</li>
+              ))}
+            </ul>
+          ) : null}
+          {detail.briefing.next_step ? <p className="note">{detail.briefing.next_step}</p> : null}
+        </section>
+      ) : null}
 
       {identity ? (
         <div className="identity-flash" role="dialog" aria-label="Resolved identity, ephemeral">

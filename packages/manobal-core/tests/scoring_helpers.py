@@ -25,6 +25,7 @@ def engine_assessment(
     acute: bool = False,
     insufficient: bool = False,
     assessed_at: datetime | None = None,
+    tier_before_hysteresis: EngineTier | None = None,
 ) -> RiskAssessment:
     """A complete ``RiskAssessment`` with no numeric welfare score on it."""
     present = covered if covered is not None else frozenset(Domain)
@@ -32,6 +33,7 @@ def engine_assessment(
         subject_token=subject_token,
         assessed_at=assessed_at or datetime.now(tz=UTC),
         tier=tier,
+        tier_before_hysteresis=tier_before_hysteresis or tier,
         contributing_categories=categories,
         contributing_domains=tuple(
             domain for domain, name in DOMAIN_CATEGORY.items() if name in categories

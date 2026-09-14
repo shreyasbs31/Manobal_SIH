@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from manobal_core.apps.biostore.models import PhysiologicalObservation
 from manobal_core.apps.governance.enums import DataType
-from manobal_core.apps.governance.models import CaptureReceipt, ConsentEntry
+from manobal_core.apps.governance.models import CaptureReceipt, ConsentEntry, Subject
 from manobal_core.apps.psystore.models import CheckinResponse
 from manobal_core.apps.voicestore.models import VoiceObservation
 
@@ -47,6 +47,16 @@ def ingest_capture_batch(
         elif kind == "checkin" and consent.get(DataType.SELF_REPORT):
             _write_checkin(subject_token, item, observed)
             accepted += 1
+        elif kind == "journal" and consent.get(DataType.JOURNAL):
+            if _write_journal(subject_token, item):
+                accepted += 1
+            else:
+                unconsented += 1
+        elif kind == "instrument" and consent.get(DataType.SELF_REPORT):
+            if _write_instrument(subject_token, item):
+                accepted += 1
+            else:
+                unconsented += 1
         else:
             unconsented += 1
     try:
@@ -116,6 +126,48 @@ def _write_checkin(token: str, item: dict[str, Any], observed: datetime | None) 
             "mood": item.get("mood"),
             "sleep_quality": item.get("sleep_quality"),
             "stress": item.get("stress"),
+            "fatigue": item.get("fatigue"),
             "connection": item.get("connection"),
         },
     )
+
+
+def _write_journal(token: str, item: dict[str, Any]) -> bool:
+    from manobal_core.journal.service import JournalRefused, write_entry
+
+    subject = Subject.objects.filter(subject_token=token).first()
+    if subject is None:
+        return False
+    try:
+        write_entry(
+            subject,
+            body=str(item.get("body") or ""),
+            crisis_accepted=bool(item.get("crisis_accepted")),
+        )
+    except JournalRefused:
+        return False
+    return True
+
+
+def _write_instrument(token: str, item: dict[str, Any]) -> bool:
+    from manobal_core.instruments.submit import InstrumentRefused, submit_instrument
+
+    subject = Subject.objects.filter(subject_token=token).first()
+    if subject is None:
+        return False
+    answers = item.get("answers")
+    if not isinstance(answers, list):
+        return False
+    try:
+        parsed = [int(value) for value in answers]
+        duration = item.get("duration_seconds")
+        submit_instrument(
+            subject,
+            code=str(item.get("code") or ""),
+            language=str(item.get("language") or "en"),
+            answers=parsed,
+            duration_seconds=None if duration in (None, "") else int(duration),
+        )
+    except (TypeError, ValueError, InstrumentRefused):
+        return False
+    return True

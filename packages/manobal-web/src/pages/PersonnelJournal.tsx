@@ -14,10 +14,12 @@ export function PersonnelJournal({ session }: Props) {
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   async function refresh() {
     const next = await api.journal();
     setEntries(next.entries);
+    setPaused(Boolean((next as { paused?: boolean }).paused));
     setLoaded(true);
   }
 
@@ -32,7 +34,7 @@ export function PersonnelJournal({ session }: Props) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
-      await api.writeJournal(body, form.get("crisis") === "on");
+      await api.writeJournal(body, form.get("crisis") === "on", form.get("retain") === "on");
       setBody("");
       setError("");
       await refresh();
@@ -46,6 +48,7 @@ export function PersonnelJournal({ session }: Props) {
       <h2>Private journal</h2>
       <p className="muted">Encrypted for you. Officers never see this. It is never scored.</p>
       {error ? <Notice tone="error">{error}</Notice> : null}
+      {paused ? <Notice>Journal writing is paused while a T3 or T4 case is open.</Notice> : null}
       <form className="grid" onSubmit={(event) => void onWrite(event)}>
         <label htmlFor="journal-body">
           Entry
@@ -57,6 +60,10 @@ export function PersonnelJournal({ session }: Props) {
             aria-required="true"
             rows={4}
           />
+        </label>
+        <label htmlFor="journal-retain" className="check">
+          <input id="journal-retain" name="retain" type="checkbox" defaultChecked />
+          Keep this entry
         </label>
         <label htmlFor="journal-crisis" className="check">
           <input id="journal-crisis" name="crisis" type="checkbox" />
@@ -72,6 +79,21 @@ export function PersonnelJournal({ session }: Props) {
             <li key={row.id}>
               {formatWhen(row.created_at)} — {row.body}
               {row.crisis_referred ? " (help requested)" : ""}
+              {row.expires_at ? " (session only)" : ""}{" "}
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  void api
+                    .deleteJournal(row.id)
+                    .then(() => refresh())
+                    .catch((err: unknown) => {
+                      setError(err instanceof ApiError ? err.message : "could not delete");
+                    });
+                }}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>

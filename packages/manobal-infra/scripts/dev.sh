@@ -22,6 +22,9 @@ make db-up
 
 log "migrate Zone 2"
 "${PY}" "${CORE}" migrate --noinput
+for db in org psy bio voice; do
+  "${PY}" "${CORE}" migrate --database="${db}" --noinput
+done
 
 log "migrate Zone 3"
 "${PY}" "${IDENTITY}" migrate --noinput

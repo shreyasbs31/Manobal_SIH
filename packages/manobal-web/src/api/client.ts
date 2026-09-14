@@ -8,13 +8,19 @@ import type {
   CaseDetail,
   CaseSummary,
   Checkin,
+  ConsentLedgerEntry,
   ConsentState,
   DisclosureRow,
+  ErasureReceipt,
   FairnessReport,
+  HelplineCard,
   InstrumentCatalogue,
   InstrumentHistory,
+  Insights,
   JournalEntry,
+  OfficerDestination,
   OwnCase,
+  OwnTrends,
   PairedDevice,
   ResolvedIdentity,
   RulesetProposal,
@@ -61,9 +67,20 @@ export function createClient(session: Session | null) {
 
   return {
     consent: () => request<ConsentState>("/v1/me/consent"),
+    consentLedger: () => request<{ entries: ConsentLedgerEntry[] }>("/v1/me/consent/ledger"),
     setConsent: (data_type: string, granted: boolean) =>
       request("/v1/me/consent", { method: "POST", body: JSON.stringify({ data_type, granted }) }),
     assessment: () => request<Assessment>("/v1/me/assessment"),
+    insights: () => request<Insights>("/v1/me/insights"),
+    trends: () => request<OwnTrends>("/v1/me/trends"),
+    helpline: () =>
+      request<HelplineCard>("/v1/me/helpline", { method: "POST", body: "{}" }),
+    requestErasure: (data_type?: string) =>
+      request<ErasureReceipt>("/v1/me/erasure", {
+        method: "POST",
+        body: JSON.stringify(data_type ? { data_type } : {}),
+      }),
+    erasure: () => request<{ requests: ErasureReceipt[] }>("/v1/me/erasure"),
     checkin: () => request<Checkin>("/v1/me/checkin"),
     submitCheckin: (payload: Omit<Checkin, "observed_on">) =>
       request<Checkin>("/v1/me/checkin", { method: "POST", body: JSON.stringify(payload) }),
@@ -74,6 +91,12 @@ export function createClient(session: Session | null) {
         body: JSON.stringify({ message, session_id }),
       }),
     queue: () => request<{ cases: CaseSummary[] }>("/v1/officer/queue"),
+    officerDestination: () => request<OfficerDestination>("/v1/officer/destination"),
+    setOfficerDestination: (payload: { duty_phone_e164?: string; push_token?: string }) =>
+      request<OfficerDestination>("/v1/officer/destination", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     caseDetail: (id: number) => request<CaseDetail>(`/v1/officer/cases/${id}`),
     contact: (id: number) =>
       request<CaseDetail>(`/v1/officer/cases/${id}/contact`, { method: "POST", body: "{}" }),
@@ -105,12 +128,14 @@ export function createClient(session: Session | null) {
         clinical ? `/v1/clinical/rulesets/${id}/approve` : `/v1/wdec/rulesets/${id}/approve`,
         { method: "POST", body: "{}" },
       ),
-    journal: () => request<{ entries: JournalEntry[] }>("/v1/me/journal"),
-    writeJournal: (body: string, crisis_accepted = false) =>
+    journal: () => request<{ entries: JournalEntry[]; paused?: boolean }>("/v1/me/journal"),
+    writeJournal: (body: string, crisis_accepted = false, retain = true) =>
       request<JournalEntry>("/v1/me/journal", {
         method: "POST",
-        body: JSON.stringify({ body, crisis_accepted }),
+        body: JSON.stringify({ body, crisis_accepted, retain }),
       }),
+    deleteJournal: (id: number) =>
+      request<undefined>(`/v1/me/journal/${id}`, { method: "DELETE", body: "{}" }),
     instrumentCatalogue: (code: string, lang: string) =>
       request<InstrumentCatalogue>(
         `/v1/me/instruments/catalogue?code=${encodeURIComponent(code)}&lang=${encodeURIComponent(lang)}`,
@@ -166,6 +191,11 @@ export function createClient(session: Session | null) {
       request<ResolvedIdentity>("/v1/wdec/break-glass", {
         method: "POST",
         body: JSON.stringify({ case_id, justification, second_approver_id }),
+      }),
+    reviewBreakGlass: (id: number) =>
+      request<{ id: number; wdec_reviewed_at: string }>(`/v1/wdec/break-glass/${id}/review`, {
+        method: "POST",
+        body: "{}",
       }),
   };
 }

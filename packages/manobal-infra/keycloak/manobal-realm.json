@@ -1,0 +1,50 @@
+{
+  "id": "manobal",
+  "realm": "manobal",
+  "displayName": "MANOBAL",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      { "name": "personnel", "description": "Data subject" },
+      { "name": "welfare_officer", "description": "Unit Welfare Officer" },
+      { "name": "medical_officer", "description": "Force Medical Officer" },
+      { "name": "commander", "description": "Commanding Officer" },
+      { "name": "wdec_auditor", "description": "Welfare Data Ethics Cell" },
+      { "name": "integration", "description": "Source-system integration" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "manobal-web",
+      "name": "MANOBAL consoles",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:5173/*", "http://127.0.0.1:5173/*"],
+      "webOrigins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "manobal-core",
+      "name": "MANOBAL Zone 2 API",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "dev_only_not_a_secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "defaultDefaultClientScopes": ["role_list", "profile", "email"],
+  "attributes": {
+    "frontendUrl": "http://localhost:58080"
+  }
+}

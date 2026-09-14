@@ -48,6 +48,7 @@ _DETAILS: Final[Mapping[str, str]] = {
     "MB-4220": "The request was understood but could not be processed.",
     "MB-4290": "Too many requests. Please slow down.",
     "MB-5000": "Something went wrong. The incident has been recorded.",
+    "MB-5030": "This service is not configured.",
 }
 
 _STATUS_TO_CODE: Final[Mapping[int, str]] = {

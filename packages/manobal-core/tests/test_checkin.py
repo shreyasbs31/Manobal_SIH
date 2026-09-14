@@ -9,7 +9,7 @@ from manobal_core.apps.authz.principal import Principal
 from manobal_core.apps.governance.enums import DataType, Role
 from manobal_core.apps.governance.models import ConsentEntry, ConsentTextVersion, Subject
 
-pytestmark = pytest.mark.django_db(databases=["default", "psy"])
+pytestmark = pytest.mark.django_db(databases=["default", "org", "psy", "bio", "voice"])
 
 
 def _client(subject: Subject) -> APIClient:
@@ -43,6 +43,15 @@ def test_a_consented_checkin_is_recorded(
     body = response.json()
     assert body["mood"] == 3
     assert body["stress"] == 4
+    assert "insights" in body
+    assert body["insights"]["lede"]
+    assert "wsi" not in str(body).lower()
+    assert "score" not in str(body["insights"]).lower()
+    picture = _client(subject).get("/v1/me/insights")
+    assert picture.status_code == 200
+    assert picture.json()["lede"]
+    assert picture.json()["engine_note"]
+    assert "next" in picture.json()
 
 
 def test_a_checkin_without_consent_is_refused(subject: Subject) -> None:

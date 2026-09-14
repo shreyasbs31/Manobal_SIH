@@ -15,6 +15,69 @@ production forbids will teach you habits production then rejects.
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+
+def _load_env_file(path: Path) -> None:
+    """Fill missing process env from a gitignored .env. Never overrides a real env."""
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("'").strip('"')
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_env_file(Path(__file__).resolve().parents[5] / ".env")
+
+
+def _bootstrap_demo_llm() -> None:
+    """Map Azure / OpenAI / xAI / Groq laptop secrets onto MANOBAL_LLM_*."""
+    if os.environ.get("MANOBAL_LLM_API_KEY", "").strip():
+        return
+    azure = os.environ.get("AZURE_OPENAI_API_KEY", "").strip()
+    azure_base = (
+        os.environ.get("AZURE_OPENAI_ENDPOINT")
+        or os.environ.get("AZURE_OPENAI_API_BASE")
+        or ""
+    ).strip()
+    if azure and azure_base.startswith("https://"):
+        os.environ["MANOBAL_LLM_API_KEY"] = azure
+        os.environ.setdefault("MANOBAL_LLM_BASE_URL", azure_base)
+        deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "").strip()
+        if deployment:
+            os.environ.setdefault("MANOBAL_LLM_MODEL", deployment)
+        version = os.environ.get("AZURE_OPENAI_API_VERSION", "").strip()
+        if version:
+            os.environ.setdefault("MANOBAL_LLM_API_VERSION", version)
+        return
+    openai = os.environ.get("OPENAI_API_KEY", "").strip()
+    if openai:
+        os.environ["MANOBAL_LLM_API_KEY"] = openai
+        os.environ.setdefault(
+            "MANOBAL_LLM_BASE_URL",
+            os.environ.get("OPENAI_BASE_URL", "").strip() or "https://api.openai.com/v1",
+        )
+        return
+    xai = (os.environ.get("XAI_API_KEY") or os.environ.get("GROK_API_KEY") or "").strip()
+    if xai:
+        os.environ["MANOBAL_LLM_API_KEY"] = xai
+        os.environ.setdefault("MANOBAL_LLM_BASE_URL", "https://api.x.ai/v1")
+        os.environ.setdefault("MANOBAL_LLM_MODEL", "grok-4-fast")
+        return
+    groq = os.environ.get("GROQ_API_KEY", "").strip()
+    if groq:
+        os.environ["MANOBAL_LLM_API_KEY"] = groq
+        os.environ.setdefault("MANOBAL_LLM_BASE_URL", "https://api.groq.com/openai/v1")
+        os.environ.setdefault("MANOBAL_LLM_MODEL", "llama-3.1-8b-instant")
+
+
+_bootstrap_demo_llm()
 
 # Set before importing base, whose _required() reads the environment at import
 # time. These are development-only values and are never used elsewhere: the
@@ -45,15 +108,28 @@ os.environ.setdefault(
 )
 os.environ.setdefault("MANOBAL_GRANT_KEY_ID", "core-dev")
 os.environ.setdefault("MANOBAL_IDENTITY_URL", "http://127.0.0.1:8001")
+os.environ.setdefault("MANOBAL_HELPLINE_FORCE", "1800-123-4567")
+os.environ.setdefault("MANOBAL_AGENT_BACKEND", "auto")
 os.environ.setdefault(
     "MANOBAL_JOURNAL_MASTER_KEY",
     __import__("base64").b64encode(b"\x55" * 32).decode(),
 )
 
-from .base import *  # noqa: F403
+from .base import *  # noqa: E402, F403
 
 DEBUG = True
 LOCAL_ISSUER_ENABLED = True
+# Phone / Expo Go on the LAN must reach this process. Laptop-only.
+ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.dev",
+    "https://*.ngrok.io",
+    "https://*.exp.direct",
+    "https://*.trycloudflare.com",
+    "https://*.lhr.life",
+    "https://*.localhost.run",
+    "https://*.pinggy.link",
+]
 if os.environ.get("MANOBAL_CELERY_EAGER", "1") in {"1", "true", "yes"}:
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True

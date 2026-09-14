@@ -1,4 +1,4 @@
-"""Pluggable inference. The default backend is deterministic and local."""
+"""Pluggable inference. Cloud is used when a key is present; otherwise local."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ from typing import Protocol
 
 import httpx
 from django.conf import settings
+
+from manobal_core.agent.cloud import complete_chat, llm_api_key
 
 
 class InferenceBackend(Protocol):
@@ -54,8 +56,22 @@ class EdgeBackend:
         return DeterministicBackend().complete(message)
 
 
+class CloudBackend:
+    """OpenAI-compatible chat. Falls back to the local listener if the call fails."""
+
+    def complete(self, message: str) -> str:
+        reply = complete_chat(message)
+        if reply:
+            return reply
+        return DeterministicBackend().complete(message)
+
+
 def backend_for_settings() -> InferenceBackend:
-    name = str(settings.AGENT["BACKEND"])
+    name = str(settings.AGENT.get("BACKEND") or "auto")
     if name == "edge":
         return EdgeBackend()
+    if name == "deterministic":
+        return DeterministicBackend()
+    if name in {"cloud", "auto"} and llm_api_key():
+        return CloudBackend()
     return DeterministicBackend()

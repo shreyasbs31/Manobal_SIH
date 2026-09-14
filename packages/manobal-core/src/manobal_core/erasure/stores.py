@@ -79,17 +79,57 @@ def purge_object_store(request: ErasureRequest) -> None:
 
     if request.data_type in {None, "", DataType.JOURNAL}:
         destroy_keys(request.subject_token)
+        _purge_object_sidecar(request.subject_token)
+
+
+def _purge_object_sidecar(subject_token: str) -> None:
+    """Tell a configured object store to drop journal blobs. Optional.
+
+    MinIO is not in this process. When ``MANOBAL_OBJECT_PURGE_URL`` is an
+    https endpoint the sidecar deletes ``journal/{token}`` objects. Without
+    it, destroying the journal key is still enough: ciphertext cannot be read.
+    """
+    import json
+    import os
+    import urllib.error
+    import urllib.request
+
+    url = os.environ.get("MANOBAL_OBJECT_PURGE_URL", "").strip()
+    if not url.startswith("https://"):
+        return
+    payload = json.dumps(
+        {"subject_token": subject_token, "prefix": f"journal/{subject_token}"}
+    ).encode()
+    request = urllib.request.Request(  # noqa: S310
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    token = os.environ.get("MANOBAL_OBJECT_PURGE_TOKEN", "").strip()
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(request, timeout=5):  # noqa: S310
+            return
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return
+
+
+def revoke_live_grants_for_subject(subject_token: str) -> int:
+    """Close every live window onto this person (FR-7.5 transfer, FR-7.2 erasure)."""
+    from django.utils import timezone
+
+    return AccessGrant.objects.filter(
+        subject_token=subject_token, revoked_at__isnull=True
+    ).update(revoked_at=timezone.now())
 
 
 def revoke_live_grants(request: ErasureRequest) -> None:
     """A full erasure ends every live window onto this person."""
     if request.data_type:
         return
-    from django.utils import timezone
-
-    AccessGrant.objects.filter(
-        subject_token=request.subject_token, revoked_at__isnull=True
-    ).update(revoked_at=timezone.now())
+    revoke_live_grants_for_subject(request.subject_token)
 
 
 PURGERS: dict[str, object] = {

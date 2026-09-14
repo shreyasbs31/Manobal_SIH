@@ -39,6 +39,8 @@ def propose_for_case(case: Case) -> list[InterventionRecommendation]:
             code = str(entry.get("code") or "")
             if not code or code in seen:
                 continue
+            if not _tier_in_range(str(case.tier_at_open), entry):
+                continue
             seen.add(code)
             if InterventionRecommendation.objects.filter(case=case, code=code).exists():
                 continue
@@ -51,6 +53,18 @@ def propose_for_case(case: Case) -> list[InterventionRecommendation]:
                 )
             )
     return created
+
+
+def _tier_in_range(case_tier: str, entry: dict[str, Any]) -> bool:
+    """SDD §4.5: recommendations are a tier-by-domain matrix, not category-only."""
+    order = ("T0", "T1", "T2", "T3", "T4")
+    try:
+        current = order.index(case_tier)
+        minimum = order.index(str(entry.get("min_tier") or "T0"))
+        maximum = order.index(str(entry.get("max_tier") or "T4"))
+    except ValueError:
+        return True
+    return minimum <= current <= maximum
 
 
 def _as_int(value: object) -> int:

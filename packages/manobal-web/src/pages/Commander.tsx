@@ -74,6 +74,7 @@ export function Commander({ session }: Props) {
               <b>{aggregate.unit}</b>
             </div>
           </div>
+          {aggregate.briefing ? <p className="lede-call">{aggregate.briefing}</p> : null}
         </section>
       ) : (
         <p className="muted">Loading the unit picture…</p>

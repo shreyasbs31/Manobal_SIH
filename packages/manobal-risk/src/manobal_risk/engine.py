@@ -116,6 +116,7 @@ def score_with_trace(
         subject_token=history.subject_token,
         assessed_at=at,
         tier=final_tier,
+        tier_before_hysteresis=gated_tier,
         contributing_categories=categories,
         contributing_domains=contributing,
         domain_coverage=tuple(

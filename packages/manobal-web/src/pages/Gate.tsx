@@ -12,7 +12,7 @@ const ROLES: { role: Role; actor: string; unit: string; label: string; desk: str
     actor: "tok_seed_0000",
     unit: "12BN_A",
     label: "Personnel",
-    desk: "Consent, journal, check-in and questionnaires",
+    desk: "Today’s picture, next actions, and a check-in that can change it",
   },
   {
     role: "welfare_officer",
@@ -46,10 +46,11 @@ const ROLES: { role: Role; actor: string; unit: string; label: string; desk: str
 
 type Props = {
   subjectToken: string;
+  llmConfigured?: boolean;
   onReady: () => void;
 };
 
-export function Gate({ subjectToken, onReady }: Props) {
+export function Gate({ subjectToken, llmConfigured = false, onReady }: Props) {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -87,8 +88,19 @@ export function Gate({ subjectToken, onReady }: Props) {
         <p className="eyebrow">Uniformed welfare</p>
         <h1>MANOBAL</h1>
         <p className="lede">
-          Analytics-plane consoles. Identities live in a separate enclave. Nothing on these desks
-          stores a score or a service number.
+          Demonstration consoles on simulated unit data. Identities stay in a separate enclave.
+          Nothing on these desks stores a score or a service number.
+        </p>
+        <ol className="muted walkthrough">
+          <li>Personnel — sleep notes, a check-in that can move the picture, Talk, SOS vs helpline.</li>
+          <li>Welfare officer — T2 / T3 / T4 with a conversation opener. Category names only.</li>
+          <li>Commander — 12BN_A band and a unit briefing. Individuals never appear.</li>
+          <li>WDEC — audit trail and break-glass review.</li>
+        </ol>
+        <p className="muted">
+          {llmConfigured
+            ? "Talk uses a cloud model. Crisis language never reaches it."
+            : "Talk uses a local listener until MANOBAL_LLM_API_KEY is set. Crisis language never reaches a model."}
         </p>
         {error ? <Notice tone="error">{error}</Notice> : null}
         <div className="desk-grid">

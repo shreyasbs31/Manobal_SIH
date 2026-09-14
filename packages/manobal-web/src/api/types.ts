@@ -22,8 +22,44 @@ export type ConsentState = {
 export type Assessment = {
   tier: string | null;
   contributing_categories: string[];
+  why?: Array<{ category: string; meaning: string }>;
   assessed_at?: string;
   acute_override?: boolean;
+  offer_checkin?: boolean;
+  incident_category?: string;
+  window_ends_at?: string;
+};
+
+export type InsightNote = {
+  field: string;
+  direction: string;
+  text: string;
+};
+
+export type InsightAction = {
+  id: string;
+  title: string;
+  detail: string;
+  href: string;
+};
+
+export type Insights = {
+  lede: string;
+  notes: InsightNote[];
+  why: Array<{ category: string; meaning: string }>;
+  settled_low: boolean;
+  settled_message: string;
+  engine_note: string;
+  streak: number;
+  next: InsightAction[];
+};
+
+export type OfficerBriefing = {
+  headline: string;
+  why: Array<{ category: string; meaning: string }>;
+  openers: string[];
+  settled_note: string;
+  next_step: string;
 };
 
 export type Checkin = {
@@ -31,8 +67,45 @@ export type Checkin = {
   mood: number | null;
   sleep_quality: number | null;
   stress: number | null;
+  fatigue: number | null;
   connection: number | null;
   concern_tag?: string;
+  picture_changed?: boolean;
+  previous_tier?: string | null;
+  tier?: string | null;
+  insights?: Insights;
+};
+
+export type ConsentLedgerEntry = {
+  data_type: string;
+  granted: boolean;
+  recorded_at: string;
+  method: string;
+};
+
+export type ErasureReceipt = {
+  id: number;
+  data_type: string | null;
+  status: string;
+  requested_at: string;
+  completed_at: string | null;
+  receipt_id: string | null;
+};
+
+export type OwnTrends = {
+  domain: string;
+  checkins: Array<{
+    observed_on: string;
+    mood: number | null;
+    sleep_quality: number | null;
+    fatigue: number | null;
+  }>;
+  instruments: Array<{ code: string; completed_at: string; acute: boolean }>;
+};
+
+export type HelplineCard = {
+  helplines: Record<string, string>;
+  recorded: false;
 };
 
 export type CaseSummary = {
@@ -40,6 +113,7 @@ export type CaseSummary = {
   subject_token: string;
   tier: string;
   contributing_categories: string[];
+  headline?: string;
   status: string;
   sla_due_at: string;
   opened_at: string;
@@ -60,6 +134,7 @@ export type CaseDetail = CaseSummary & {
   contested_at: string | null;
   contest_note: string;
   recommendations: Recommendation[];
+  briefing?: OfficerBriefing;
 };
 
 export type JournalEntry = {
@@ -67,6 +142,13 @@ export type JournalEntry = {
   created_at: string;
   body: string;
   crisis_referred: boolean;
+  expires_at?: string | null;
+};
+
+export type OfficerDestination = {
+  duty_phone_set: boolean;
+  duty_phone_hint: string;
+  push_token_set: boolean;
 };
 
 export type InstrumentCatalogue = {
@@ -147,6 +229,7 @@ export type Aggregate = {
   elevated_band?: string;
   dominant_category?: string;
   trend_direction?: string;
+  briefing?: string;
 };
 
 export type ResolvedIdentity = {

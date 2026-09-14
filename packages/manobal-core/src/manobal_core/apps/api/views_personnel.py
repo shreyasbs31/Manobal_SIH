@@ -18,7 +18,12 @@ from manobal_core.casework.contest import ContestRefused, contest_case
 from manobal_core.casework.disclosure import DisclosureRefused, answer_disclosure
 from manobal_core.instruments.catalogue import SUPPORTED_LANGUAGES, catalogue_payload
 from manobal_core.instruments.submit import InstrumentRefused, submit_instrument
-from manobal_core.journal.service import JournalRefused, list_entries, write_entry
+from manobal_core.journal.service import (
+    JournalRefused,
+    journal_is_paused,
+    list_entries,
+    write_entry,
+)
 
 
 def _own(request: Request) -> tuple[object, Subject]:
@@ -47,16 +52,23 @@ class MeJournalView(APIView):
             subject_token=subject.subject_token,
             detail={"event": "journal.list", "count": len(entries)},
         )
-        return Response({"entries": [_journal_body(row) for row in entries]})
+        return Response(
+            {
+                "entries": [_journal_body(row) for row in entries],
+                "paused": journal_is_paused(subject.subject_token),
+            }
+        )
 
     def post(self, request: Request) -> Response:
         principal, subject = _own(request)
         body = _payload(request)
         try:
+            retain = body.get("retain")
             row = write_entry(
                 subject,
                 body=str(body.get("body") or ""),
                 crisis_accepted=bool(body.get("crisis_accepted")),
+                retain=True if retain is None else bool(retain),
             )
         except JournalRefused as exc:
             raise Unprocessable(f"MB-4220: {exc}") from exc
@@ -253,6 +265,7 @@ def _journal_body(row: object) -> dict[str, object]:
         "created_at": row.created_at.isoformat(),  # type: ignore[attr-defined]
         "body": row.body,  # type: ignore[attr-defined]
         "crisis_referred": row.crisis_referred,  # type: ignore[attr-defined]
+        "expires_at": row.expires_at.isoformat() if row.expires_at else None,  # type: ignore[attr-defined]
     }
 
 

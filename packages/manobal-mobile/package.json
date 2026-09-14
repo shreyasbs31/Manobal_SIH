@@ -2,13 +2,34 @@
   "name": "manobal-mobile",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
-  "description": "MANOBAL Zone 0 device protocol — capture batches, lock-screen copy, crisis triage.",
+  "main": "expo-router/entry",
+  "description": "MANOBAL Zone 0 device — personnel app and capture protocol.",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "babel-preset-expo": "~57.0.0",
+    "expo": "^57.0.0",
+    "expo-audio": "~57.0.5",
+    "expo-constants": "~57.0.18",
+    "expo-linking": "~57.0.10",
+    "expo-router": "~57.0.21",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "typescript": "^5.8.0",
+    "@types/react": "~19.2.4",
+    "typescript": "~6.0.3",
     "vitest": "^3.1.0"
   }
 }

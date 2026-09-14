@@ -69,6 +69,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "manobal_core.apps.authz.middleware.PrincipalMiddleware",
     "manobal_core.observability.middleware.RequestContextMiddleware",
+    "manobal_core.apps.api.throttles.RateLimitMiddleware",
 ]
 
 ROOT_URLCONF = "manobal_core.urls"
@@ -223,6 +224,27 @@ ALERTING = {
     #: NFR-P6 / UC-10.
     "ACUTE_DISPATCH_SLA_MINUTES": 15,
     "SLA_HOURS_BY_TIER": {"T2": 24 * 7, "T3": 48, "T4": 0},
+    #: Live FCM / NIC SMS fire only when the matching env vars are set.
+    "USE_IN_PROCESS_TRANSPORT": _flag("MANOBAL_ALERT_IN_PROCESS", default=True),
+}
+
+DEEPGRAM = {
+    "API_KEY": os.environ.get("MANOBAL_DEEPGRAM_API_KEY", ""),
+    "BASE_URL": os.environ.get("MANOBAL_DEEPGRAM_BASE_URL", "https://api.deepgram.com/v1"),
+    "MODEL": os.environ.get("MANOBAL_DEEPGRAM_MODEL", "nova-2"),
+}
+
+HELPLINES = {
+    "national_emergency": os.environ.get("MANOBAL_HELPLINE_NATIONAL", "112"),
+    "force_welfare": os.environ.get("MANOBAL_HELPLINE_FORCE", ""),
+    "kiran": os.environ.get("MANOBAL_HELPLINE_KIRAN", "1800-599-0019"),
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "manobal-core",
+    }
 }
 
 RATE_LIMITS = {
@@ -240,6 +262,7 @@ RATE_LIMITS = {
     "identity_breakglass_per_officer_day": 2,
     "commander_aggregates_per_hour": 300,
     "unauthenticated_per_ip_minute": 100,
+    "transcribe_per_hour": 40,
     "integration_webhook_per_minute": 100,
 }
 
@@ -247,8 +270,11 @@ AGENT = {
     #: SDD §7.8. One flag disables the conversational agent force-wide; the
     #: system degrades to structured forms and keeps working.
     "ENABLED": _flag("MANOBAL_AGENT_ENABLED", default=True),
-    "BACKEND": os.environ.get("MANOBAL_AGENT_BACKEND", "deterministic"),
+    "BACKEND": os.environ.get("MANOBAL_AGENT_BACKEND", "auto"),
     "EDGE_URL": os.environ.get("MANOBAL_AGENT_EDGE_URL", ""),
+    "LLM_API_KEY": os.environ.get("MANOBAL_LLM_API_KEY", ""),
+    "LLM_BASE_URL": os.environ.get("MANOBAL_LLM_BASE_URL", "https://api.openai.com/v1"),
+    "LLM_MODEL": os.environ.get("MANOBAL_LLM_MODEL", "gpt-4o-mini"),
     "MAX_TEMPERATURE": 0.3,
     "SESSION_TTL_MINUTES": 30,
 }

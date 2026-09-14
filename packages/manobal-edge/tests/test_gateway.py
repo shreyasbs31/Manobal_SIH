@@ -28,6 +28,43 @@ def test_a_clean_batch_is_forwarded() -> None:
     assert core.payloads
 
 
+def test_an_sdd_capture_packet_is_accepted() -> None:
+    assert (
+        validate_batch(
+            {
+                "subject_token": "st_000001",
+                "packet_id": "pkt-9",
+                "payload_type": "checkin",
+                "payload": {"mood": 3, "fatigue": 2},
+            }
+        )
+        is None
+    )
+
+
+def test_journal_and_instrument_kinds_are_accepted() -> None:
+    assert (
+        validate_batch(
+            {
+                "subject_token": "st_000001",
+                "client_batch_id": "dev-journal",
+                "items": [{"kind": "journal", "body": "a private sentence"}],
+            }
+        )
+        is None
+    )
+    assert (
+        validate_batch(
+            {
+                "subject_token": "st_000001",
+                "client_batch_id": "dev-instrument",
+                "items": [{"kind": "instrument", "code": "phq9", "answers": [0] * 9}],
+            }
+        )
+        is None
+    )
+
+
 def test_identifiers_are_refused() -> None:
     assert validate_batch(
         {
@@ -36,6 +73,12 @@ def test_identifiers_are_refused() -> None:
             "items": [{"kind": "bio", "service_no": "CRPF-1", "value": 1}],
         }
     )
+
+
+def test_inference_falls_back_when_no_cloud_key_is_set() -> None:
+    result = infer_turn("I have not been sleeping well")
+    assert result["crisis"] is False
+    assert "diagnos" not in str(result["reply"]).lower()
 
 
 def test_crisis_language_is_flagged_without_a_diagnosis() -> None:

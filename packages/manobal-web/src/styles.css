@@ -39,9 +39,7 @@ body {
   font-family: var(--ui);
   font-size: 1.02rem;
   line-height: 1.5;
-  background:
-    radial-gradient(1200px 420px at 80% -10%, rgba(39, 88, 58, 0.07), transparent 60%),
-    linear-gradient(180deg, #efe8d8, var(--paper) 18rem);
+  background: var(--paper);
 }
 
 h1,
@@ -245,6 +243,13 @@ textarea:focus-visible {
   margin-bottom: 1.35rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--rule);
+}
+
+.page-head .mark {
+  width: 2.5rem;
+  height: 0.28rem;
+  background: #c4a574;
+  margin-bottom: 0.75rem;
 }
 
 .anchor {
@@ -616,12 +621,117 @@ legend {
   display: grid;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+  max-height: 22rem;
+  overflow: auto;
 }
 
 .bubble {
   padding: 0.65rem 0.8rem;
   background: var(--paper-2);
   max-width: 40rem;
+}
+
+.bubble p {
+  margin: 0.2rem 0 0;
+}
+
+.bubble.you {
+  background: #e8d7b5;
+  border-left: 3px solid #c4a574;
+  margin-left: auto;
+}
+
+.page-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.page-jump a {
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  text-decoration: none;
+}
+
+.page-jump a:hover {
+  border-color: var(--ink);
+}
+
+.scale {
+  border: 0;
+  padding: 0.35rem 0 0.7rem;
+}
+
+.scale-word {
+  margin: 0.15rem 0 0;
+  color: var(--ink-soft);
+}
+
+.scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.scale-chip {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  background: #fffdf8;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+}
+
+.scale-chip.on {
+  background: var(--rail);
+  color: var(--paper);
+  border-color: var(--rail);
+  font-weight: 700;
+}
+
+.case-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.case-card {
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  padding: 1rem 1.05rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.case-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.case-card a {
+  font-weight: 600;
+  text-decoration: none;
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.case-card.tier-T4 {
+  border-left: 4px solid var(--signal);
+}
+
+.case-card.tier-T3 {
+  border-left: 4px solid var(--watch);
+}
+
+.case-card.tier-T2 {
+  border-left: 4px solid var(--focus);
 }
 
 .cells {
@@ -648,6 +758,90 @@ legend {
 .cell.withheld {
   background: var(--paper-2);
   color: var(--ink-soft);
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 0.65rem;
+  margin: 0.75rem 0 0;
+}
+
+.action-card {
+  display: block;
+  min-height: 5.25rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  text-decoration: none;
+}
+
+.action-card strong {
+  display: block;
+  font-family: var(--type);
+  margin-bottom: 0.3rem;
+}
+
+.action-card span {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.lede-call {
+  font-family: var(--type);
+  font-size: 1.15rem;
+  line-height: 1.35;
+  margin: 0.4rem 0 0.7rem;
+}
+
+.note {
+  margin: 0.75rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+}
+
+.note-list {
+  margin: 0.4rem 0 0.2rem;
+  padding-left: 1.15rem;
+}
+
+.week-strip {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-end;
+  min-height: 6.5rem;
+  margin: 0.4rem 0 1rem;
+}
+
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 3.4rem;
+  gap: 0.2rem;
+}
+
+.week-bar {
+  width: 1.05rem;
+  background: var(--rail);
+}
+
+.week-day small {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.headline {
+  font-family: var(--type);
+  margin: 0.35rem 0;
+}
+
+.openers {
+  margin: 0.4rem 0 0.8rem;
+  padding-left: 1.2rem;
 }
 
 .gate {
@@ -678,6 +872,11 @@ legend {
   height: 0.35rem;
   background: #c4a574;
   margin-bottom: 1rem;
+}
+
+.gate-card .walkthrough {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
 }
 
 @media (max-width: 800px) {

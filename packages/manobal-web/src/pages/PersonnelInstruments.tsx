@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { ApiError, createClient } from "../api/client";
-import type { InstrumentCatalogue, Session } from "../api/types";
+import type { InstrumentCatalogue, InstrumentHistory, Session } from "../api/types";
 import { Notice } from "../components/Notice";
 
 type Props = { session: Session };
@@ -15,6 +15,7 @@ export function PersonnelInstruments({ session }: Props) {
   const [catalogue, setCatalogue] = useState<InstrumentCatalogue | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<InstrumentHistory[]>([]);
 
   useEffect(() => {
     setCatalogue(null);
@@ -23,6 +24,12 @@ export function PersonnelInstruments({ session }: Props) {
       .then(setCatalogue)
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : "catalogue unavailable");
+      });
+    void api
+      .instruments()
+      .then((payload) => setHistory(payload.history))
+      .catch(() => {
+        /* history is optional on first paint */
       });
   }, [session.token, code, lang]);
 
@@ -100,6 +107,16 @@ export function PersonnelInstruments({ session }: Props) {
         <p className="muted">Loading the official items…</p>
       )}
       {total !== null ? <Notice>Recorded total: {total}. Item answers were discarded.</Notice> : null}
+      {history.length ? (
+        <ul>
+          {history.map((row) => (
+            <li key={`${row.code}-${row.completed_at}`}>
+              {row.code} · {row.completed_at}
+              {row.acute ? " · safety item flagged" : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }

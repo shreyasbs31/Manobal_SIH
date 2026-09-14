@@ -85,3 +85,20 @@ def test_stale_items_are_dropped(subject: Subject, consent_text: ConsentTextVers
     )
     assert receipt.rejected_stale == 1
     assert PhysiologicalObservation.objects.count() == 0
+
+
+def test_a_consented_journal_item_is_accepted(
+    subject: Subject, consent_text: ConsentTextVersion
+) -> None:
+    ConsentEntry.objects.create(
+        subject_token=subject.subject_token,
+        data_type=DataType.JOURNAL,
+        granted=True,
+        consent_text=consent_text,
+    )
+    receipt = ingest_capture_batch(
+        subject_token=subject.subject_token,
+        client_batch_id="batch-journal",
+        items=[{"kind": "journal", "body": "a private sentence"}],
+    )
+    assert receipt.accepted_count == 1

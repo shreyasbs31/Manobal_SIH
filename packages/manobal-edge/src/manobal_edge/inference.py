@@ -18,7 +18,11 @@ def infer_turn(message: str) -> dict[str, str | bool]:
             "crisis": True,
             "reply": "Please seek immediate help from welfare or emergency services.",
         }
+    from manobal_edge.cloud import complete_chat
+
+    cloud = complete_chat(message)
     return {
         "crisis": False,
-        "reply": "I can listen. Use the check-in or talk to welfare if you want support.",
+        "reply": cloud
+        or "I can listen. Use the check-in or talk to welfare if you want support.",
     }

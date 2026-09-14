@@ -15,13 +15,17 @@ import { Wdec } from "./pages/Wdec";
 export function App() {
   const [session, setSession] = useState<Session | null>(readSession);
   const [personnelToken, setPersonnelToken] = useState("tok_seed_0000");
+  const [llmConfigured, setLlmConfigured] = useState(false);
 
   useEffect(() => {
     void fetch("/dev/seed")
       .then((response) => response.json())
-      .then((body: { personnel_token?: string }) => {
+      .then((body: { personnel_token?: string; llm_configured?: boolean }) => {
         if (body.personnel_token) {
           setPersonnelToken(body.personnel_token);
+        }
+        if (typeof body.llm_configured === "boolean") {
+          setLlmConfigured(body.llm_configured);
         }
       })
       .catch(() => {
@@ -30,7 +34,13 @@ export function App() {
   }, []);
 
   if (!session) {
-    return <Gate subjectToken={personnelToken} onReady={() => setSession(readSession())} />;
+    return (
+      <Gate
+        subjectToken={personnelToken}
+        llmConfigured={llmConfigured}
+        onReady={() => setSession(readSession())}
+      />
+    );
   }
 
   return (

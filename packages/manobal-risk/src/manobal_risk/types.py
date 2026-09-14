@@ -201,6 +201,10 @@ class RiskAssessment:
     subject_token: str
     assessed_at: datetime
     tier: Tier
+    #: Gated tier after corroboration and before hysteresis. Persisted as
+    #: ``pre_gate_tier`` so the next cycle can count consecutive lower nights.
+    #: A ``Tier`` is a name, not a score — the privacy gate allows it.
+    tier_before_hysteresis: Tier
     #: Officer-facing category names, ordered by contribution. Names only.
     contributing_categories: tuple[str, ...]
     #: Machine-readable domain identifiers for internal routing (intervention

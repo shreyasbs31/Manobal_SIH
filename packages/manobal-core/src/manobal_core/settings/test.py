@@ -29,3 +29,7 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 # Tasks run inline so a test can assert on the outcome without a broker.
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+
+# Suite volume would trip the unauthenticated IP ceiling; a dedicated test
+# turns the limiter back on.
+RATE_LIMITS_DISABLED = True

@@ -43,6 +43,8 @@ def request_otp(mobile_e164: str, *, code: str | None = None) -> IssuedOtp:
         code_hash=_hash(index, digits),
         expires_at=timezone.now() + OTP_TTL,
     )
+    if code is None:
+        _dispatch_otp_sms(mobile_e164, digits)
     return IssuedOtp(accepted=True, code=digits if code is not None else None)
 
 
@@ -102,3 +104,43 @@ def _rate_ok(mobile_index: str) -> bool:
     return hourly < int(limits["otp_per_mobile_hour"]) and daily < int(
         limits["otp_per_mobile_day"]
     )
+
+
+def _dispatch_otp_sms(mobile_e164: str, digits: str) -> None:
+    """Send the challenge via NIC SMS when credentials are configured.
+
+    The HTTP response never includes the digits. Without credentials this is a
+    no-op so local and CI enrolment tests stay offline.
+    """
+    import json
+    import logging
+    import os
+    import urllib.request
+
+    user = os.environ.get("MANOBAL_NIC_SMS_USER", "")
+    password = os.environ.get("MANOBAL_NIC_SMS_PASSWORD", "")
+    sender = os.environ.get("MANOBAL_NIC_SMS_SENDER", "")
+    endpoint = os.environ.get("MANOBAL_NIC_SMS_URL", "")
+    if not (user and password and sender and endpoint):
+        return
+    payload = json.dumps(
+        {
+            "username": user,
+            "password": password,
+            "sender": sender,
+            "message": f"MANOBAL enrolment code: {digits}",
+            "recipient": mobile_e164,
+        }
+    ).encode()
+    if not endpoint.startswith("https://"):
+        return
+    request = urllib.request.Request(  # noqa: S310
+        endpoint,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(request, timeout=5)  # noqa: S310
+    except (OSError, TimeoutError):
+        logging.getLogger(__name__).warning("enrolment_otp_sms_failed")

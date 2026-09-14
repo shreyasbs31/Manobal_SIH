@@ -201,10 +201,17 @@ class TestOfficerCasework:
         assert queue.status_code == 200
         assert len(queue.json()["cases"]) == 1
         assert queue.json()["cases"][0]["tier"] == Tier.T2
+        assert queue.json()["cases"][0]["headline"]
+        assert "wsi" not in queue.json()["cases"][0]["headline"].lower()
         detail = client.get(f"/v1/officer/cases/{opened.case.id}")
         assert detail.status_code == 200
         assert detail.json()["subject_token"] == subject.subject_token
         assert "wsi" not in detail.json()
+        briefing = detail.json()["briefing"]
+        assert briefing["headline"]
+        assert briefing["openers"]
+        assert "wsi" not in str(briefing).lower()
+        assert "tok_" not in str(briefing)
 
     def test_contact_then_decision_closes_the_case_and_revokes_the_grant(
         self, subject: Subject, officer: OfficerProfile, officer_principal: Principal

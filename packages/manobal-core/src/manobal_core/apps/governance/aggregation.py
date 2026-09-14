@@ -30,6 +30,7 @@ from manobal_core.apps.governance.models import (
     Unit,
     UnitAggregate,
 )
+from manobal_core.insights.briefing import unit_briefing
 
 SUPPRESSED_BELOW_K = "below_k"
 SUPPRESSED_CHURN = "cohort_churn"
@@ -188,6 +189,12 @@ def public_aggregate_payload(aggregate: UnitAggregate) -> dict[str, object]:
             "elevated_band": aggregate.elevated_band,
             "dominant_category": aggregate.dominant_category,
             "trend_direction": aggregate.trend_direction,
+            "briefing": unit_briefing(
+                suppressed=False,
+                elevated_band=str(aggregate.elevated_band or ""),
+                dominant_category=str(aggregate.dominant_category or ""),
+                trend_direction=str(aggregate.trend_direction or ""),
+            ),
         }
     )
     return body

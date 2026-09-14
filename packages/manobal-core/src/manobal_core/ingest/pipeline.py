@@ -32,6 +32,8 @@ from manobal_core.ingest.contract import (
     validate_features,
 )
 from manobal_core.ingest.identity import TokeniseClient
+from manobal_core.ingest.quality import record_hrms_quality
+from manobal_core.ingest.transfer import apply_posting_change
 
 
 def ingest_hrms_batch(
@@ -88,6 +90,7 @@ def ingest_hrms_batch(
         batch.quarantined_count = quarantined
         batch.status = "applied"
         batch.save(update_fields=["accepted_count", "quarantined_count", "status"])
+        record_hrms_quality(batch)
 
     AuditEvent.record(
         actor_id="ingest-worker",
@@ -103,6 +106,9 @@ def ingest_hrms_batch(
 
 def _apply_row(token: str, payload: dict[str, Any], batch_id: int) -> None:
     unit = _unit_of(payload)
+    existing = Subject.objects.filter(subject_token=token).first()
+    employment = str(payload.get("employment_status") or "").lower()
+    apply_posting_change(existing, new_unit=unit, employment_status=employment)
     subject, _ = Subject.objects.update_or_create(
         subject_token=token,
         defaults={
@@ -112,7 +118,7 @@ def _apply_row(token: str, payload: dict[str, Any], batch_id: int) -> None:
             "service_years_bucket": str(payload.get("service_years_bucket") or "unknown"),
         },
     )
-    if str(payload.get("employment_status") or "").lower() == "separated":
+    if employment == "separated":
         from manobal_core.erasure.separation import mark_separated
 
         mark_separated(subject)

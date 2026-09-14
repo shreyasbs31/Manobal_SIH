@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from typing import cast
 
@@ -49,13 +50,20 @@ from manobal_core.apps.governance.models import (
     AccessGrant,
     AuditEvent,
     ConsentEntry,
+    RiskAssessmentRecord,
     RulesetProposal,
     Subject,
 )
 from manobal_core.apps.psystore.models import CheckinResponse
 from manobal_core.identity.resolve import resolve_for_case
 from manobal_core.ingest.captures import ingest_capture_batch
+from manobal_core.ingest.packets import normalize_capture_payload
+from manobal_core.insights.briefing import personnel_briefing
+from manobal_core.insights.store import checkin_rows
 from manobal_core.ruleset.registry import approve_proposal, register_proposal
+from manobal_core.scoring.nightly import score_subject
+
+logger = logging.getLogger(__name__)
 
 
 class OfficerResolveView(APIView):
@@ -188,6 +196,7 @@ class MeCheckinView(APIView):
                 "mood": _scale(body.get("mood")),
                 "sleep_quality": _scale(body.get("sleep_quality")),
                 "stress": _scale(body.get("stress")),
+                "fatigue": _scale(body.get("fatigue") if "fatigue" in body else body.get("stress")),
                 "connection": _scale(body.get("connection")),
                 "concern_tag": str(body.get("concern_tag") or "")[:32],
             },
@@ -201,7 +210,7 @@ class MeCheckinView(APIView):
             subject_token=token,
             detail={"event": "checkin.recorded"},
         )
-        return Response(_checkin_body(row), status=status.HTTP_201_CREATED)
+        return Response(_checkin_saved_body(row, token), status=status.HTTP_201_CREATED)
 
 
 class IngestCapturesView(APIView):
@@ -209,7 +218,7 @@ class IngestCapturesView(APIView):
 
     def post(self, request: Request) -> Response:
         principal = _actor(request)
-        body = _payload(request)
+        body = normalize_capture_payload(_payload(request))
         token = str(body.get("subject_token") or "")
         batch_id = str(body.get("client_batch_id") or "")
         items = body.get("items")
@@ -343,6 +352,48 @@ def _as_int(value: object) -> int:
     return value
 
 
+def _latest_assessment(token: str) -> RiskAssessmentRecord | None:
+    return (
+        RiskAssessmentRecord.objects.filter(subject_token=token)
+        .order_by("-assessed_at", "-id")
+        .first()
+    )
+
+
+def _rescore_after_checkin(token: str) -> RiskAssessmentRecord | None:
+    """Re-run the named picture so today's Likert values can move it."""
+    subject = Subject.objects.filter(subject_token=token).first()
+    if subject is None:
+        return _latest_assessment(token)
+    try:
+        score_subject(subject)
+    except Exception:
+        logger.exception("check-in could not refresh the named picture")
+    return _latest_assessment(token)
+
+
+def _checkin_saved_body(row: CheckinResponse, token: str) -> dict[str, object]:
+    previous = _latest_assessment(token)
+    current = _rescore_after_checkin(token)
+    previous_tier = previous.tier if previous else None
+    current_tier = current.tier if current else None
+    categories = list(current.contributing_categories or []) if current else []
+    body = _checkin_body(row)
+    body.update(
+        {
+            "previous_tier": previous_tier,
+            "tier": current_tier,
+            "picture_changed": bool(current_tier) and previous_tier != current_tier,
+            "insights": personnel_briefing(
+                checkin_rows(token),
+                tier=current_tier,
+                categories=categories,
+            ),
+        }
+    )
+    return body
+
+
 def _checkin_body(row: CheckinResponse | None) -> dict[str, object]:
     if row is None:
         return {
@@ -350,6 +401,7 @@ def _checkin_body(row: CheckinResponse | None) -> dict[str, object]:
             "mood": None,
             "sleep_quality": None,
             "stress": None,
+            "fatigue": None,
             "connection": None,
         }
     return {
@@ -357,6 +409,7 @@ def _checkin_body(row: CheckinResponse | None) -> dict[str, object]:
         "mood": row.mood,
         "sleep_quality": row.sleep_quality,
         "stress": row.stress,
+        "fatigue": row.fatigue,
         "connection": row.connection,
         "concern_tag": row.concern_tag,
     }

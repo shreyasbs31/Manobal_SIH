@@ -99,8 +99,8 @@ class RiskAssessmentRecord(models.Model):
     #: the tier because the acute path has different consent rules, a different
     #: legal basis and a different response SLA.
     acute_override = models.BooleanField(default=False)
-    #: Tier before the corroboration gate and hysteresis, for explaining to a
-    #: reviewer why a raw signal did not become a case.
+    #: Gated tier after corroboration and before hysteresis. Used to count
+    #: consecutive lower cycles so a falling flag is held for two nights (FR-3.5).
     pre_gate_tier = models.CharField(max_length=2, choices=Tier.choices)
 
     superseded_by = models.OneToOneField(

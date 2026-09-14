@@ -41,3 +41,25 @@ def advance_erasure_task(request_id: int) -> int:
     request = ErasureRequest.objects.get(pk=request_id)
     done = advance_erasure(request)
     return done.id
+
+
+@app.task(name="manobal_core.tasks.resurface_sla_breaches")  # type: ignore[untyped-decorator]
+def resurface_sla_breaches() -> int:
+    from manobal_core.alerting.sla import resurface_sla_breaches as run
+
+    return len(run())
+
+
+@app.task(name="manobal_core.tasks.purge_raw_retention")  # type: ignore[untyped-decorator]
+def purge_raw_retention() -> int:
+    from manobal_core.retention import purge_raw_observations
+
+    return purge_raw_observations()
+
+
+@app.task(name="manobal_core.tasks.pull_nightly_hrms")  # type: ignore[untyped-decorator]
+def pull_nightly_hrms() -> int:
+    from manobal_core.ingest.nightly import pull_nightly_hrms as run
+
+    accepted = run()
+    return 0 if accepted is None else accepted

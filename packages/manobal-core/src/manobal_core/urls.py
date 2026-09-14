@@ -27,6 +27,7 @@ def healthz(_: HttpRequest) -> JsonResponse:
 urlpatterns = [
     path("healthz", healthz, name="healthz"),
     path("", include("manobal_core.apps.api.urls")),
+    path("api/", include("manobal_core.apps.api.urls")),
 ]
 
 if getattr(settings, "LOCAL_ISSUER_ENABLED", False):

@@ -46,3 +46,12 @@ def test_dev_jwks_is_published_when_the_local_issuer_is_on() -> None:
 def test_dev_token_rejects_an_unknown_role() -> None:
     response = APIClient().post("/dev/token", {"role": "spy"}, format="json")
     assert response.status_code == 422
+
+
+def test_dev_seed_describes_the_demo_walkthrough() -> None:
+    response = APIClient().get("/dev/seed")
+    assert response.status_code == 200
+    body = response.json()
+    assert "personnel_token" in body
+    assert isinstance(body["llm_configured"], bool)
+    assert len(body["walkthrough"]) >= 4

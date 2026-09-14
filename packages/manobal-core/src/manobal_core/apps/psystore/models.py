@@ -77,6 +77,9 @@ class CheckinResponse(models.Model):
     mood = models.PositiveSmallIntegerField(null=True, blank=True, validators=list(_SCALE))
     sleep_quality = models.PositiveSmallIntegerField(null=True, blank=True, validators=list(_SCALE))
     stress = models.PositiveSmallIntegerField(null=True, blank=True, validators=list(_SCALE))
+    #: SDD D5 names mood, fatigue and sleep. ``stress`` remains as the older
+    #: label; when ``fatigue`` is present the engine reads it instead.
+    fatigue = models.PositiveSmallIntegerField(null=True, blank=True, validators=list(_SCALE))
     #: Perceived social connection. Isolation is among the more actionable
     #: contributors, and one an officer can respond to without clinical training.
     connection = models.PositiveSmallIntegerField(null=True, blank=True, validators=list(_SCALE))
@@ -124,6 +127,8 @@ class JournalEntry(models.Model):
     nonce = models.BinaryField()
 
     crisis_referred_at = models.DateTimeField(null=True, blank=True)
+    #: UC-19. A session the person chose not to keep expires and is swept.
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "journal_entry"

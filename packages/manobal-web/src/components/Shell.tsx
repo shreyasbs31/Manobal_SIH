@@ -61,10 +61,12 @@ export function Shell({ session, children }: Props) {
 }
 
 const PERSONNEL_JUMPS = [
+  { href: "#picture", label: "Picture" },
+  { href: "#checkin", label: "Check-in" },
+  { href: "#talk", label: "Talk" },
+  { href: "#help", label: "Help" },
   { href: "#journal", label: "Journal" },
   { href: "#instruments", label: "Questionnaires" },
-  { href: "#flags", label: "Flags" },
-  { href: "#devices", label: "Devices" },
 ];
 
 function linksFor(role: Session["role"]): { to: string; label: string }[] {

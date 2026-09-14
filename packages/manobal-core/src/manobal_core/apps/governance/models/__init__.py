@@ -20,6 +20,7 @@ from .casework import (
 )
 from .consent import ConsentEntry, ConsentTextVersion, DisclosureRequest, ErasureRequest
 from .enrolment import JournalKey, PairedDevice
+from .incidents import UnitIncident
 from .ingest import CaptureReceipt, DataQualityReport, IngestBatch, QuarantinedRecord
 from .org import Subject, Unit, UnitAggregate
 
@@ -50,5 +51,6 @@ __all__ = [
     "Subject",
     "Unit",
     "UnitAggregate",
+    "UnitIncident",
     "canonicalise",
 ]

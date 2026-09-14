@@ -13,7 +13,7 @@ from typing import Any, Protocol
 import httpx
 
 MAX_PACKETS = 500
-ALLOWED_KINDS = frozenset({"bio", "voice", "checkin"})
+ALLOWED_KINDS = frozenset({"bio", "voice", "checkin", "journal", "instrument"})
 FORBIDDEN_KEYS = frozenset(
     {"service_no", "full_name", "mobile_e164", "name", "aadhaar", "rank_code"}
 )
@@ -56,17 +56,50 @@ class CaptureForwarder:
         self._core = core
 
     def forward(self, payload: dict[str, Any]) -> SyncResult:
-        reason = validate_batch(payload)
+        normalized = normalize_capture_payload(payload)
+        reason = validate_batch(normalized)
         if reason is not None:
             return SyncResult(
                 accepted=False,
                 status_code=422,
                 body={"code": "MB-4220", "detail": reason},
             )
-        return self._core.post_captures(payload)
+        return self._core.post_captures(normalized)
+
+
+def normalize_capture_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Accept SDD CapturePacket fields alongside the live batch contract."""
+    out = dict(payload)
+    if not out.get("client_batch_id") and out.get("packet_id"):
+        out["client_batch_id"] = str(out["packet_id"])
+    items = out.get("items")
+    if not isinstance(items, list):
+        blob = out.get("payload")
+        if isinstance(blob, list):
+            items = blob
+        elif isinstance(blob, dict):
+            items = [blob]
+        else:
+            items = []
+    kind = str(out.get("payload_type") or "")
+    if kind == "biometric":
+        kind = "bio"
+    if kind == "self_assessment":
+        kind = "checkin"
+    normalized: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        row = dict(item)
+        if not row.get("kind") and kind:
+            row["kind"] = kind
+        normalized.append(row)
+    out["items"] = normalized
+    return out
 
 
 def validate_batch(payload: dict[str, Any]) -> str | None:
+    payload = normalize_capture_payload(payload)
     if not payload.get("subject_token") or not payload.get("client_batch_id"):
         return "subject_token and client_batch_id are required"
     items = payload.get("items")

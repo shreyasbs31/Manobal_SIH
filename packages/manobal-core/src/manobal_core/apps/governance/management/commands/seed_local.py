@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from manobal_core.apps.governance.enums import DataType, DeviceTier, Role
+from manobal_core.apps.governance.enums import CaseStatus, DataType, DeviceTier, Role
 from manobal_core.apps.governance.models import (
     Case,
     ConsentEntry,
@@ -20,6 +20,7 @@ from manobal_core.apps.governance.models import (
     Unit,
     UnitAggregate,
 )
+from manobal_core.demo.populate import populate_demo
 from manobal_core.scoring.orchestrator import persist_assessment
 from manobal_risk.types import DOMAIN_CATEGORY, Domain, RiskAssessment
 from manobal_risk.types import Tier as EngineTier
@@ -42,15 +43,12 @@ class Command(BaseCommand):
         for subject in subjects:
             subject.refresh_from_db()
             _grant_all(subject, text)
-        if not Case.objects.exists():
-            persist_assessment(_engine(subjects[0].subject_token, EngineTier.T2), subjects[0])
-            persist_assessment(_engine(subjects[1].subject_token, EngineTier.T3), subjects[1])
-            persist_assessment(
-                _engine(subjects[2].subject_token, EngineTier.T4, acute=True), subjects[2]
-            )
+        demo = populate_demo(subjects, company=units["company"], consent_text=text)
+        _ensure_demo_flags(subjects)
         self.stdout.write(
             self.style.SUCCESS(
-                f"seeded {len(subjects)} subjects; personnel token {subjects[0].subject_token}"
+                f"seeded {len(subjects)} subjects / {demo['checkins']} check-ins; "
+                f"personnel token {subjects[0].subject_token}"
             )
         )
 
@@ -162,12 +160,30 @@ def _grant_all(subject: Subject, text: ConsentTextVersion) -> None:
         )
 
 
+def _ensure_demo_flags(subjects: list[Subject]) -> None:
+    """Keep T2 / T3 / T4 on the first three people so every officer desk has work."""
+    specs = (
+        (subjects[0], EngineTier.T2, False),
+        (subjects[1], EngineTier.T3, False),
+        (subjects[2], EngineTier.T4, True),
+    )
+    open_statuses = {CaseStatus.OPEN, CaseStatus.CONTACTED, CaseStatus.CONTESTED}
+    for subject, tier, acute in specs:
+        already = Case.objects.filter(
+            subject_token=subject.subject_token, status__in=open_statuses
+        ).exists()
+        if already:
+            continue
+        persist_assessment(_engine(subject.subject_token, tier, acute=acute), subject)
+
+
 def _engine(token: str, tier: EngineTier, *, acute: bool = False) -> RiskAssessment:
     categories = ("workload_and_duty", "leave_and_time_off")
     return RiskAssessment(
         subject_token=token,
         assessed_at=timezone.now(),
         tier=tier,
+        tier_before_hysteresis=tier,
         contributing_categories=categories,
         contributing_domains=tuple(
             domain for domain, name in DOMAIN_CATEGORY.items() if name in categories

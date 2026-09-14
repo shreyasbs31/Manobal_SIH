@@ -54,6 +54,16 @@ export function Wdec({ session }: Props) {
     }
   }
 
+  async function review(id: number) {
+    try {
+      await api.reviewBreakGlass(id);
+      setError("");
+      await refresh();
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : "could not close this review");
+    }
+  }
+
   async function approve(id: number) {
     try {
       await api.approveRuleset(id, false);
@@ -86,6 +96,7 @@ export function Wdec({ session }: Props) {
                 <th>Grant</th>
                 <th>Officer</th>
                 <th>Justification</th>
+                <th>Review</th>
               </tr>
             </thead>
             <tbody>
@@ -94,6 +105,11 @@ export function Wdec({ session }: Props) {
                   <td>{row.id}</td>
                   <td>{row.grantee_id}</td>
                   <td>{row.justification}</td>
+                  <td>
+                    <button type="button" className="ghost" onClick={() => void review(row.id)}>
+                      Mark reviewed
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -8,6 +8,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from manobal_core.agent.cloud import llm_api_key
 from manobal_core.apps.authz.local_issuer import mint_token, public_jwk
 from manobal_core.apps.governance.enums import Role, Tier
 from manobal_core.apps.governance.models import Case, Subject
@@ -64,5 +65,13 @@ class DevSeedInfoView(APIView):
                 "personnel_token": subject.subject_token if subject else "tok_seed_0000",
                 "officer_id": "officer-001",
                 "unit_code": subject.unit_id if subject else "12BN_A",
+                "llm_configured": bool(llm_api_key()),
+                "walkthrough": [
+                    "Personnel: check-in, helplines vs SOS, talk, journal, trends.",
+                    "Officer: assigned T2/T3/T4 cases — category names only.",
+                    "Medical: clinical queue after a referral.",
+                    "Commander: unit band for 12BN_A. No tokens.",
+                    "WDEC: audit, fairness, break-glass review.",
+                ],
             }
         )

@@ -15,7 +15,7 @@ RULESET := rulesets/manobal-ruleset-1.0.0.yaml
 .DEFAULT_GOAL := help
 .PHONY: help venv install lint format typecheck test test-risk coverage gates \
         ruleset-keygen ruleset-sign ruleset-verify ruleset-show clean \
-        migrate seed dev test-web test-mobile
+        migrate seed demo dev test-web test-mobile mobile
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -103,10 +103,14 @@ db-extensions: ## Apply TimescaleDB/pgvector where available (unlocks bio + voic
 	@/opt/homebrew/opt/postgresql@16/bin/psql -p 55432 -d postgres \
 		-v ON_ERROR_STOP=1 -f packages/manobal-infra/postgres/analytics-extensions.sql
 
-.PHONY: db-up db-down db-reset db-status db-extensions migrate seed load-synth dev test-web test-mobile
+.PHONY: db-up db-down db-reset db-status db-extensions migrate seed load-synth dev test-web test-mobile mobile
 
 migrate: ## Apply Django migrations on both local clusters
 	$(PY) packages/manobal-core/manage.py migrate --noinput
+	$(PY) packages/manobal-core/manage.py migrate --database=org --noinput
+	$(PY) packages/manobal-core/manage.py migrate --database=psy --noinput
+	$(PY) packages/manobal-core/manage.py migrate --database=bio --noinput
+	$(PY) packages/manobal-core/manage.py migrate --database=voice --noinput
 	$(PY) packages/manobal-identity/manage.py migrate --noinput
 
 seed: ## Enrol the demonstration cohort in both zones
@@ -116,6 +120,16 @@ seed: ## Enrol the demonstration cohort in both zones
 load-synth: ## Load a tiny synthetic observation cohort into the analytics stores
 	$(PY) packages/manobal-core/manage.py load_synth --personnel 12 --days 60
 
+demo: migrate seed ## Refresh simulated cohort so every console has a walkable path
+	@echo
+	@echo "Demo data is loaded. Start the desks with:"
+	@echo "  .venv/bin/python packages/manobal-core/manage.py runserver 127.0.0.1:8000"
+	@echo "  (cd packages/manobal-web && npm run dev)"
+	@echo "Open http://127.0.0.1:5173"
+	@echo "Talk uses a cloud model when MANOBAL_LLM_API_KEY is set; otherwise a local listener."
+	@echo "Phone: .venv/bin/python packages/manobal-core/manage.py runserver 0.0.0.0:8000"
+	@echo "       (cd packages/manobal-mobile && npm start)"
+
 dev: ## Provision local stores, schema and seed data (SDD §8.2)
 	@chmod +x packages/manobal-infra/scripts/dev.sh
 	@packages/manobal-infra/scripts/dev.sh
@@ -123,5 +137,8 @@ dev: ## Provision local stores, schema and seed data (SDD §8.2)
 test-web: ## Zone 2 console unit tests
 	cd packages/manobal-web && npm test
 
-test-mobile: ## Zone 0 protocol tests
+test-mobile: ## Zone 0 protocol and client tests
 	cd packages/manobal-mobile && npm test
+
+mobile: ## Start the Expo personnel app (needs API on 0.0.0.0:8000)
+	cd packages/manobal-mobile && npm start

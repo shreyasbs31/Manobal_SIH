@@ -50,3 +50,85 @@ jobs:
           npm ci
           npm test
           npx tsc --noEmit
+
+  zone2-django:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: manobal_core
+          POSTGRES_PASSWORD: dev_only_not_a_secret
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U manobal_core -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      MANOBAL_DB_HOST: 127.0.0.1
+      MANOBAL_DB_PORT: "5432"
+      MANOBAL_DB_USER: manobal_core
+      MANOBAL_DB_PASSWORD: dev_only_not_a_secret
+      MANOBAL_DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Create the five analytics databases
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          for db in gov_store org_store psy_store bio_store voice_store; do
+            PGPASSWORD=dev_only_not_a_secret psql -h 127.0.0.1 -U manobal_core -d postgres \
+              -c "CREATE DATABASE ${db} OWNER manobal_core;"
+          done
+      - name: Install Zone 2
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/manobal-risk -e "packages/manobal-core[dev]"
+      - name: Django suite
+        run: >
+          pytest packages/manobal-core
+          --create-db -m "not integration and not slow"
+
+  zone3-django:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: manobal_identity
+          POSTGRES_PASSWORD: dev_only_not_a_secret
+          POSTGRES_DB: iam_vault
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U manobal_identity -d iam_vault"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      MANOBAL_IDENTITY_DB_HOST: 127.0.0.1
+      MANOBAL_IDENTITY_DB_PORT: "5432"
+      MANOBAL_IDENTITY_DB_USER: manobal_identity
+      MANOBAL_IDENTITY_DB_PASSWORD: dev_only_not_a_secret
+      MANOBAL_IDENTITY_DB_NAME: iam_vault
+      MANOBAL_IDENTITY_DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Zone 3
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "packages/manobal-identity[dev]"
+      - name: Enclave suite
+        run: >
+          pytest packages/manobal-identity/tests/enclave
+          -o DJANGO_SETTINGS_MODULE=manobal_identity.settings.test
+          -p no:cacheprovider --create-db

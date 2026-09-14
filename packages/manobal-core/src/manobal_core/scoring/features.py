@@ -64,13 +64,15 @@ def assemble_history(subject_token: str, *, as_of: date | None = None) -> Subjec
         observations.extend(_voice(subject_token, day))
     if Domain.ENGAGEMENT in domains:
         observations.extend(_engagement(subject_token, day))
+    previous = _previous_tier(subject_token)
     return SubjectHistory(
         subject_token=subject_token,
         as_of=day,
         observations=tuple(observations),
         consented_domains=domains,
         acute_triggers=_acute(subject_token),
-        previous_tier=_previous_tier(subject_token),
+        previous_tier=previous,
+        consecutive_lower_cycles=_consecutive_lower_cycles(subject_token, previous),
     )
 
 
@@ -109,7 +111,10 @@ def _self_report(token: str, day: date) -> list[Observation]:
     for checkin in checkins:
         if checkin.mood is not None:
             out.append(Observation("ema_mood", checkin.observed_on, float(checkin.mood)))
-        if checkin.stress is not None:
+        fatigue = getattr(checkin, "fatigue", None)
+        if fatigue is not None:
+            out.append(Observation("ema_fatigue", checkin.observed_on, float(fatigue)))
+        elif checkin.stress is not None:
             out.append(Observation("ema_fatigue", checkin.observed_on, float(checkin.stress)))
         if checkin.sleep_quality is not None:
             out.append(
@@ -167,3 +172,24 @@ def _previous_tier(token: str) -> EngineTier:
         return EngineTier.T0
     stored = Tier(record.tier)
     return EngineTier[stored]
+
+
+def _consecutive_lower_cycles(token: str, held: EngineTier) -> int:
+    """Count trailing nights whose gated tier sat below the held final tier.
+
+    ``pre_gate_tier`` is the corroboration-gated tier from the previous run.
+    Hysteresis holds a falling result until this count reaches two (FR-3.5).
+    """
+    if held is EngineTier.T0:
+        return 0
+    count = 0
+    records = RiskAssessmentRecord.objects.filter(subject_token=token).order_by(
+        "-assessed_at", "-id"
+    )
+    for record in records:
+        gated = EngineTier[Tier(record.pre_gate_tier)]
+        if gated < held:
+            count += 1
+            continue
+        break
+    return count

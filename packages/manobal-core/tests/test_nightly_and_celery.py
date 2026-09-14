@@ -75,3 +75,9 @@ def test_beat_schedule_covers_scoring_escalation_and_erasure() -> None:
     assert "escalate-unacked-t4" in names
     assert "resume-erasures" in names
     assert "purge-separated" in names
+    assert "resurface-sla-breaches" in names
+    assert "purge-raw-retention" in names
+    assert "nightly-hrms-pull" in names
+    nightly = celery_app.conf.beat_schedule["nightly-score"]["schedule"]
+    assert 2 in nightly.hour
+    assert 0 in nightly.minute

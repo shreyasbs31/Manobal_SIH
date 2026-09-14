@@ -88,7 +88,7 @@ def persist_assessment(engine: RiskAssessment, subject: Subject) -> PersistResul
             domains_present=_covered_names(engine),
             coverage=_participation(engine),
             acute_override=engine.acute_override,
-            pre_gate_tier=to_stored(engine.tier),
+            pre_gate_tier=to_stored(engine.tier_before_hysteresis),
         )
         if previous is not None:
             RiskAssessmentRecord.objects.filter(pk=previous.pk).update(superseded_by=record)

@@ -64,6 +64,7 @@ from manobal_core.apps.governance.models import (
 )
 from manobal_core.ingest.identity import get_identity
 from manobal_core.ingest.pipeline import ingest_hrms_batch
+from manobal_core.insights.briefing import officer_briefing, officer_headline
 from manobal_core.observability.logging import request_id_var
 
 
@@ -241,14 +242,25 @@ class MeAssessmentView(APIView):
             outcome="success",
             subject_token=token,
         )
+        subject = Subject.objects.filter(subject_token=token).first()
+        offer = {}
+        if subject is not None:
+            from manobal_core.ingest.incidents import offer_checkin_for
+
+            offer = offer_checkin_for(subject)
         if record is None:
-            return Response({"tier": None, "contributing_categories": []})
+            return Response({"tier": None, "contributing_categories": [], "why": [], **offer})
+        from manobal_core.scoring.explain import why_flagged
+
+        categories = list(record.contributing_categories)
         return Response(
             {
                 "tier": record.tier,
-                "contributing_categories": record.contributing_categories,
+                "contributing_categories": categories,
+                "why": why_flagged(categories),
                 "assessed_at": record.assessed_at.isoformat(),
                 "acute_override": record.acute_override,
+                **offer,
             }
         )
 
@@ -470,6 +482,34 @@ class WdecBreakGlassView(APIView):
         )
 
 
+class WdecBreakGlassReviewView(APIView):
+    permission_classes = [IsWDECAuditor]  # noqa: RUF012
+
+    def post(self, request: Request, grant_id: int) -> Response:
+        principal = _actor(request)
+        grant = AccessGrant.objects.filter(pk=grant_id, break_glass=True).first()
+        if grant is None:
+            raise NotFound("MB-4040: not found")
+        if grant.wdec_reviewed_at is None:
+            AccessGrant.objects.filter(pk=grant.pk).update(wdec_reviewed_at=timezone.now())
+            grant.refresh_from_db()
+        _audit(
+            principal,
+            action=AuditAction.ADMIN_ACTION,
+            purpose=PurposeCode.OVERSIGHT_AUDIT,
+            basis=LegalBasis.LEGAL_OBLIGATION,
+            outcome="success",
+            subject_token=grant.subject_token,
+            detail={"event": "break_glass.reviewed", "grant_id": grant.id},
+        )
+        return Response(
+            {
+                "id": grant.id,
+                "wdec_reviewed_at": grant.wdec_reviewed_at.isoformat(),
+            }
+        )
+
+
 class IngestHrmsView(APIView):
     permission_classes = [IsIntegration]  # noqa: RUF012
 
@@ -605,11 +645,13 @@ def _case_flag_decision(principal: Principal, case: Case) -> Decision:
 
 
 def _case_summary(case: Case) -> dict[str, object]:
+    categories = list(case.contributing_categories or [])
     return {
         "id": case.id,
         "subject_token": case.subject_token,
         "tier": case.tier_at_open,
-        "contributing_categories": case.contributing_categories,
+        "contributing_categories": categories,
+        "headline": officer_headline(str(case.tier_at_open), categories),
         "status": case.status,
         "sla_due_at": case.sla_due_at.isoformat(),
         "opened_at": case.opened_at.isoformat(),
@@ -617,6 +659,15 @@ def _case_summary(case: Case) -> dict[str, object]:
 
 
 def _case_detail(case: Case) -> dict[str, object]:
+    recs = [
+        {
+            "code": row.code,
+            "rationale": row.rationale,
+            "priority": row.priority,
+            "accepted": row.accepted,
+        }
+        for row in case.recommendations.all()
+    ]
     body = _case_summary(case)
     body.update(
         {
@@ -628,15 +679,12 @@ def _case_detail(case: Case) -> dict[str, object]:
             "officer_rationale": case.officer_rationale,
             "contested_at": case.contested_at.isoformat() if case.contested_at else None,
             "contest_note": case.contest_note,
-            "recommendations": [
-                {
-                    "code": row.code,
-                    "rationale": row.rationale,
-                    "priority": row.priority,
-                    "accepted": row.accepted,
-                }
-                for row in case.recommendations.all()
-            ],
+            "recommendations": recs,
+            "briefing": officer_briefing(
+                tier=str(case.tier_at_open),
+                categories=list(case.contributing_categories or []),
+                recommendations=recs,
+            ),
         }
     )
     return body

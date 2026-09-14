@@ -17,7 +17,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from manobal_core.alerting.bodies import assert_minimised, lock_screen_body
-from manobal_core.alerting.transport import AlertTransport, InProcessTransport, apply_send
+from manobal_core.alerting.transport import AlertTransport, apply_send, configured_transport
 from manobal_core.apps.governance.enums import (
     AlertChannel,
     AuditAction,
@@ -45,6 +45,7 @@ def dispatch_for_case(
     assessment: RiskAssessmentRecord | None = None,
     now: datetime | None = None,
     transport: AlertTransport | None = None,
+    reason: str = "open",
 ) -> list[AlertDispatch]:
     """Queue the tier-appropriate channels for ``case``. Idempotent within the week."""
     if case.assigned_officer_id is None:
@@ -53,7 +54,7 @@ def dispatch_for_case(
     if tier in {Tier.T0, Tier.T1}:
         return []
     moment = now or timezone.now()
-    carrier = transport or InProcessTransport()
+    carrier = transport or configured_transport()
     record = assessment or case.assessment
     body = lock_screen_body(tier)
     assert_minimised(body)
@@ -68,6 +69,7 @@ def dispatch_for_case(
             body=body,
             ruleset_version=record.ruleset_version,
             moment=moment,
+            reason=reason,
         )
         if row is None:
             continue
@@ -154,6 +156,7 @@ def _queue(
     body: str,
     ruleset_version: str,
     moment: datetime,
+    reason: str = "open",
 ) -> AlertDispatch | None:
     key = _dedupe_key(
         subject_token=case.subject_token,
@@ -162,6 +165,7 @@ def _queue(
         channel=channel,
         recipient_id=recipient_id,
         moment=moment,
+        reason=reason,
     )
     if AlertDispatch.objects.filter(dedupe_key=key).exists():
         return None
@@ -188,10 +192,13 @@ def _dedupe_key(
     channel: str,
     recipient_id: str,
     moment: datetime,
+    reason: str = "open",
 ) -> str:
     iso = moment.isocalendar()
     week = f"{iso.year}-W{iso.week:02d}"
-    material = "|".join((subject_token, str(tier), ruleset_version, week, channel, recipient_id))
+    material = "|".join(
+        (subject_token, str(tier), ruleset_version, week, channel, recipient_id, reason)
+    )
     return hashlib.sha256(material.encode()).hexdigest()
 
 

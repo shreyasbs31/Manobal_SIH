@@ -51,6 +51,12 @@ class OfficerProfile(models.Model):
     #: Caseload ceiling. Beyond it, assignment moves to the next officer in the
     #: escalation ladder rather than deepening a queue nobody can work through.
     max_open_cases = models.PositiveSmallIntegerField(default=25)
+    #: Duty phone for T4 SMS. Never a subject's number. Empty until the officer
+    #: registers it; the transport then no-ops rather than guessing.
+    duty_phone_e164 = models.CharField(max_length=16, blank=True, default="")
+    #: FCM registration token for this officer's device. ``recipient_id`` on a
+    #: dispatch is the actor id, not a push token.
+    push_token = models.CharField(max_length=4096, blank=True, default="")
 
     class Meta:
         db_table = "officer_profile"
