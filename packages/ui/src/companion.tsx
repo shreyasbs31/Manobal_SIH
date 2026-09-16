@@ -57,9 +57,11 @@ export function SOSButton({ href = "/app/safety" }: { href?: string | undefined 
 export function CallPanel({
   peer,
   status,
+  joinLabel = "Join call",
 }: {
   peer: string;
   status: string;
+  joinLabel?: string | undefined;
 }) {
   return (
     <section className="mb-card mb-call">
@@ -67,7 +69,7 @@ export function CallPanel({
       <p>{status}</p>
       <div className="mb-action-row">
         <button className="mb-primary" type="button">
-          Join call
+          {joinLabel}
         </button>
         <button className="mb-secondary" type="button">
           Leave
