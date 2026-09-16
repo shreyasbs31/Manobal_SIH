@@ -118,3 +118,25 @@ Choices implied by the spec (recorded, not blocked):
 17. [x] Review loop on every Saathi screen at 360, 390, and 412 widths. Check: scores in `docs/UI_NOTES.md`; axe clean on Saathi routes after waiting for h1; screenshots in `e2e/artifacts/ui/p6-*.png`.
 
 End-of-prompt gate: Arjun, Meena, and Karthik show visibly different, explained home screens; 27.2 rows work after a first online open (encrypted queue, cached toolkit and safety, SMS SOS, lexicon, local nudges, snapshot trends, acute retry, resync drain, edge hold). Lighthouse on landing in next-dev: accessibility 100, performance 41; mobile 90+ needs a production build. `make test`, `make lint`, `copy-lint`, UI review loop passed.
+
+## Prompt 7: Consoles that make the right action obvious
+
+Officer consoles: Welfare, Counsellor, Medical, Command, and Force HQ. Identity never leaks to Command. Misuse (small-group simulation, individual Copilot questions) is refused with a useful aggregate.
+
+Choices implied by the spec (recorded, not blocked):
+- ACS is unset, so Counsellor join-call is a labelled demo join (31.1 scheduling fallback).
+- Identity reveal in the demo writes the in-memory access ledger so `/stage` can show the phone updating without a live vault database.
+- Copilot refuses Hindi and English individual questions, including "Charlie Coy mein kaun pareshan hai?", and answers with Charlie Coy banded share.
+- HQ monthly brief PDF is generated on the device as a small text PDF. No extra print service.
+- Console T3 and T4 chimes play on officer shells even when Saathi sound is off.
+
+1. [ ] Welfare Console (17.2) master-detail queue, J/K/Enter, T4 banner, digest and other tabs, case workspace with strip, levers, verified brief hovers, trend-share, identity reveal with purpose and contact-note, actions, outcomes, workload. Check: `/welfare` lists MB-4091 under High; J then Enter opens the case; reveal with purpose writes a ledger row for Arjun.
+2. [ ] Counsellor Desk (17.3) calendar, anonymous and named requests, ACS demo join, private notes, lever suggestion without notes, language-matched routing. Check: Hindi request routes to Anjali; suggest REST_48H returns lever code only; notes endpoint is counsel-scoped.
+3. [ ] Medical Desk (17.4) acute board, ladder, acknowledge, referrals, acute guide. Check: MB-6604 is T4; acknowledge updates status; referrals list has minimum context; guide has no suicide-risk score.
+4. [ ] Command Console (17.5) field-sheet posture, KPI strip, takeaway, side panel, Post D-7 hidden tile, roster balancer with small-group locks and draft order, leave pressure, unit climate, Copilot drawer with aggregate tools, Hindi and English suggestions, refusal. Check: Post D-7 is hatched; `/command/roster` locks n under 10; Copilot refuses "Charlie Coy mein kaun pareshan hai?" with a Charlie Coy aggregate.
+5. [ ] Force HQ (17.6) theatre comparison, schematic sector board, capacity vs demand, observational lever effectiveness, retention pressure, policy simulator, monthly brief with edit and PDF export. Check: brief edit saves; PDF download starts with `%PDF`; lever table is labelled observational.
+6. [ ] Officer personalisation (28.6) and officer personas (29.9). Check: Sunita profile has Hindi briefs and 08:00 digest; Anjali languages include Marathi; Menon Copilot language is Hindi.
+7. [ ] Sound and chimes for T3 and T4 on consoles. Check: welfare with a T4 case calls `chimeT4`; T3-only queue calls `chimeT3`.
+8. [ ] Review loop at 1280, 1440, and 1920 in Command dark and Command light. Check: scores in `docs/UI_NOTES.md`; screenshots in `e2e/artifacts/ui/p7-*.png`.
+
+End-of-prompt gate: Arjun flow on `/stage` updates the ledger; Post D-7 shows the hidden tile; Copilot refuses the Hindi individual question with a useful aggregate; HQ brief exports; `make test`, `make lint`, `copy-lint`, UI review loop.
