@@ -129,3 +129,21 @@ Section 9.5 decorative removals that still leave the screen working:
 - Me ledger on a 390 full-page shot is crossed by the fixed tab bar. In use the tabs stay at the bottom while the page scrolls.
 - Illustration kit is original line-art SVG. Image-model rasters failed the 2.6 single-weight rule (31.1 has no image-model row).
 - Review screenshots were taken against local `next dev` on port 3000. `make dev` is `compose --build` publishing 3000. The compose web container was stuck earlier in this session.
+
+## Prompt 4 live-data review
+
+Touched screens were walked with a signed-in session against a local engine on 8000. Layout, copy, and Direction v3 components are unchanged from Prompt 3. Scores stay at 4 or above. No new after-shots; the visual language did not change.
+
+| Screen | Live check | Notes |
+|---|---|---|
+| Saathi home | Arjun greeting and nudge from `GET /me/home` | Same ribbon and tiles. |
+| Check-in | Questions from `GET /me/check-in`; FaceScale advances | Live questions match the old three-step flow. |
+| Me | Consents from `GET /me/consents` | Ledger empty until an access row exists. |
+| Welfare queue | Unit-scoped `GET /welfare/queue` | Bn C-02 shows MB-4091 T3 only, not the old four-persona fixture mix. |
+| Case workspace | `GET /welfare/cases/MB-4091` | REST_48H still ranks first. |
+| Command | `GET /command/posture` | Takeaway and hidden cells unchanged; no case ids. |
+| Medical | `GET /medical/acute` | MB-6604 T4 after `POST /acute`. |
+| Governance | `GET /gov/kpis` | Same KPI copy. |
+| Gallery | fixtures | `/dev/components` still uses `@manobal/contracts` fixtures. |
+
+Welfare queue is thinner than the Prompt 3 fixture board because UWO Sunita only sees Bn C-02. That is the spec, not a Direction v3 miss.
