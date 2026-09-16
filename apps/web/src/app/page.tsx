@@ -1,4 +1,12 @@
-import { BaselineRibbonChart, PublicHeader } from "@manobal/ui";
+import { landingRibbon, psMapping } from "@manobal/contracts";
+import {
+  SceneBunkDawn,
+  SceneCircleSupport,
+  SceneEmptyPath,
+  SceneHighPost,
+  SceneInformalWalk,
+} from "@manobal/illustrations";
+import { BaselineRibbonChart, ContourTexture, PublicHeader } from "@manobal/ui";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -29,43 +37,37 @@ const stats = [
   },
 ] as const;
 
-const phoneRoles = [
+const doors = [
   {
     href: "/login?role=personnel",
-    title: "Saathi on a phone",
-    detail: "Private check-in, voice companion, toolkit, and rights. This is a PWA at /app, not a native Expo build.",
+    title: "Personnel",
+    detail: "Private check-in and a companion on the phone",
+    Scene: SceneBunkDawn,
   },
-] as const;
-
-const deskRoles = [
-  ["/login?role=uwo", "Welfare officer", "Cases ordered by due time, never by a score"],
-  ["/login?role=mo", "Medical officer", "Acute board with a live timer that cannot be switched off"],
-  ["/login?role=commander", "Commander", "Unit posture only. No names, no drill-down to a person"],
-  ["/login?role=hq", "Force HQ", "Theatre comparison, still grouped"],
-  ["/login?role=wdec", "Governance", "Fairness, audit chain, and independent controls"],
-] as const;
-
-const mapping = [
-  ["Personnel Wellness Monitoring Dashboard", "Welfare Console, Command Console, Force HQ"],
-  ["Mobile-based Wellness and Self-Assessment Application", "Saathi PWA"],
-  ["Predictive Behavioral Analytics Engine", "Engine baselines, regimes, CUSUM, Validation Lab"],
-  ["Stress and Burnout Risk Prediction Models", "14-day forecast with calibration and drivers; CBI burnout domain"],
-  ["Welfare Intervention Recommendation System", "Lever library, ranking, closed loop, JITAI"],
-  ["Role-based Access Control and Privacy Management Framework", "Roles, grants, vault, Rights Centre, DPO Centre, Trust Centre"],
-  ["Automated Alerts for authorized welfare personnel", "Tiered alerts, escalation ladder, acute path"],
-  ["Data anonymization and secure storage mechanisms", "Tokenisation, envelope encryption, k-anonymity, audit chain"],
-  ["Secure integration with HRMS", "Integration Console"],
-] as const;
-
-const ribbon = [
-  { day: 1, value: 3.1 },
-  { day: 12, value: 3.0 },
-  { day: 24, value: 3.3 },
-  { day: 36, value: 3.2 },
-  { day: 48, value: 4.1 },
-  { day: 60, value: 5.2 },
-  { day: 72, value: 5.8 },
-  { day: 84, value: 5.4 },
+  {
+    href: "/login?role=uwo",
+    title: "Welfare officer",
+    detail: "Cases ordered by due time, never by a score",
+    Scene: SceneInformalWalk,
+  },
+  {
+    href: "/login?role=commander",
+    title: "Commander",
+    detail: "Unit posture only. No names.",
+    Scene: SceneHighPost,
+  },
+  {
+    href: "/login?role=wdec",
+    title: "Ethics cell",
+    detail: "Fairness, audit chain, independent controls",
+    Scene: SceneCircleSupport,
+  },
+  {
+    href: "/architecture",
+    title: "More",
+    detail: "How the zones stay apart",
+    Scene: SceneEmptyPath,
+  },
 ] as const;
 
 export default function LandingPage() {
@@ -73,15 +75,29 @@ export default function LandingPage() {
     <div className="mb-theme mb-landing" data-skin="saathi" data-theme="light">
       <PublicHeader mode={manobalMode()} />
       <section className="mb-landing-hero">
-        <p className="mb-landing-kicker">Predictive welfare support for CAPF personnel</p>
-        <p className="mb-promise">Support, not surveillance</p>
-        <h1>A private companion on the phone. Protected group insight on the desk.</h1>
-        <p>
-          MANOBAL helps a person check in in their own language, helps authorised
-          welfare teams act early, and shows commanders only what a small group can
-          safely show.
-        </p>
-        <BaselineRibbonChart label="The ribbon is a person versus their own usual range" values={ribbon} />
+        <h1>
+          Every jawan has a usual rhythm. MANOBAL notices when it changes, and makes sure
+          the right person helps.
+        </h1>
+        <div className="mb-landing-hero-ribbon">
+          <ContourTexture height={200} seed="landing" width={1200} />
+          <BaselineRibbonChart
+            label="A person versus their own usual range"
+            takeaway="The line can leave the band. A quiet marker appears. Then it can return."
+            values={landingRibbon}
+            variant="hero"
+          />
+        </div>
+        <p className="mb-landing-promise">Support, not surveillance.</p>
+        <nav aria-label="Role doors" className="mb-roles">
+          {doors.map((door) => (
+            <Link className="mb-role" href={door.href} key={door.href}>
+              <door.Scene />
+              <strong>{door.title}</strong>
+              <span>{door.detail}</span>
+            </Link>
+          ))}
+        </nav>
         <div className="mb-stats">
           {stats.map((stat) => (
             <article className="mb-stat" key={stat.figure}>
@@ -93,37 +109,25 @@ export default function LandingPage() {
             </article>
           ))}
         </div>
-        <div className="mb-action-row">
-          <Link className="mb-primary" href="/app">
-            Open Saathi
-          </Link>
-          <Link className="mb-secondary" href="/stage?phone=/app&console=/command">
-            View phone and console together
-          </Link>
-        </div>
-        <div className="mb-roles">
-          {phoneRoles.map((role) => (
-            <Link className="mb-role" href={role.href} key={role.href}>
-              <strong>{role.title}</strong>
-              <span>{role.detail}</span>
-            </Link>
-          ))}
-          {deskRoles.map(([href, title, detail]) => (
-            <Link className="mb-role" href={href} key={href}>
-              <strong>{title}</strong>
-              <span>{detail}</span>
-            </Link>
-          ))}
-        </div>
       </section>
       <section className="mb-mapping">
         <h2>How the problem statement maps to screens</h2>
-        {mapping.map(([component, where]) => (
-          <div className="mb-map-row" key={component}>
-            <strong>{component}</strong>
-            <span>{where}</span>
-          </div>
-        ))}
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">PS component</th>
+              <th scope="col">Where it is</th>
+            </tr>
+          </thead>
+          <tbody>
+            {psMapping.map(([component, where]) => (
+              <tr key={component}>
+                <th scope="row">{component}</th>
+                <td>{where}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
     </div>
   );
