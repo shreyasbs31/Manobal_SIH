@@ -6,10 +6,17 @@ import { roleForRoute, signIn } from "./session";
 const screens = [
   ["landing", "/"],
   ["home", "/app"],
+  ["onboarding", "/app/onboarding"],
   ["check-in", "/app/check-in"],
   ["saathi", "/app/saathi"],
   ["safety", "/app/safety"],
   ["breathing", "/app/toolkit/breathe"],
+  ["toolkit", "/app/toolkit"],
+  ["assessments", "/app/assessments"],
+  ["rest", "/app/rest"],
+  ["talk", "/app/talk"],
+  ["buddy", "/app/buddy"],
+  ["plan", "/app/plan"],
   ["me", "/app/me"],
   ["welfare", "/welfare"],
   ["case", "/welfare/cases/MB-4091"],
@@ -29,6 +36,7 @@ for (const [slug, route] of screens) {
       await signIn(page, session.role, session.persona);
     }
     await page.goto(route, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 45_000 });
     const builder = new AxeBuilder({ page });
     if (slug === "stage") {
       await page.setViewportSize({ width: 1920, height: 1080 });

@@ -101,9 +101,12 @@ export function SaathiShell({
             {shiftLine ? <p className="mb-saathi-shift">{shiftLine}</p> : null}
           </div>
         ) : (
-          <a aria-label="Close" className="mb-ghost mb-flow-close" href="/app">
-            x
-          </a>
+          <>
+            <h1 className="mb-sr-only">Saathi</h1>
+            <a aria-label="Close" className="mb-ghost mb-flow-close" href="/app">
+              x
+            </a>
+          </>
         )}
         {chrome === "full" ? <SOSButton href="/app/safety" /> : null}
         {showTabs ? (
