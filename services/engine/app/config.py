@@ -61,6 +61,30 @@ class Settings(BaseSettings):
     )
     blob_container: str = "audit-anchors"
 
+    foundry_endpoint: str = ""
+    ai_deployment_main: str = "main"
+    ai_deployment_fast: str = "fast"
+    ai_deployment_open: str = "open"
+    ai_deployment_embed: str = "embed"
+    ai_deployment_alt: str = ""
+    xai_api_key: SecretStr = SecretStr("")
+    sovereign_llm_base_url: str = ""
+    content_safety_endpoint: str = ""
+    content_safety_key: SecretStr = SecretStr("")
+    translator_endpoint: str = ""
+    translator_region: str = ""
+    translator_key: SecretStr = SecretStr("")
+    speech_region: str = ""
+    speech_endpoint: str = ""
+    speech_key: SecretStr = SecretStr("")
+    deepgram_api_key: SecretStr = SecretStr("")
+    dg_stt_model_en: str = "nova-3"
+    dg_stt_model_hi: str = "nova-3"
+    dg_tts_voice_en: str = "flux-meena-en"
+    az_tts_voice_hi: str = "hi-IN-SwaraNeural"
+    az_tts_voice_hinglish: str = "hi-IN-AaravNeural"
+    resilience_mode: bool = False
+
 
 @lru_cache
 def get_settings() -> Settings:

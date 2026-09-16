@@ -1,0 +1,84 @@
+# Voice names and STT models. Verify against provider docs at setup.
+stt:
+  en:
+    provider: deepgram
+    model: nova-3
+    language: en
+    end_of_turn: flux
+  hi:
+    provider: deepgram
+    model: nova-3
+    language: hi
+    keyterms: true
+  hi-Latn:
+    provider: deepgram
+    model: nova-3
+    language: multi
+    keyterms: true
+    transliterate: true
+  ta:
+    provider: azure
+    locale: ta-IN
+  bn:
+    provider: azure
+    locale: bn-IN
+  te:
+    provider: azure
+    locale: te-IN
+  mr:
+    provider: azure
+    locale: mr-IN
+  kn:
+    provider: azure
+    locale: kn-IN
+  ml:
+    provider: azure
+    locale: ml-IN
+  gu:
+    provider: azure
+    locale: gu-IN
+  pa:
+    provider: azure
+    locale: pa-IN
+  or:
+    provider: azure
+    locale: or-IN
+  as:
+    provider: azure
+    locale: as-IN
+  ur:
+    provider: azure
+    locale: ur-IN
+
+tts:
+  en:
+    provider: deepgram
+    voice: flux-meena-en
+    fallback: en-IN-NeerjaNeural
+  hi:
+    provider: azure
+    voice: hi-IN-SwaraNeural
+    style: empathetic
+    fallback: hi-IN-MadhurNeural
+  hi-Latn:
+    provider: azure
+    voice: hi-IN-AaravNeural
+  ta:
+    provider: azure
+    voice: ta-IN-PallaviNeural
+
+keyterms:
+  - MANOBAL
+  - Saathi
+  - roster
+  - duty
+  - chutti
+  - EL
+  - CL
+  - company
+  - platoon
+  - post
+  - battalion
+  - welfare officer
+  - counsellor
+  - Tele-MANAS

@@ -1,0 +1,95 @@
+# Model class to Foundry deployment name. IDs stay in config, never in code.
+classes:
+  main: ${AI_DEPLOYMENT_MAIN}
+  fast: ${AI_DEPLOYMENT_FAST}
+  open: ${AI_DEPLOYMENT_OPEN}
+  embeddings: ${AI_DEPLOYMENT_EMBED}
+  alt: ${AI_DEPLOYMENT_ALT}
+
+capabilities:
+  companion_text:
+    ordered: [open, main]
+    timeout_s: 8.0
+  companion_voice:
+    ordered: [fast, open]
+    timeout_s: 3.0
+  crisis_classify:
+    ordered: [fast, main]
+    timeout_s: 1.5
+    fail_safe: crisis
+  output_guard:
+    ordered: [fast, main]
+    timeout_s: 1.5
+    fail_safe: block
+  checkin_extract:
+    ordered: [fast, main]
+    timeout_s: 1.5
+  case_brief:
+    ordered: [main, open]
+    timeout_s: 8.0
+  brief_verify:
+    ordered: [fast, main]
+    timeout_s: 1.5
+  command_copilot:
+    ordered: [main, open]
+    timeout_s: 8.0
+  hq_brief:
+    ordered: [main, open]
+    timeout_s: 8.0
+  transparency_report:
+    ordered: [main, open, alt]
+    timeout_s: 8.0
+  grievance_triage:
+    ordered: [fast, main]
+    timeout_s: 1.5
+  embeddings:
+    ordered: [embeddings]
+    timeout_s: 8.0
+  translate:
+    ordered: [translator, main]
+    timeout_s: 4.0
+  stt_en:
+    ordered: [deepgram_nova3_en, azure_speech]
+    timeout_s: 8.0
+  stt_hi:
+    ordered: [deepgram_nova3_hi, azure_speech]
+    timeout_s: 8.0
+  stt_multi:
+    ordered: [deepgram_nova3_multi, azure_speech]
+    timeout_s: 8.0
+  stt_other:
+    ordered: [azure_speech]
+    timeout_s: 8.0
+  tts_en:
+    ordered: [deepgram_flux_en, azure_en_in]
+    timeout_s: 0.8
+  tts_hi:
+    ordered: [azure_hi, azure_hi_madhur]
+    timeout_s: 0.8
+  tts_hinglish:
+    ordered: [azure_hi_bilingual, azure_hi]
+    timeout_s: 0.8
+  tts_other:
+    ordered: [azure_neural]
+    timeout_s: 0.8
+  content_safety:
+    ordered: [azure_content_safety]
+    timeout_s: 1.2
+  prompt_shields:
+    ordered: [azure_prompt_shields]
+    timeout_s: 1.2
+
+personnel_or_safety_tasks:
+  - companion_turn
+  - companion_text
+  - companion_voice
+  - crisis_classify
+  - output_guard
+  - checkin_extract
+  - instrument_conversational
+  - grievance_triage
+
+circuit_breaker:
+  open_after_failures: 3
+  window_s: 60
+  half_open_after_s: 30

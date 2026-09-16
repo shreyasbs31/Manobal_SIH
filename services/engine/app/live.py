@@ -10,6 +10,7 @@ from .acute import AcuteRequest, AcuteResponse
 from .audio import generate_audio, manifest, sw_cache_list
 from .auth import PERSONAS, Principal
 from .cases import CASES, acknowledge, digest_items, open_case, queue_items, remaining_ratio
+from .config import get_settings
 from .errors import ApiError
 from .incident import (
     IncidentWebhook,
@@ -701,6 +702,40 @@ async def admin_audio_generate(
 ) -> dict[str, object]:
     del principal
     return generate_audio()
+
+
+@router.get("/gov/providers")
+async def gov_providers(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    from .providers.router import PROVIDER_CALLS, get_router
+
+    router = get_router()
+    return {
+        "capabilities": {name: router.ordered(name) for name in router.config["capabilities"]},
+        "calls": [
+            {
+                "capability": item.capability,
+                "provider": item.provider,
+                "latency_ms": item.latency_ms,
+                "ok": item.ok,
+                "cached": item.cached,
+            }
+            for item in PROVIDER_CALLS[-50:]
+        ],
+        "foundry_configured": bool(get_settings().foundry_endpoint),
+    }
+
+
+@router.post("/demo/warmup")
+async def demo_warmup(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, str]:
+    del principal
+    from .providers.router import get_router
+
+    return await get_router().warmup()
 
 
 @router.post("/demo/seed-ready")

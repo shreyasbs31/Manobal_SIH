@@ -60,3 +60,29 @@ Choices implied by the spec (recorded, not blocked):
 12. [x] Tests: 23.1 engine-core coverage gate and 23.2 privacy suite as CI. Check: `make test` runs both; scoring/privacy modules meet the 90% coverage bar on those modules.
 
 End-of-prompt gate: `make seed` under 3 minutes; eight personas match spec 5.3; `POST /acute` T4+alerts under 2 s; privacy suite green; Prompt 3 screens show live data; `make test`, `make lint`, `copy-lint`, UI review loop.
+
+## Prompt 5: Safe bilingual companion and officer AI
+
+Ship the provider router, signed AI gateway, fail-safe companion pipeline, voice cascade, RAG corpus, and recorded evals.
+
+Choices implied by the spec (recorded, not blocked):
+- Engine modules stay under `app/` (`app/providers/router.py` is spec `services/engine/providers/router.py`).
+- Foundry classes map from `infra/ai/providers.yaml`. `alt` is never selected for companion, crisis, guards, check-in, or grievance tasks.
+- When Foundry, Deepgram, Speech, Translator, or Content Safety env vars are empty, use the 31.1 fallbacks: local scripted model plus resilience cache; hash embeddings (Voyage is the named embed fallback and is also unset); Content Safety and Prompt Shields abstain; STT accepts fixture or client-final transcripts; TTS uses the silent-WAV first-byte path already used for pre-rendered audio.
+- Classifier timeout or error still returns crisis. A missing Foundry deployment is not treated as a classifier error; a local heuristic classifier runs so non-crisis turns can complete.
+- Hindi and Hinglish companion routing defaults to `main` unless the recorded eval gate records `open` as a match. English may use `open` when the recorded gate passes.
+- Browser lexicon is the same `infra/lexicon/phrases.json` file the engine loads (copied into the web bundle).
+- P2 on-device preview is capability-gated (WebGPU). Hindi stays on the structured offline flow.
+
+1. [x] Provider router (spec 3.3): ordered lists per capability, timeouts, circuit breakers, fallbacks, `provider_call` metrics, resilience-mode cache, warm-up endpoint, managed-identity Foundry path. Check: `PYTHONPATH=services/engine uv run pytest services/engine/tests/test_providers.py` covers timeout, open-after-3-failures, classifier fail-safe, alt blocked on personnel tasks, cache hit by `(beat_id, language)`, warm-up status. Fallback: Foundry/Deepgram/Speech unset, local handlers plus `fallback` on warm-up (31.1).
+2. [ ] AI gateway (12.1) and every task in 12.2; signed prompt files; `brief_verify` enforced; dash removal on outputs. Check: tests load and verify each prompt signature; `brief_verify` rejects an unsupported sentence; U+2014 and U+2013 in a draft become commas; kill switches `agent`, `voice`, `copilot`, `briefs` skip those tasks.
+3. [ ] Companion pipeline exactly 12.3: sanitiser, browser and server lexicon, fast crisis classifier, Content Safety self-harm, Prompt Shields, mode router, companion, output guard; any positive or any error to acute with no model reply. Check: typed Hinglish distress never sets `model_reached`; injection refuses without acute; sanitiser strips role tokens and caps 1000 chars.
+4. [ ] Companion prompt from 12.4, tools, Things Saathi remembers (28.4) only when opted in. Check: tools are the five named ones and cannot open cases; remembers omitted when opt-in is off; Hindi replies use aap in the local companion path.
+5. [ ] Corpus (12.5): 25 to 30 documents in English and Hindi, chunked, embedded, ask mode cites chunk ids. Check: corpus count 25-30 per language; ask with an in-corpus question returns chunk ids; ask outside the corpus offers a person and does not improvise.
+6. [ ] Transliteration of Latin-script Hindi before gating. Check: `main jeena nahi chahta` transliterates then hits the lexicon; gating is not skipped when Translator is unset (local map fallback, 31.1).
+7. [ ] Voice (13): AudioWorklet 16 kHz PCM, VAD and push-to-talk, `WS /voice/session`, STT/TTS routing from config, sentence streaming, barge-in, latency marks, opensmile-or-numpy eGeMAPS in memory with zeroisation and `audio.cleared`. Check: en, hi, ta fixture turns finish with first audio under 1.8 s; barge-in cancels pending TTS; buffer is zeros after `audio.cleared`.
+8. [ ] Wire VoiceContour to real input and output amplitude; captions; prototype hosting caption (27.5). Check: Saathi voice page uses live amplitude and captions; caption text is `Prototype: open-weight model hosted on Azure. Deployable on force servers.`
+9. [ ] Evals (23.3): 120 companion cases, Copilot refusal suite, brief suite, recorded en/hi/hi-Latn/ta fixtures, routing gate written to the model registry. Check: crisis recall 100% on the suite; 30 individual Copilot questions refused; routing decision present in `GET /gov/models`; `make eval` is a CI gate.
+10. [ ] Optional P2 on-device preview (27.3) behind a capability check. Check: UI offers On-device preview only after WebGPU passes; Hindi is not offered that path.
+
+End-of-prompt gate: English, Hindi, and Tamil voice check-ins within the 13.3 budget; typed and spoken Hinglish distress never reaches the model and opens the acute path; eval crisis recall 100%; routing decision in the model registry; `make test`, `make lint`, `copy-lint`, UI review loop.
