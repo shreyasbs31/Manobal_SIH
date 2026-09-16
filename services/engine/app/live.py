@@ -46,6 +46,7 @@ from .officers import (
     unit_climate,
     welfare_tabs,
 )
+from .personnel import build_home, checkin_config
 from .privacy.kanon import simulator_allows
 from .privacy.rights import (
     KILLSWITCHES,
