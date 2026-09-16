@@ -1,0 +1,46 @@
+en:
+  consecutive_duty_days: Long stretch without a rest day
+  duty_hours_7d: Duty hours have been high this week
+  duty_hours_28d: Duty hours have been high this month
+  night_shift_ratio_28d: Night duty share is higher than usual
+  roster_volatility_28d: Shift times have been jumping around
+  rest_denials_28d: Planned rest days were cancelled
+  quick_returns_14d: Next shift started too soon after the last
+  days_since_last_leave: It has been a long time since leave
+  leave_rejections_90d: Leave requests not approved recently
+  family_separation_days: Time away from family has run long
+  grievance_open_age_max: A concern has been pending for a long time
+  sleep_minutes_7d: Less sleep than usual
+  sleep_efficiency_7d: Sleep has been more broken than usual
+  hrv_rmssd_7d: Recovery markers are lower than usual
+  resting_hr_7d: Resting heart rate is higher than usual
+  ema_mood_7d: Mood check-ins have been lower than usual
+  ema_energy_7d: Energy check-ins have been lower than usual
+  pss10: Stress check-ins have been higher than usual
+  cbi_personal: Burnout check-ins have been higher than usual
+  checkin_completion_14d: Check-ins have been thinning
+  voice_mahalanobis: Voice pattern has shifted from the personal baseline
+  duty_swap_rate_delta: Duty swaps have been rising
+hi:
+  consecutive_duty_days: बिना आराम के लंबे ड्यूटी के दिन
+  duty_hours_7d: इस सप्ताह ड्यूटी के घंटे अधिक रहे
+  duty_hours_28d: इस महीने ड्यूटी के घंटे अधिक रहे
+  night_shift_ratio_28d: रात की ड्यूटी सामान्य से अधिक है
+  roster_volatility_28d: शिफ्ट का समय बार-बार बदल रहा है
+  rest_denials_28d: तय आराम के दिन रद्द हुए
+  quick_returns_14d: पिछली शिफ्ट के तुरंत बाद अगली शिफ्ट शुरू हुई
+  days_since_last_leave: छुट्टी को बहुत दिन हो गए
+  leave_rejections_90d: हाल की छुट्टी स्वीकृत नहीं हुई
+  family_separation_days: परिवार से दूर रहने का समय लंबा हो गया
+  grievance_open_age_max: एक चिंता लंबे समय से लंबित है
+  sleep_minutes_7d: नींद सामान्य से कम रही
+  sleep_efficiency_7d: नींद सामान्य से अधिक टूटी रही
+  hrv_rmssd_7d: रिकवरी के संकेत सामान्य से कम हैं
+  resting_hr_7d: आराम की नब्ज सामान्य से तेज है
+  ema_mood_7d: हाल के चेक-इन में मूड सामान्य से नीचे रहा
+  ema_energy_7d: ऊर्जा सामान्य से कम रही
+  pss10: तनाव के चेक-इन सामान्य से ऊपर रहे
+  cbi_personal: थकान के चेक-इन सामान्य से ऊपर रहे
+  checkin_completion_14d: चेक-इन कम होते गए
+  voice_mahalanobis: आवाज का पैटर्न व्यक्तिगत आधार से हटा है
+  duty_swap_rate_delta: ड्यूटी अदला-बदली बढ़ी है
