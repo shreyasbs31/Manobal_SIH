@@ -153,6 +153,23 @@ export class ManobalClient {
     return payload as TResponse;
   }
 
+  async requestBlob(path: string, signal?: AbortSignal): Promise<Blob> {
+    const headers = new Headers({ accept: "application/pdf" });
+    const token = this.getAccessToken();
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+    const init: RequestInit = { method: "GET", headers, cache: "no-store" };
+    if (signal) {
+      init.signal = signal;
+    }
+    const response = await fetch(new URL(path, this.baseUrl), init);
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    return response.blob();
+  }
+
   demoLogin(body: DemoLoginRequest): Promise<LoginResponse> {
     return this.request<LoginResponse, DemoLoginRequest>(
       "/api/v1/auth/demo-login",
@@ -423,6 +440,156 @@ export class ManobalClient {
 
   commandPosture(signal?: AbortSignal): Promise<CommandPosture> {
     return this.request("/api/v1/command/posture", { signal });
+  }
+
+  welfareTabs(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/welfare/tabs", { signal });
+  }
+
+  welfareReveal(
+    caseId: string,
+    body: { purpose_code: string; justification: string },
+  ): Promise<{
+    revealed: boolean;
+    grant_id: string;
+    contact_note_due: string;
+    notice: string;
+    card: Record<string, string | boolean>;
+  }> {
+    return this.request(`/api/v1/welfare/cases/${caseId}/reveal`, { method: "POST", body });
+  }
+
+  welfareContactNote(grantId: string, note: string): Promise<{ grant_id: string; status: string }> {
+    return this.request("/api/v1/welfare/contact-note", {
+      method: "POST",
+      body: { grant_id: grantId, note },
+    });
+  }
+
+  welfareAction(
+    caseId: string,
+    body: { mode: string; lever: string; outcome: string; follow_up: string; refer: string },
+  ): Promise<Record<string, string>> {
+    return this.request(`/api/v1/welfare/cases/${caseId}/action`, { method: "POST", body });
+  }
+
+  welfareTrendRequest(caseId: string, domain: string): Promise<Record<string, string>> {
+    return this.request(`/api/v1/welfare/cases/${caseId}/trend-request`, {
+      method: "POST",
+      body: { domain },
+    });
+  }
+
+  counselDesk(signal?: AbortSignal): Promise<{
+    calendar: string[];
+    requests: Record<string, string | null>[];
+    routing: { counsellor: string; languages: string[]; matched?: boolean };
+    acs: { demo_join: boolean; label: string };
+    notes_scope: string;
+  }> {
+    return this.request("/api/v1/counsel/desk", { signal });
+  }
+
+  counselNotes(sessionId: string, note: string): Promise<{ session_id: string; scope: string }> {
+    return this.request("/api/v1/counsel/notes", {
+      method: "POST",
+      body: { session_id: sessionId, note },
+    });
+  }
+
+  counselSuggest(
+    caseId: string,
+    lever: string,
+    sentence: string,
+  ): Promise<{ lever: string; notes_shared: boolean }> {
+    return this.request("/api/v1/counsel/suggest", {
+      method: "POST",
+      body: { case_id: caseId, lever, sentence },
+    });
+  }
+
+  medicalReferrals(signal?: AbortSignal): Promise<{
+    items: { from: string; case_id: string; context: string }[];
+    guide: { title: string; steps: string[]; note: string };
+  }> {
+    return this.request("/api/v1/medical/referrals", { signal });
+  }
+
+  commandRoster(signal?: AbortSignal): Promise<{
+    companies: {
+      id: string;
+      label: string;
+      n: number;
+      duty_hours: number;
+      rest_days: number;
+      night_share: number;
+      quick_return_cap: number;
+      leave_release: number;
+      locked: boolean;
+      lock_reason?: string;
+    }[];
+  }> {
+    return this.request("/api/v1/command/roster", { signal });
+  }
+
+  commandSimulate(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/command/simulate", { method: "POST", body });
+  }
+
+  commandDraft(body: Record<string, unknown>): Promise<{ title: string; body: string }> {
+    return this.request("/api/v1/command/draft-order", { method: "POST", body });
+  }
+
+  commandLeave(signal?: AbortSignal): Promise<{
+    copy: string;
+    companies: { label: string; backlog_days: number; longest_wait: string }[];
+    minimum_strength: string;
+  }> {
+    return this.request("/api/v1/command/leave", { signal });
+  }
+
+  commandClimate(signal?: AbortSignal): Promise<{
+    pulse: { week: string; heavy: string }[];
+    colleague_conflict: string;
+    grievances: { category: string; age: string }[];
+  }> {
+    return this.request("/api/v1/command/climate", { signal });
+  }
+
+  commandCopilot(
+    question: string,
+    lang = "en",
+  ): Promise<{
+    refuse: boolean;
+    answer: string;
+    chart_spec: { type: string; metric: string; value: string };
+    tools_used: string[];
+  }> {
+    return this.request("/api/v1/command/copilot", { method: "POST", body: { question, lang } });
+  }
+
+  hqOverview(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/hq/overview", { signal });
+  }
+
+  hqSaveBrief(body: string): Promise<{ title: string; body: string; edited: boolean }> {
+    return this.request("/api/v1/hq/brief", { method: "POST", body: { body } });
+  }
+
+  hqBriefPdf(signal?: AbortSignal): Promise<Blob> {
+    return this.requestBlob("/api/v1/hq/brief.pdf", signal);
+  }
+
+  hqSimulate(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/hq/simulate", { method: "POST", body });
+  }
+
+  officerProfile(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/officer/profile", { signal });
+  }
+
+  patchOfficerProfile(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/officer/profile", { method: "POST", body });
   }
 
   govOverview(signal?: AbortSignal): Promise<{

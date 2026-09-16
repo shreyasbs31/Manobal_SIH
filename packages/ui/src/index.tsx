@@ -82,9 +82,11 @@ export type { VoiceState } from "./voice-contour";
 export { MOTION, motionToOpacityOnly, useBreath, usePrefersReducedMotion } from "./motion";
 export {
   breathPulse,
+  chimeKindForQueue,
   chimeT3,
   chimeT4,
   hapticsEnabled,
+  playConsoleChime,
   setSoundEnabled,
   soundEnabled,
   tickCheckIn,

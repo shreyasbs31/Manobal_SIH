@@ -88,6 +88,9 @@ export function StageView({
         <Link className="mb-secondary" href="/director">
           Open director
         </Link>
+        <Link className="mb-secondary" href="/stage?phone=/app/me&console=/welfare/cases/MB-4091">
+          Arjun reveal plus ledger
+        </Link>
         <Link className="mb-secondary" href="/stage?phone=/app/saathi&console=/welfare">
           Companion plus queue
         </Link>

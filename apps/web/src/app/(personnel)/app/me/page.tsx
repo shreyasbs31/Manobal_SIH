@@ -14,7 +14,7 @@ import {
   ReceiptCard,
 } from "@manobal/ui";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
@@ -43,6 +43,23 @@ export default function MePage() {
   );
   const items = data?.consents.items ?? [];
   const checked = consents.length ? consents : items.map((item) => item.on);
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel("manobal-ledger");
+      channel.addEventListener("message", () => reloadRef.current());
+    } catch {
+      channel = null;
+    }
+    const timer = window.setInterval(() => reloadRef.current(), 2500);
+    return () => {
+      channel?.close();
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
@@ -93,9 +110,17 @@ export default function MePage() {
           ) : (
             data.ledger.items.map((item, index) => (
               <AccessLedgerItem
-                actor={item.actor_label ?? item.actor ?? "Officer"}
+                actor={
+                  item.action === "identity.viewed"
+                    ? (item.actor_label ?? "Welfare Officer, your unit, viewed your identity")
+                    : (item.actor_label ?? item.actor ?? "Officer")
+                }
                 key={`${item.action ?? "access"}-${index}`}
-                purpose={item.purpose_code ?? "Care"}
+                purpose={
+                  item.action === "identity.viewed"
+                    ? "Care contact"
+                    : (item.purpose_code ?? "Care")
+                }
                 when={item.at ?? ""}
               />
             ))

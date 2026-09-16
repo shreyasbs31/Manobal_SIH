@@ -134,27 +134,10 @@ def local_task_text(task: str, inputs: dict[str, Any], lang: str) -> str:
             f"First lever to consider is {lever} [lever]."
         )
     if task == "command_copilot":
-        question = str(inputs.get("question", "")).lower()
-        individual = any(
-            token in question
-            for token in ("who is", "token", "mb-", "this person", "named", "jawan", "constable")
-        )
-        if individual:
-            return json.dumps(
-                {
-                    "refuse": True,
-                    "answer": "I can only talk about unit totals, not a person.",
-                    "chart_spec": None,
-                }
-            )
-        aggregates = dict(inputs.get("aggregates") or {"share_t2": "20 to 30%"})
-        return json.dumps(
-            {
-                "refuse": False,
-                "answer": f"Unit share at T2 or above is {aggregates.get('share_t2', 'banded')}.",
-                "chart_spec": {"type": "ribbon", "metric": "share_t2"},
-            }
-        )
+        from ..officers import copilot_answer
+
+        result = copilot_answer(str(inputs.get("question", "")), lang)
+        return json.dumps(result)
     if task == "grievance_triage":
         return json.dumps(
             {"category": "leave", "urgency": "medium", "redacted": "A leave delay was reported."}

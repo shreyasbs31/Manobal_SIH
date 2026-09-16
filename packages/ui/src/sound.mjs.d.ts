@@ -7,3 +7,5 @@ export function tickComplete(): void;
 export function breathPulse(): void;
 export function chimeT3(): void;
 export function chimeT4(): void;
+export function chimeKindForQueue(t4Count: number, t3Count: number): "t3" | "t4" | "";
+export function playConsoleChime(kind: "t3" | "t4" | ""): void;

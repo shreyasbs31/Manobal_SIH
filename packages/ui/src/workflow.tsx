@@ -85,6 +85,7 @@ export function CaseCard({
   lever,
   status,
   source,
+  selected = false,
 }: {
   caseId: string;
   tier: TierId;
@@ -97,11 +98,12 @@ export function CaseCard({
   lever?: string | undefined;
   status?: string | undefined;
   source?: string | undefined;
+  selected?: boolean | undefined;
 }) {
   const shown = domains.slice(0, 3);
   const extra = domains.length - shown.length;
   return (
-    <article className="mb-case" data-tier={tier}>
+    <article className="mb-case" data-selected={selected ? "true" : "false"} data-tier={tier}>
       <div className="mb-case-head">
         <TierBadge tier={tier} />
         <strong className="mb-num">{caseId}</strong>

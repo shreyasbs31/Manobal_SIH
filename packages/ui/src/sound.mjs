@@ -41,8 +41,8 @@ export function breathPulse() {
   vibrate([12, 80, 12]);
 }
 
-function tone(frequency, duration, when = 0) {
-  if (typeof window === "undefined" || !soundEnabled()) {
+function tone(frequency, duration, when = 0, force = false) {
+  if (typeof window === "undefined" || (!force && !soundEnabled())) {
     return;
   }
   const Ctor = window.AudioContext;
@@ -70,4 +70,27 @@ export function chimeT4() {
   tone(392, 0.1);
   tone(494, 0.1, 0.12);
   tone(587, 0.16, 0.24);
+}
+
+export function chimeKindForQueue(t4Count, t3Count) {
+  if (t4Count > 0) {
+    return "t4";
+  }
+  if (t3Count > 0) {
+    return "t3";
+  }
+  return "";
+}
+
+export function playConsoleChime(kind) {
+  if (kind === "t4") {
+    tone(392, 0.1, 0, true);
+    tone(494, 0.1, 0.12, true);
+    tone(587, 0.16, 0.24, true);
+    return;
+  }
+  if (kind === "t3") {
+    tone(440, 0.12, 0, true);
+    tone(554, 0.14, 0.12, true);
+  }
 }

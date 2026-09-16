@@ -75,6 +75,11 @@ export interface CommandPosture {
   leave_backlog: string;
   takeaway: string;
   companies: readonly string[];
+  quick_returns?: string;
+  median_leave?: string;
+  incident_exposure?: string;
+  grievance_age?: string;
+  sparks?: Record<string, readonly number[]>;
   cells: readonly {
     unit: string;
     week: number;

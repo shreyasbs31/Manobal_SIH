@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from .acute import AcuteRequest, AcuteResponse
@@ -14,15 +15,38 @@ from .config import get_settings
 from .errors import ApiError
 from .incident import (
     IncidentWebhook,
-    commander_card,
     lalit_demo_window,
     open_incident,
     uwo_board,
     verify_hmac,
 )
 from .levers import rank_levers
-from .personnel import build_home, checkin_config
-from .privacy.kanon import complementary_suppress, simulator_allows
+from .officers import (
+    acute_guide,
+    case_brief_fields,
+    command_posture_payload,
+    copilot_answer,
+    counsel_desk,
+    draft_order,
+    hq_payload,
+    hq_simulate,
+    leave_pressure,
+    medical_referrals,
+    officer_profile,
+    patch_officer_profile,
+    project_roster,
+    record_case_action,
+    reveal_identity,
+    roster_companies,
+    save_contact_note,
+    save_counsel_note,
+    save_hq_brief,
+    suggest_lever,
+    text_pdf,
+    unit_climate,
+    welfare_tabs,
+)
+from .privacy.kanon import simulator_allows
 from .privacy.rights import (
     KILLSWITCHES,
     break_glass,
@@ -308,14 +332,20 @@ async def welfare_case(
         dominant_domains=case.dominant_domains,
         lifecycle_state="inducted",
     )
+    picked = list(levers[:3])
+    for lever in levers:
+        if lever.code == "NO_ACTION" and all(item.code != "NO_ACTION" for item in picked):
+            picked.append(lever)
     recommended = [
         {
             "title": lever.label,
             "code": lever.code,
-            "hint": "Draft only. You decide.",
+            "hint": "Often helpful in similar situations."
+            if index == 0
+            else "Draft only. You decide.",
             "rationale": "Ranked from the current domain mix.",
         }
-        for lever in levers[:3]
+        for index, lever in enumerate(picked)
     ]
     return {
         "case_id": case.case_id,
@@ -332,9 +362,18 @@ async def welfare_case(
             for domain in case.dominant_domains[:3]
         ],
         "brief": (
-            "Duty and rest markers are outside the usual range. "
-            "The first lever is a rest cycle. This person has not asked for help."
-        ),
+            "Tier is {tier} [tier]. "
+            "The leading domain is {domain} [domain]. "
+            "Drift began {onset} [onset]. "
+            "First lever to consider is {lever} [lever]."
+        ).format(**case_brief_fields(case.case_id)),
+        "brief_fields": case_brief_fields(case.case_id),
+        "brief_label": "Written by Saathi AI, check before use",
+        "openers": [
+            "Aaj duty ke baad baat karne ka waqt hai?",
+            "Kaise ho. Rest mil paaya kya?",
+            "Kuch din se neend kam lag rahi hai. Kya main madad kar sakta hoon?",
+        ],
         "strip": [
             {
                 "day": day,
@@ -356,7 +395,6 @@ async def welfare_case(
         "limited": case.limited,
         "source": case.source,
         "status": case.status,
-        "token": case.token,
     }
 
 
@@ -408,6 +446,86 @@ async def welfare_incidents(
     return uwo_board(principal.scope_path)
 
 
+@router.get("/welfare/tabs")
+async def welfare_tabs_view(
+    principal: Annotated[Principal, Depends(require("welfare:read", RowPredicate.UNIT_SUBTREE))],
+) -> dict[str, object]:
+    _ensure_persona_cases()
+    return welfare_tabs(principal.scope_path)
+
+
+class RevealBody(BaseModel):
+    purpose_code: str
+    justification: str
+
+
+@router.post("/welfare/cases/{case_id}/reveal")
+async def welfare_reveal(
+    case_id: str,
+    body: RevealBody,
+    principal: Annotated[Principal, Depends(require("welfare:write", RowPredicate.UNIT_SUBTREE))],
+) -> dict[str, object]:
+    _ensure_persona_cases()
+    try:
+        return reveal_identity(
+            case_id=case_id,
+            actor=principal.actor_id,
+            purpose_code=body.purpose_code,
+            justification=body.justification,
+        )
+    except KeyError as error:
+        raise ApiError(
+            "case_not_found", "Case not found", hint="Refresh the queue", status_code=404
+        ) from error
+    except ValueError as error:
+        raise ApiError(
+            "reveal_rejected",
+            "Purpose and a short justification are required",
+            hint="Choose care contact and write why you need to reach them",
+            status_code=422,
+        ) from error
+
+
+class NoteBody(BaseModel):
+    grant_id: str
+    note: str
+
+
+@router.post("/welfare/contact-note")
+async def welfare_contact_note(
+    body: NoteBody,
+    principal: Annotated[Principal, Depends(require("welfare:write", RowPredicate.UNIT_SUBTREE))],
+) -> dict[str, str]:
+    del principal
+    return save_contact_note(body.grant_id, body.note)
+
+
+class CaseActionBody(BaseModel):
+    mode: str = "call"
+    lever: str = "REST_48H"
+    outcome: str = "open"
+    follow_up: str = ""
+    refer: str = ""
+
+
+@router.post("/welfare/cases/{case_id}/action")
+async def welfare_action(
+    case_id: str,
+    body: CaseActionBody,
+    principal: Annotated[Principal, Depends(require("welfare:write", RowPredicate.UNIT_SUBTREE))],
+) -> dict[str, str]:
+    del principal
+    _ensure_persona_cases()
+    return record_case_action(
+        case_id,
+        mode=body.mode,
+        lever=body.lever,
+        outcome=body.outcome,
+        follow_up=body.follow_up,
+        refer=body.refer,
+    )
+
+
 @router.get("/medical/acute")
 async def medical_acute(
     principal: Annotated[Principal, Depends(require("medical:read", RowPredicate.UNIT_SUBTREE))],
@@ -456,53 +574,13 @@ async def command_posture(
     unit: str = "force.central.c02",
     weeks: int = 12,
 ) -> dict[str, object]:
-    del principal
+    del principal, unit, weeks
+    payload = command_posture_payload()
     if not simulator_allows(100):
         raise ApiError(
             "k_anonymity", "Group is too small", hint="Pick a larger unit", status_code=422
         )
-    companies = ["Alpha Coy", "Bravo Coy", "Charlie Coy", "Delta Coy"]
-    raw_cells = []
-    for company in companies:
-        for week in range(1, weeks + 1):
-            n = 8 if company == "Delta Coy" and week > 7 else 40
-            raw_cells.append(
-                {
-                    "key": f"{company}:{week}",
-                    "unit": company,
-                    "week": week,
-                    "n": n,
-                    "band": "T2" if company == "Charlie Coy" and week > 8 else "T0",
-                    "shareLabel": "20 to 30%"
-                    if company == "Charlie Coy" and week > 8
-                    else "under 10%",
-                }
-            )
-    cells = complementary_suppress(raw_cells, k=10)
-    public_cells = []
-    for cell in cells:
-        item: dict[str, object] = {
-            "unit": cell.get("unit"),
-            "week": cell.get("week"),
-            "band": cell.get("band", "hidden"),
-        }
-        if cell.get("band") != "hidden" and cell.get("shareLabel"):
-            item["shareLabel"] = cell["shareLabel"]
-        elif cell.get("band") == "hidden":
-            item["n"] = None
-        public_cells.append(item)
-    return {
-        "unit_label": "Bn C-02",
-        "week": 38,
-        "duty_hours": "61",
-        "rest_denials": "14",
-        "night_load": "38%",
-        "leave_backlog": "22 days",
-        "takeaway": "Charlie Coy's workload has risen for three weeks.",
-        "companies": companies,
-        "cells": public_cells,
-        "incident": commander_card(lalit_demo_window()),
-    }
+    return payload
 
 
 @router.get("/command/metrics")
@@ -526,15 +604,184 @@ async def command_simulate(
     ],
 ) -> dict[str, object]:
     del principal
-    n = int(body.get("n") or 0)
-    if not simulator_allows(n):
+    try:
+        if "companies" in body:
+            return project_roster(body)
+        n = int(body.get("n") or 0)
+        if not simulator_allows(n):
+            raise ValueError("k_anonymity")
+        return {"ok": True, "n": n}
+    except ValueError as error:
         raise ApiError(
             "k_anonymity",
             "The simulator needs at least 10 people",
             hint="Widen the unit",
             status_code=422,
-        )
-    return {"ok": True, "n": n}
+        ) from error
+
+
+@router.get("/command/roster")
+async def command_roster(
+    principal: Annotated[
+        Principal, Depends(require("command:aggregate", RowPredicate.AGGREGATE_ONLY))
+    ],
+) -> dict[str, object]:
+    del principal
+    return {"companies": roster_companies()}
+
+
+@router.post("/command/draft-order")
+async def command_draft_order(
+    body: dict[str, Any],
+    principal: Annotated[
+        Principal, Depends(require("command:aggregate", RowPredicate.AGGREGATE_ONLY))
+    ],
+) -> dict[str, str]:
+    del principal
+    return draft_order(body)
+
+
+@router.get("/command/leave")
+async def command_leave(
+    principal: Annotated[
+        Principal, Depends(require("command:aggregate", RowPredicate.AGGREGATE_ONLY))
+    ],
+) -> dict[str, object]:
+    del principal
+    return leave_pressure()
+
+
+@router.get("/command/climate")
+async def command_climate(
+    principal: Annotated[
+        Principal, Depends(require("command:aggregate", RowPredicate.AGGREGATE_ONLY))
+    ],
+) -> dict[str, object]:
+    del principal
+    return unit_climate()
+
+
+class CopilotBody(BaseModel):
+    question: str
+    lang: str = "en"
+
+
+@router.post("/command/copilot")
+async def command_copilot(
+    body: CopilotBody,
+    principal: Annotated[
+        Principal, Depends(require("command:aggregate", RowPredicate.AGGREGATE_ONLY))
+    ],
+) -> dict[str, object]:
+    del principal
+    return copilot_answer(body.question, body.lang)
+
+
+@router.get("/hq/overview")
+async def hq_overview(
+    principal: Annotated[Principal, Depends(require("hq:aggregate", RowPredicate.AGGREGATE_ONLY))],
+) -> dict[str, object]:
+    del principal
+    return hq_payload()
+
+
+class HqBriefBody(BaseModel):
+    body: str
+
+
+@router.post("/hq/brief")
+async def hq_brief_save(
+    body: HqBriefBody,
+    principal: Annotated[Principal, Depends(require("hq:aggregate", RowPredicate.AGGREGATE_ONLY))],
+) -> dict[str, object]:
+    del principal
+    return save_hq_brief(body.body)
+
+
+@router.get("/hq/brief.pdf")
+async def hq_brief_pdf(
+    principal: Annotated[Principal, Depends(require("hq:aggregate", RowPredicate.AGGREGATE_ONLY))],
+) -> Response:
+    del principal
+    brief = hq_payload()["brief"]
+    payload = text_pdf(str(brief["title"]), str(brief["body"]))
+    return Response(content=payload, media_type="application/pdf")
+
+
+class HqPolicyBody(BaseModel):
+    leave_approval_rate: float | None = None
+    max_consecutive_duty: int | None = None
+    rotation_length_months: int | None = None
+    quick_return_cap: int | None = None
+
+
+@router.post("/hq/simulate")
+async def hq_policy_simulate(
+    body: HqPolicyBody,
+    principal: Annotated[Principal, Depends(require("hq:aggregate", RowPredicate.AGGREGATE_ONLY))],
+) -> dict[str, object]:
+    del principal
+    return hq_simulate(body.model_dump(exclude_none=True))
+
+
+@router.get("/counsel/desk")
+async def counsel_desk_view(
+    principal: Annotated[Principal, Depends(require("counsel:read", RowPredicate.ASSIGNED))],
+    language: str = "hi",
+) -> dict[str, object]:
+    del principal
+    return counsel_desk(language)
+
+
+class CounselNoteBody(BaseModel):
+    session_id: str
+    note: str
+
+
+@router.post("/counsel/notes")
+async def counsel_notes(
+    body: CounselNoteBody,
+    principal: Annotated[Principal, Depends(require("counsel:write", RowPredicate.ASSIGNED))],
+) -> dict[str, str]:
+    del principal
+    return save_counsel_note(body.session_id, body.note)
+
+
+class CounselSuggestBody(BaseModel):
+    case_id: str
+    lever: str = "REST_48H"
+    sentence: str = "A rest cycle may help."
+
+
+@router.post("/counsel/suggest")
+async def counsel_suggest(
+    body: CounselSuggestBody,
+    principal: Annotated[Principal, Depends(require("counsel:write", RowPredicate.ASSIGNED))],
+) -> dict[str, object]:
+    del principal
+    return suggest_lever(body.case_id, body.lever, body.sentence)
+
+
+@router.get("/medical/referrals")
+async def medical_referral_list(
+    principal: Annotated[Principal, Depends(require("medical:read", RowPredicate.UNIT_SUBTREE))],
+) -> dict[str, object]:
+    return {"items": medical_referrals(principal.scope_path), "guide": acute_guide()}
+
+
+@router.get("/officer/profile")
+async def get_officer_profile(
+    principal: Annotated[Principal, Depends(require("system:read", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    return {"actor_id": principal.actor_id, "role": principal.role.value, **officer_profile(principal.actor_id)}
+
+
+@router.post("/officer/profile")
+async def post_officer_profile(
+    body: dict[str, Any],
+    principal: Annotated[Principal, Depends(require("system:read", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    return patch_officer_profile(principal.actor_id, body)
 
 
 @router.get("/hq/levers")

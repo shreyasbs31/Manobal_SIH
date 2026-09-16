@@ -12,8 +12,10 @@ import {
 import type { FixtureTier, FixtureTrajectory } from "@manobal/contracts";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
 interface CasePayload {
@@ -21,9 +23,11 @@ interface CasePayload {
   tier: FixtureTier;
   trajectory: FixtureTrajectory;
   drivers: string[];
-  levers: { title: string; hint: string; rationale: string }[];
+  levers: { title: string; hint: string; rationale: string; code?: string }[];
   what_changed: { title: string; detail: string }[];
   brief: string;
+  brief_fields: Record<string, string>;
+  openers: string[];
   strip: { day: number; tier: FixtureTier }[];
   onset_day: number;
   incidents: number[];
@@ -32,12 +36,34 @@ interface CasePayload {
   remaining_ratio: number;
 }
 
+interface RevealCard {
+  revealed: boolean;
+  grant_id: string;
+  contact_note_due: string;
+  notice: string;
+  card: Record<string, string | boolean>;
+}
+
 export default function CaseWorkspacePage() {
   const params = useParams<{ caseId: string }>();
   const caseId = params.caseId;
-  const { data, error, loading, offline } = useEngine(`case-${caseId}`, (client, signal) =>
-    client.welfareCase(caseId, signal) as unknown as Promise<CasePayload>,
+  const { data, error, loading, offline, reload } = useEngine(
+    `case-${caseId}`,
+    (client, signal) => client.welfareCase(caseId, signal) as unknown as Promise<CasePayload>,
   );
+  const [purpose, setPurpose] = useState("care_contact");
+  const [justification, setJustification] = useState("");
+  const [reveal, setReveal] = useState<RevealCard | null>(null);
+  const [note, setNote] = useState("");
+  const [mode, setMode] = useState("call");
+  const [lever, setLever] = useState("REST_48H");
+  const [followUp, setFollowUp] = useState("D+2");
+  const [refer, setRefer] = useState("");
+  const [trend, setTrend] = useState("Sleep, not yet requested");
+  const [briefLang, setBriefLang] = useState("hi");
+  const [message, setMessage] = useState("");
+
+  const nodes = useMemo(() => (data ? briefNodes(data.brief, data.brief_fields) : []), [data]);
 
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
@@ -73,30 +99,121 @@ export default function CaseWorkspacePage() {
                   {row.detail}
                 </p>
               ))}
-              <p>Trend sharing: Sleep, request pending.</p>
+              <h2>Trend sharing</h2>
+              <p>{trend}</p>
+              <button
+                className="mb-secondary"
+                onClick={() => {
+                  void engineClient()
+                    .welfareTrendRequest(caseId, "sleep")
+                    .then(() => setTrend("Sleep, request pending"));
+                }}
+                type="button"
+              >
+                Request sleep trend
+              </button>
             </section>
             <section>
               <h2>Recommended actions</h2>
-              {data.levers.map((lever, index) => (
+              {data.levers.map((item, index) => (
                 <LeverOption
-                  hint={lever.hint}
+                  hint={item.hint}
                   index={index + 1}
-                  key={lever.title}
-                  rationale={lever.rationale}
-                  title={lever.title}
+                  key={item.title}
+                  rationale={item.rationale}
+                  title={item.title}
                 />
               ))}
+              <label>
+                Brief language
+                <select onChange={(event) => setBriefLang(event.target.value)} value={briefLang}>
+                  <option value="hi">Hindi</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
               <BriefPanel>
-                <p lang="hi">{data.brief}</p>
+                <p lang={briefLang}>{nodes}</p>
+                <p>Openers</p>
+                <ol>
+                  {(data.openers ?? []).map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ol>
               </BriefPanel>
             </section>
             <section>
               <h2>Identity</h2>
-              <p>Locked</p>
-              <button className="mb-secondary" type="button">
-                Reveal to contact
-              </button>
-              <p>This person will see that you viewed it.</p>
+              {reveal ? (
+                <div className="mb-identity-card">
+                  <p>{reveal.notice}</p>
+                  <p>
+                    {String(reveal.card.label)}. {String(reveal.card.rank)}. {String(reveal.card.unit)}.
+                  </p>
+                  <p>Contact {String(reveal.card.contact)}. Note due {reveal.contact_note_due}.</p>
+                  <label>
+                    Contact note
+                    <textarea onChange={(event) => setNote(event.target.value)} value={note} />
+                  </label>
+                  <button
+                    className="mb-secondary"
+                    onClick={() => {
+                      void engineClient()
+                        .welfareContactNote(reveal.grant_id, note)
+                        .then(() => setMessage("Contact note saved."));
+                    }}
+                    type="button"
+                  >
+                    Save contact note
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p>Locked</p>
+                  <label>
+                    Purpose
+                    <select onChange={(event) => setPurpose(event.target.value)} value={purpose}>
+                      <option value="care_contact">Care contact</option>
+                      <option value="urgent_welfare">Urgent welfare</option>
+                      <option value="follow_up">Follow up</option>
+                    </select>
+                  </label>
+                  <label>
+                    Why you need to reach them
+                    <textarea
+                      onChange={(event) => setJustification(event.target.value)}
+                      value={justification}
+                    />
+                  </label>
+                  <button
+                    className="mb-secondary"
+                    onClick={() => {
+                      void engineClient()
+                        .welfareReveal(caseId, {
+                          purpose_code: purpose,
+                          justification,
+                        })
+                        .then((payload) => {
+                          setReveal(payload);
+                          try {
+                            new BroadcastChannel("manobal-ledger").postMessage({
+                              caseId,
+                              action: "identity.viewed",
+                            });
+                          } catch {
+                            // BroadcastChannel is optional in older webviews.
+                          }
+                        })
+                        .catch((caught: unknown) => {
+                          setMessage(caught instanceof Error ? caught.message : "Reveal failed");
+                        });
+                    }}
+                    type="button"
+                  >
+                    Reveal to contact
+                  </button>
+                  <p>This person will see that you viewed it.</p>
+                </>
+              )}
               <h2>Log</h2>
               <EscalationLadder
                 current="waiting"
@@ -107,13 +224,92 @@ export default function CaseWorkspacePage() {
                   { role: "Sector counsellor", status: "waiting", time: "" },
                 ]}
               />
-              <button className="mb-secondary" type="button">
+              <label>
+                Contacted
+                <select onChange={(event) => setMode(event.target.value)} value={mode}>
+                  <option value="call">Call</option>
+                  <option value="visit">Visit</option>
+                  <option value="message">Message</option>
+                </select>
+              </label>
+              <label>
+                Decision
+                <select onChange={(event) => setLever(event.target.value)} value={lever}>
+                  <option value="REST_48H">48-hour rest</option>
+                  <option value="NO_ACTION">No action needed</option>
+                  <option value="COUNSELLOR_REFERRAL">Refer to counsellor</option>
+                </select>
+              </label>
+              <label>
+                Follow-up
+                <input onChange={(event) => setFollowUp(event.target.value)} value={followUp} />
+              </label>
+              <label>
+                Refer
+                <select onChange={(event) => setRefer(event.target.value)} value={refer}>
+                  <option value="">None</option>
+                  <option value="counsellor">Counsellor</option>
+                  <option value="mo">Medical officer</option>
+                </select>
+              </label>
+              <button
+                className="mb-secondary"
+                onClick={() => {
+                  void engineClient()
+                    .welfareAction(caseId, {
+                      mode,
+                      lever,
+                      outcome: "open",
+                      follow_up: followUp,
+                      refer,
+                    })
+                    .then(() => {
+                      setMessage("Action recorded.");
+                      reload();
+                    });
+                }}
+                type="button"
+              >
+                Record action
+              </button>
+              <button
+                className="mb-secondary"
+                onClick={() => {
+                  void engineClient()
+                    .welfareAction(caseId, {
+                      mode,
+                      lever,
+                      outcome: "closed",
+                      follow_up: followUp,
+                      refer,
+                    })
+                    .then(() => setMessage("Case closed."));
+                }}
+                type="button"
+              >
                 Close case
               </button>
+              {message ? <p role="status">{message}</p> : null}
             </section>
           </div>
         </div>
       ) : null}
     </ScreenState>
   );
+}
+
+function briefNodes(brief: string, fields: Record<string, string>) {
+  const parts = brief.split(/(\[[a-z_]+\])/g);
+  return parts.map((part, index) => {
+    const match = /^\[([a-z_]+)\]$/.exec(part);
+    if (!match) {
+      return <span key={`${part}-${index}`}>{part}</span>;
+    }
+    const key = match[1] ?? "";
+    return (
+      <abbr className="mb-brief-ref" key={`${key}-${index}`} title={fields[key] ?? key}>
+        {part}
+      </abbr>
+    );
+  });
 }
