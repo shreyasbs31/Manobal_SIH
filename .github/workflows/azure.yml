@@ -1,0 +1,39 @@
+name: azure
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-azd@v2
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy
+        env:
+          AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: azd up --no-prompt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Playwright against Azure
+        env:
+          WEB_URL: ${{ secrets.AZURE_WEB_URL }}
+          ENGINE_URL: ${{ secrets.AZURE_ENGINE_URL }}
+          AZURE_WEB_URL: ${{ secrets.AZURE_WEB_URL }}
+        run: |
+          corepack enable
+          corepack pnpm install
+          corepack pnpm --filter @manobal/e2e exec playwright install chromium
+          corepack pnpm --filter @manobal/e2e test tests/demo-spine.spec.ts

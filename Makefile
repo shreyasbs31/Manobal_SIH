@@ -1,7 +1,7 @@
 SHELL := /bin/sh
 COMPOSE := docker compose --env-file infra/.env -f infra/docker-compose.yml
 
-.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify dev lint
+.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify dev lint twa
 
 up:
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
@@ -58,3 +58,7 @@ deploy:
 
 verify: copy-lint
 	python3 scripts/verify-foundation.py
+
+twa:
+	test -f apps/twa/twa-manifest.json
+	python3 -c "import json; json.load(open('apps/twa/twa-manifest.json'))"

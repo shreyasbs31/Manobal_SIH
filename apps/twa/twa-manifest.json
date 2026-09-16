@@ -1,0 +1,30 @@
+{
+  "packageId": "in.gov.mha.manobal.saathi",
+  "host": "localhost",
+  "name": "MANOBAL Saathi",
+  "launcherName": "Saathi",
+  "display": "standalone",
+  "themeColor": "#2F5D50",
+  "navigationColor": "#2F5D50",
+  "backgroundColor": "#F5F8F7",
+  "enableNotifications": true,
+  "startUrl": "/app",
+  "iconUrl": "/icons/icon-512.png",
+  "maskableIconUrl": "/icons/icon-512.png",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "http://localhost:3000/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "minSdkVersion": 26,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "appVersionName": "1",
+  "appVersionCode": 1
+}
