@@ -3,27 +3,56 @@
 import {
   BaselineRibbonChart,
   ContourTexture,
+  IconBuddyPair,
   IconLeaveWindow,
   IconShiftMoon,
   IconVoiceContour,
 } from "@manobal/ui";
-import { SceneSleepWindDown } from "@manobal/illustrations";
+import {
+  SceneLeaveWindow,
+  SceneShiftMoon,
+  SceneSleepWindDown,
+} from "@manobal/illustrations";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { localNudgeRules } from "@/lib/offline";
 import { useEngine } from "@/lib/use-engine";
+
+function illustrationFor(kind: string): ReactNode {
+  if (kind === "leave") {
+    return <SceneLeaveWindow />;
+  }
+  if (kind === "lifecycle") {
+    return <SceneShiftMoon />;
+  }
+  return <SceneSleepWindDown />;
+}
+
+const TILES = [
+  { href: "/app/saathi", label: "Talk", icon: IconVoiceContour },
+  { href: "/app/toolkit/breathe", label: "Breathe", icon: IconShiftMoon },
+  { href: "/app/talk", label: "Counsellor", icon: IconBuddyPair },
+  { href: "/app/rest", label: "Leave", icon: IconLeaveWindow },
+] as const;
 
 export default function SaathiHomePage() {
   const { data, error, loading, offline } = useEngine("home", (client, signal) =>
     client.meHome(signal),
   );
+  const cards = (data?.context_cards ?? (data ? [data.nudge] : [])).slice(0, 2);
+  const local = localNudgeRules({
+    sleepNightsLow: data?.persona === "arjun" ? 3 : 0,
+    consecutiveDuty: data?.persona === "arjun" ? 11 : 0,
+  });
 
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
         <div className="mb-home-stack">
           <div className="mb-ribbon-hero">
-            <ContourTexture height={140} seed={data.persona_id} width={390} />
+            <ContourTexture height={180} seed={data.persona_id} width={390} />
             <BaselineRibbonChart
               label="Your mood and sleep against your usual range"
               takeaway={data.takeaway}
@@ -34,39 +63,49 @@ export default function SaathiHomePage() {
           <article className="mb-checkin-card">
             <div>
               <h2>{data.checkin.title}</h2>
-              <p>{data.checkin.duration_s} seconds</p>
+              <p>{data.checkin.done ? "Done for today" : `${data.checkin.duration_s} seconds`}</p>
             </div>
             <Link className="mb-primary" href={data.checkin.href}>
-              Start
+              {data.checkin.done ? "Open" : "Start"}
             </Link>
           </article>
           <p className="mb-section-label">For you now</p>
-          <article className="mb-context-card">
-            <SceneSleepWindDown />
-            <div>
-              <h2>{data.nudge.title}</h2>
-              <p>{data.nudge.detail}</p>
-              <p>Why this? {data.nudge.why}</p>
-            </div>
-          </article>
+          {cards.map((card) => (
+            <article className="mb-context-card" key={card.title}>
+              {illustrationFor("kind" in card && typeof card.kind === "string" ? card.kind : "nudge")}
+              <div>
+                <h2>{card.title}</h2>
+                <p>{card.detail}</p>
+                <p className="mb-why">Why this? {card.why}</p>
+              </div>
+            </article>
+          ))}
+          {offline
+            ? local.slice(0, Math.max(0, 2 - cards.length)).map((card) => (
+                <article className="mb-context-card" key={card.title}>
+                  <SceneSleepWindDown />
+                  <div>
+                    <h2>{card.title}</h2>
+                    <p className="mb-why">Why this? {card.why}</p>
+                  </div>
+                </article>
+              ))
+            : null}
           <nav aria-label="Shortcuts" className="mb-quick-tiles">
-            <Link href="/app/saathi">
-              <IconVoiceContour height={22} width={22} />
-              Talk
-            </Link>
-            <Link href="/app/toolkit/breathe">
-              <IconShiftMoon height={22} width={22} />
-              Breathe
-            </Link>
-            <Link href="/app/saathi">
-              <IconVoiceContour height={22} width={22} />
-              Counsellor
-            </Link>
-            <Link href="/app/me">
-              <IconLeaveWindow height={22} width={22} />
-              Leave
-            </Link>
+            {TILES.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <Link href={tile.href} key={tile.href}>
+                  <Icon height={22} width={22} />
+                  {tile.label}
+                </Link>
+              );
+            })}
           </nav>
+          <p className="mb-status-strip">
+            Wearable {data.status?.wearable ?? "off"}
+            {data.status?.last_sync ? ` · Last sync saved` : null}
+          </p>
         </div>
       ) : null}
     </ScreenState>

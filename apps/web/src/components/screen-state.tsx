@@ -17,17 +17,20 @@ export function ScreenState({
   emptyText?: string;
   children: ReactNode;
 }) {
-  if (offline) {
-    return <p role="status">Offline. Reconnect to load this view.</p>;
-  }
-  if (loading) {
+  if (loading && empty) {
     return <p role="status">Loading.</p>;
   }
-  if (error) {
+  if (error && empty) {
     return <p role="alert">{error}</p>;
   }
   if (empty) {
-    return <p role="status">{emptyText}</p>;
+    return (
+      <p role="status">
+        {offline
+          ? "Offline. This view stays on the phone after you open it once."
+          : emptyText}
+      </p>
+    );
   }
   return children;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@manobal/i18n";
 import { mePrivacy } from "@manobal/contracts";
 import { SceneOnboardingPhone } from "@manobal/illustrations";
 import {
@@ -9,8 +10,10 @@ import {
   IconHiddenLock,
   IconLeaveWindow,
   IconVaultKey,
+  MachineTranslatedBadge,
   ReceiptCard,
 } from "@manobal/ui";
+import Link from "next/link";
 import { useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
@@ -20,16 +23,24 @@ import { useEngine } from "@/lib/use-engine";
 const ICONS = [IconHiddenLock, IconLeaveWindow, IconVaultKey] as const;
 
 export default function MePage() {
-  const { data, error, loading, offline } = useEngine("me", async (client, signal) => {
-    const [consents, ledger, trends] = await Promise.all([
+  const { data, error, loading, offline, reload } = useEngine("me", async (client, signal) => {
+    const [consents, ledger, trends, rights, remembers] = await Promise.all([
       client.meConsents(signal),
       client.meLedger(signal),
       client.meTrends(signal),
+      client.meRights(signal),
+      client.meRemembers(signal),
     ]);
-    return { consents, ledger, trends };
+    return { consents, ledger, trends, rights, remembers };
   });
   const [consents, setConsents] = useState<boolean[]>([]);
   const [receipt, setReceipt] = useState(mePrivacy.receipt);
+  const [simple, setSimple] = useState(
+    typeof window === "undefined" ? false : window.localStorage.getItem("manobal.simple_mode") === "1",
+  );
+  const [lang, setLang] = useState(
+    typeof window === "undefined" ? "en" : window.localStorage.getItem("manobal.language") ?? "en",
+  );
   const items = data?.consents.items ?? [];
   const checked = consents.length ? consents : items.map((item) => item.on);
 
@@ -49,6 +60,17 @@ export default function MePage() {
               );
             })}
           </div>
+          <p>{t("privacy.commander", lang === "hi" || lang === "ta" ? lang : "en")}</p>
+          {lang !== "en" && lang !== "hi" && lang !== "ta" ? <MachineTranslatedBadge /> : null}
+
+          <h2 className="mb-section-label">My trends</h2>
+          <BaselineRibbonChart
+            label="Sleep hours against your usual range"
+            takeaway="Your sleep has been below your usual rhythm for 3 nights."
+            values={data.trends.points}
+            variant="detail"
+          />
+
           {items.map((item, index) => (
             <ConsentToggleCard
               checked={checked[index] ?? false}
@@ -64,6 +86,7 @@ export default function MePage() {
               whoCanSee={item.whoCanSee}
             />
           ))}
+
           <h2 className="mb-section-label">Who viewed my information</h2>
           {data.ledger.items.length === 0 ? (
             <p>No access yet.</p>
@@ -78,21 +101,22 @@ export default function MePage() {
             ))
           )}
           <ReceiptCard hash={receipt.hash} time={receipt.time} />
-          <BaselineRibbonChart
-            label="Sleep hours against your usual range"
-            takeaway="Your sleep has been below your usual rhythm for 3 nights."
-            values={data.trends.points}
-            variant="detail"
-          />
+
+          <h2 className="mb-section-label">Rights centre</h2>
+          <p>
+            Notice {data.rights.notice.version}. Hash {data.rights.notice.hash}.
+          </p>
           <nav aria-label="Rights" className="mb-rights">
-            <a href="#download">
-              Download my data <span aria-hidden="true">›</span>
-            </a>
+            {data.rights.actions.map((action) => (
+              <span key={action}>
+                {action} <span aria-hidden="true">›</span>
+              </span>
+            ))}
             <button
               className="mb-ghost"
               onClick={() => {
                 void engineClient()
-                  .mePurge("wearable")
+                  .eraseRights("self_report")
                   .then((result) => {
                     setReceipt({
                       hash: result.sha256.slice(0, 16),
@@ -104,10 +128,110 @@ export default function MePage() {
             >
               Erase my data <span aria-hidden="true">›</span>
             </button>
-            <a href="#consents">
-              Manage consents <span aria-hidden="true">›</span>
-            </a>
           </nav>
+
+          <h2 className="mb-section-label">Requests</h2>
+          <Link href="/app/talk">Counselling bookings and welfare requests</Link>
+
+          <h2 className="mb-section-label">Concerns</h2>
+          <Link href="/app/concerns">Raise a grievance and track the SLA</Link>
+
+          <h2 className="mb-section-label">Unit pulse</h2>
+          <p>One anonymous question this week. Results are never shown individually.</p>
+          <button
+            className="mb-secondary"
+            onClick={() => void engineClient().savePulse("unit", 1)}
+            type="button"
+          >
+            This week felt heavy
+          </button>
+          <button
+            className="mb-secondary"
+            onClick={() => void engineClient().savePulse("unit", 0)}
+            type="button"
+          >
+            This week felt steady
+          </button>
+
+          <h2 className="mb-section-label">Trust pulse</h2>
+          <p>I believe this system exists to support me.</p>
+          <button
+            className="mb-secondary"
+            onClick={() => void engineClient().savePulse("trust", 1)}
+            type="button"
+          >
+            Yes
+          </button>
+          <button
+            className="mb-secondary"
+            onClick={() => void engineClient().savePulse("trust", 0)}
+            type="button"
+          >
+            Not yet
+          </button>
+
+          <h2 className="mb-section-label">Things Saathi remembers</h2>
+          <p>Off by default. Saved items stay with you, never scoring, never officers.</p>
+          <button
+            className="mb-secondary"
+            onClick={() => {
+              void engineClient()
+                .saveRemembers({ opt_in: !data.remembers.opt_in })
+                .then(() => reload());
+            }}
+            type="button"
+          >
+            {data.remembers.opt_in ? "Turn off remembering" : "Turn on remembering"}
+          </button>
+          {data.remembers.items.map((item) => (
+            <p key={item.text}>
+              {item.group}: {item.text}
+            </p>
+          ))}
+          <button
+            className="mb-ghost"
+            onClick={() => {
+              void engineClient().saveRemembers({ forget: true }).then(() => reload());
+            }}
+            type="button"
+          >
+            Forget everything
+          </button>
+
+          <h2 className="mb-section-label">Settings</h2>
+          <label>
+            Language
+            <select
+              onChange={(event) => {
+                setLang(event.target.value);
+                window.localStorage.setItem("manobal.language", event.target.value);
+                void engineClient().savePersonalisation({ language: event.target.value });
+              }}
+              value={lang}
+            >
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ta">Tamil</option>
+            </select>
+          </label>
+          <label className="mb-check-row">
+            <input
+              checked={simple}
+              onChange={(event) => {
+                setSimple(event.target.checked);
+                window.localStorage.setItem("manobal.simple_mode", event.target.checked ? "1" : "0");
+                void engineClient().savePersonalisation({ simple_mode: event.target.checked });
+              }}
+              type="checkbox"
+            />
+            Simple mode, larger buttons
+          </label>
+          <Link href="/app/plan">My safety plan</Link>
+          <Link href="/app/buddy">Buddy</Link>
+          <Link href="/app/family">Family connect</Link>
+          <Link href="/app/rest">Plan my rest</Link>
+          <Link href="/app/assessments">Assessments</Link>
+          <Link href="/app/onboarding">Review consent</Link>
         </div>
       ) : null}
     </ScreenState>

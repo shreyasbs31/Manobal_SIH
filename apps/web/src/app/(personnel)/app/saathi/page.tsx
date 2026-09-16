@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
 import { browserInjectionHit, browserLexiconHit } from "@/lib/lexicon";
+import { saveJournal } from "@/lib/offline";
 import {
   ON_DEVICE_HINDI_NOTE,
   ON_DEVICE_LABEL,
@@ -42,6 +43,8 @@ export default function SaathiCompanionPage() {
   const [holding, setHolding] = useState(false);
   const [handsFree, setHandsFree] = useState(false);
   const [hostingCaption, setHostingCaption] = useState(HOSTING_CAPTION);
+  const [summary, setSummary] = useState("");
+  const [journalSaved, setJournalSaved] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const playbackRef = useRef<AudioBufferSourceNode | null>(null);
@@ -358,6 +361,33 @@ export default function SaathiCompanionPage() {
               </button>
             </div>
           )}
+          <button
+            className="mb-secondary"
+            onClick={() => {
+              const text = lines.map((line) => `${line.speaker}: ${line.text}`).join(" ");
+              setSummary(text.slice(0, 280) || "A short check-in.");
+            }}
+            type="button"
+          >
+            End of session summary
+          </button>
+          {summary ? <p>{summary}</p> : null}
+          <button
+            className="mb-ghost"
+            onClick={() => {
+              const text = summary || lines.map((line) => line.text).join(" ");
+              if (browserLexiconHit(text)) {
+                window.location.href = "/app/safety";
+                return;
+              }
+              saveJournal(text);
+              setJournalSaved(true);
+            }}
+            type="button"
+          >
+            Save as private journal
+          </button>
+          {journalSaved ? <p>Saved on this phone. Officers cannot see it.</p> : null}
         </div>
       ) : null}
     </ScreenState>

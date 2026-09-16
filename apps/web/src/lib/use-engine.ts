@@ -4,6 +4,7 @@ import { ManobalApiError, type ManobalClient } from "@manobal/contracts";
 import { useEffect, useRef, useState } from "react";
 
 import { engineClient } from "@/lib/engine";
+import { loadSnapshot, saveSnapshot } from "@/lib/offline";
 
 export function useEngine<T>(
   key: string,
@@ -19,7 +20,9 @@ export function useEngine<T>(
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(
-    typeof navigator !== "undefined" ? !navigator.onLine : false,
+    typeof navigator !== "undefined"
+      ? !navigator.onLine || window.localStorage.getItem("manobal.airplane") === "1"
+      : false,
   );
   const [tick, setTick] = useState(0);
   const loaderRef = useRef(loader);
@@ -27,12 +30,19 @@ export function useEngine<T>(
 
   useEffect(() => {
     const onOffline = () => setOffline(true);
-    const onOnline = () => setOffline(false);
+    const onOnline = () =>
+      setOffline(window.localStorage.getItem("manobal.airplane") === "1" ? true : false);
+    const onAirplane = () =>
+      setOffline(
+        window.localStorage.getItem("manobal.airplane") === "1" || !window.navigator.onLine,
+      );
     window.addEventListener("offline", onOffline);
     window.addEventListener("online", onOnline);
+    window.addEventListener("manobal-airplane", onAirplane);
     return () => {
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("manobal-airplane", onAirplane);
     };
   }, []);
 
@@ -40,11 +50,26 @@ export function useEngine<T>(
     const controller = new AbortController();
     setLoading(true);
     setError(null);
+    void loadSnapshot<T>(key).then((cached) => {
+      if (cached && !controller.signal.aborted) {
+        setData(cached);
+        setLoading(false);
+      }
+    });
+    if (
+      typeof navigator !== "undefined" &&
+      (!navigator.onLine || window.localStorage.getItem("manobal.airplane") === "1")
+    ) {
+      setOffline(true);
+      setLoading(false);
+      return () => controller.abort();
+    }
     loaderRef
       .current(engineClient(), controller.signal)
       .then((payload) => {
         if (!controller.signal.aborted) {
           setData(payload);
+          void saveSnapshot(key, payload);
         }
       })
       .catch((caught: unknown) => {

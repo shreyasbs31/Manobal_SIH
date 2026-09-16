@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { OfflineObserver } from "@/components/offline-observer";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import { fontClassName } from "@/lib/fonts";
 
 import "./globals.css";
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html className={fontClassName} data-skin="saathi" data-theme="light" lang="en">
       <body>
         <OfflineObserver />
+        <ServiceWorkerRegister />
         {children}
       </body>
     </html>

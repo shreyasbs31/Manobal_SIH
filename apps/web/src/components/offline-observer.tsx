@@ -1,18 +1,41 @@
 "use client";
 
+import { t } from "@manobal/i18n";
 import { useEffect, useState } from "react";
+
+import { engineClient } from "@/lib/engine";
+import { drainQueue, queueCount } from "@/lib/offline";
 
 export function OfflineObserver() {
   const [offline, setOffline] = useState(false);
+  const [queued, setQueued] = useState(0);
 
   useEffect(() => {
-    const update = () => setOffline(!window.navigator.onLine);
+    const update = () => {
+      const airplane = window.localStorage.getItem("manobal.airplane") === "1";
+      setOffline(!window.navigator.onLine || airplane);
+      void queueCount().then(setQueued);
+    };
+    const drain = () => {
+      if (!window.navigator.onLine || window.localStorage.getItem("manobal.airplane") === "1") {
+        return;
+      }
+      void drainQueue(async (kind, payload, id) => {
+        await engineClient().syncQueue([
+          { kind, payload: payload as Record<string, unknown>, client_id: id },
+        ]);
+      }).then(update);
+    };
     update();
-    window.addEventListener("online", update);
+    window.addEventListener("online", drain);
     window.addEventListener("offline", update);
+    window.addEventListener("manobal-airplane", update);
+    window.addEventListener("manobal-queue", update);
     return () => {
-      window.removeEventListener("online", update);
+      window.removeEventListener("online", drain);
       window.removeEventListener("offline", update);
+      window.removeEventListener("manobal-airplane", update);
+      window.removeEventListener("manobal-queue", update);
     };
   }, []);
 
@@ -20,9 +43,11 @@ export function OfflineObserver() {
     return null;
   }
 
+  const lang =
+    typeof window === "undefined" ? "en" : window.localStorage.getItem("manobal.language") ?? "en";
   return (
     <div className="offline-banner" role="status">
-      Offline. Saved actions will sync when the connection returns.
+      {t("offline.bar", lang === "hi" || lang === "ta" ? lang : "en", { n: queued })}
     </div>
   );
 }
