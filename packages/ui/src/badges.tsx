@@ -1,26 +1,6 @@
-import type { ReactElement } from "react";
-
 import type { ManobalMode, TierId, Trajectory } from "./types";
 import { TIER_LABELS } from "./types";
-
-function DropIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path
-        d="M10 2 C10 2 4 10 4 13.2 A6 6 0 0 0 16 13.2 C16 10 10 2 10 2 Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function TriangleIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 3 L18 17 H2 Z" fill="currentColor" />
-    </svg>
-  );
-}
+import { TierGlyph } from "./icons";
 
 function DiamondIcon() {
   return (
@@ -30,34 +10,10 @@ function DiamondIcon() {
   );
 }
 
-function OctagonIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path
-        d="M7 2 H13 L18 7 V13 L13 18 H7 L2 13 V7 Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-const TIER_ICONS: Record<TierId, () => ReactElement> = {
-  T0: () => (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="10" cy="10" r="7" fill="currentColor" />
-    </svg>
-  ),
-  T1: DropIcon,
-  T2: TriangleIcon,
-  T3: DiamondIcon,
-  T4: OctagonIcon,
-};
-
 export function TierBadge({ tier }: { tier: TierId }) {
-  const Icon = TIER_ICONS[tier];
   return (
     <span className="mb-tier" data-tier={tier}>
-      <Icon />
+      <TierGlyph tier={tier} />
       <span>
         {tier} {TIER_LABELS[tier]}
       </span>

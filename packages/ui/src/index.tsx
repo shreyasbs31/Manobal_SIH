@@ -14,6 +14,19 @@ export type { ThemeColors, ThemeId, TierToken } from "./contrast";
 export { ContourTexture, MapGrid } from "./texture-view";
 export { contourPaths, contourSvg, hashSeed } from "./texture";
 export type { ContourPath } from "./texture-types";
+export { ThemeRoot } from "./theme-root";
+export {
+  CUSTOM_ICONS,
+  IconBuddyPair,
+  IconEdgeQueue,
+  IconHiddenLock,
+  IconLayRibbon,
+  IconLeaveWindow,
+  IconShiftMoon,
+  IconVaultKey,
+  IconVoiceContour,
+  TierGlyph,
+} from "./icons";
 export { RibbonMark, SyntheticMarker } from "./brand";
 export {
   AudioClearedChip,

@@ -642,6 +642,7 @@ textarea:focus-visible,
   width: 18px;
   height: 18px;
   flex: none;
+  color: var(--mb-t0);
 }
 
 .mb-tier[data-tier="T0"] svg {
