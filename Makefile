@@ -1,10 +1,15 @@
 SHELL := /bin/sh
 COMPOSE := docker compose --env-file infra/.env -f infra/docker-compose.yml
 
-.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify
+.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify dev lint
 
 up:
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
+
+dev: up
+
+lint:
+	corepack pnpm --recursive lint
 
 down:
 	$(COMPOSE) down
@@ -36,6 +41,9 @@ test: copy-lint
 	PYTHONPATH=services/vault uv run pytest services/vault/tests
 	PYTHONPATH=services/synth uv run pytest services/synth/tests
 	corepack pnpm --recursive typecheck
+	corepack pnpm --filter @manobal/ui test
+	corepack pnpm --filter @manobal/contracts test
+	corepack pnpm --filter @manobal/illustrations test
 
 eval:
 	uv run pytest infra/evals
