@@ -40,6 +40,7 @@ from .passkeys import (
     verify_authentication,
     verify_registration,
 )
+from .personnel import router as personnel_router
 from .security import RowPredicate, require
 from .selftest import SelfTestReport, run_selftest
 from .sim_clock import ClockState, ClockUpdate, get_clock, update_clock
@@ -72,6 +73,7 @@ app = FastAPI(
 )
 install_error_handlers(app)
 app.include_router(live_router)
+app.include_router(personnel_router)
 app.include_router(voice_router)
 app.add_middleware(
     CORSMiddleware,

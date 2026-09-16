@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -7,10 +8,14 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_ENV_FILES = [".env"]
+if os.environ.get("MANOBAL_SKIP_SECRETS") != "1":
+    _ENV_FILES.append("infra/secrets.env")
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=tuple(_ENV_FILES),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -84,6 +89,17 @@ class Settings(BaseSettings):
     az_tts_voice_hi: str = "hi-IN-SwaraNeural"
     az_tts_voice_hinglish: str = "hi-IN-AaravNeural"
     resilience_mode: bool = False
+
+    openai_api_key: SecretStr = SecretStr("")
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    openai_companion_fallback: bool = False
+    azure_openai_api_key: SecretStr = SecretStr("")
+    azure_openai_endpoint: str = ""
+    azure_openai_deployment: str = ""
+    azure_openai_api_version: str = "2024-10-21"
+    acs_connection_string: SecretStr = SecretStr("")
+    unit_sms_number: str = "+910000000000"
 
 
 @lru_cache

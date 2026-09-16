@@ -39,7 +39,17 @@ class FoundryClient:
             return has_alt or has_xai
         if model_class == "embeddings":
             return bool(self.settings.foundry_endpoint and self.settings.ai_deployment_embed)
+        if model_class in {"main", "open"} and self._openai_companion_ok():
+            if self.settings.foundry_endpoint and self._deployment(model_class):
+                return True
+            return True
         return bool(self.settings.foundry_endpoint and self._deployment(model_class))
+
+    def _openai_companion_ok(self) -> bool:
+        return bool(
+            self.settings.openai_companion_fallback
+            and self.settings.openai_api_key.get_secret_value()
+        )
 
     async def chat(
         self,
@@ -56,6 +66,22 @@ class FoundryClient:
             headers = {"content-type": "application/json"}
             body: dict[str, Any] = {
                 "model": self._deployment(model_class),
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+        elif (
+            model_class in {"main", "open"}
+            and not self.settings.foundry_endpoint
+            and self._openai_companion_ok()
+        ):
+            url = f"{self.settings.openai_base_url.rstrip('/')}/chat/completions"
+            headers = {
+                "content-type": "application/json",
+                "authorization": f"Bearer {self.settings.openai_api_key.get_secret_value()}",
+            }
+            body = {
+                "model": self.settings.openai_model,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,

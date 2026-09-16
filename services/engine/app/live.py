@@ -21,6 +21,7 @@ from .incident import (
     verify_hmac,
 )
 from .levers import rank_levers
+from .personnel import build_home, checkin_config
 from .privacy.kanon import complementary_suppress, simulator_allows
 from .privacy.rights import (
     KILLSWITCHES,
@@ -46,6 +47,16 @@ class HomePayload(BaseModel):
     checkin: dict[str, object]
     nudge: dict[str, str]
     ribbon: list[dict[str, float]]
+    persona: str = ""
+    simple_mode: bool = False
+    language: str = "en"
+    context_cards: list[dict[str, str]] = []
+    tiles: list[dict[str, str]] = []
+    status: dict[str, object] = {}
+    checkin_done: bool = False
+    onboarding_done: bool = False
+    lifecycle_state: str = "inducted"
+    device_tier: str = "B"
 
 
 class WelfareCaseOut(BaseModel):
@@ -93,46 +104,7 @@ def _ensure_persona_cases() -> None:
 async def me_home(
     principal: Annotated[Principal, Depends(require("me:read", RowPredicate.OWN))],
 ) -> HomePayload:
-    persona = next(item for item in PERSONAS.values() if item.token == principal.subject_token)
-    greetings = {
-        "arjun": ("Suprabhat, Arjun", "Night duty ended at 06:00"),
-        "meena": ("Namaste, Meena", "Leave window after de-induction"),
-        "imran": ("Good morning, Imran", "Sleep has been off for a week"),
-        "thomas": ("Good morning, Thomas", "A steady week on static duty"),
-        "lalit": ("Namaste, Lalit", "A private check-in is open for 72 hours"),
-        "deepak": ("Hello Deepak", "You can talk in Hinglish here"),
-        "rajesh": ("Namaste, Rajesh", "A land concern is still open"),
-        "karthik": ("Vanakkam, Karthik", "Settling back after leave"),
-    }
-    greeting, shift = greetings.get(persona.id, (f"Hello, {persona.display_label}", "Duty"))
-    return HomePayload(
-        persona_id=persona.case_id,
-        given_name=persona.display_label.split()[-1],
-        greeting=greeting,
-        shift_line=shift,
-        takeaway="Your sleep has been below your usual rhythm for 3 nights."
-        if persona.id == "arjun"
-        else "This view is only yours.",
-        checkin={"title": "How are you after duty?", "duration_s": 20, "href": "/app/check-in"},
-        nudge={
-            "title": "Sleep before tonight's duty" if persona.id == "arjun" else "A quiet check-in",
-            "detail": "A 20-minute nap plan" if persona.id == "arjun" else "Optional, on your time",
-            "why": "Roster days are running long this rotation. This is a private nudge.",
-        },
-        ribbon=[
-            {"day": float(day), "value": value}
-            for day, value in (
-                (1, 6.4),
-                (3, 6.2),
-                (5, 6.1),
-                (7, 5.8),
-                (9, 5.4),
-                (11, 4.9),
-                (13, 4.4),
-                (14, 4.2),
-            )
-        ],
-    )
+    return HomePayload.model_validate(build_home(principal.subject_token))
 
 
 @router.get("/me/trends")
@@ -149,14 +121,7 @@ async def me_trends(
 async def me_check_in(
     principal: Annotated[Principal, Depends(require("me:read", RowPredicate.OWN))],
 ) -> dict[str, object]:
-    del principal
-    return {
-        "questions": [
-            {"id": "mood", "prompt": "How is your mood right now?"},
-            {"id": "energy", "prompt": "How is your energy right now?"},
-            {"id": "sleep", "prompt": "How was your sleep?"},
-        ]
-    }
+    return checkin_config(principal.subject_token)
 
 
 @router.get("/me/voice")

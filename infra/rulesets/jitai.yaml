@@ -1,0 +1,30 @@
+# JITAI rules. Delivered only to the person.
+# Caps: 1 per day, 4 per week. Never during duty. "Not now" silences 72 hours.
+
+caps:
+  per_day: 1
+  per_week: 4
+  not_now_hours: 72
+
+rules:
+  NIGHT_TOMORROW:
+    trigger: night_shift_within_24h
+    prompt: Nap and light plan for tonight
+  DUTY_STREAK_10:
+    trigger: consecutive_duty_10
+    prompt: 5-minute recovery routine
+  QUICK_RETURN:
+    trigger: next_shift_under_11h
+    prompt: Wind-down audio and caffeine timing tip
+  LEAVE_WINDOW:
+    trigger: leave_balance_high
+    prompt: Leave planner suggestion
+  POST_INCIDENT:
+    trigger: unit_incident_72h
+    prompt: Check-in window card
+  LOW_SLEEP_3:
+    trigger: three_nights_below_baseline
+    prompt: Sleep toolkit
+  SILENCE_7:
+    trigger: no_checkin_7d
+    prompt: We are here when you want a check-in
