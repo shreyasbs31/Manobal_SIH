@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.auth import DemoLoginRequest, Role, mint_access_token, principal_for_demo
+from app.privacy.rights import KILLSWITCHES
 from app.voice.acoustics import acoustic_features, zeroise
 from app.voice.routing import stt_route, tts_route
 from app.voice.session import voice_router
@@ -12,7 +13,12 @@ app.include_router(voice_router)
 client = TestClient(app)
 
 
+def _enable_voice() -> None:
+    KILLSWITCHES["voice"] = False
+
+
 def _token(persona: str = "arjun") -> str:
+    _enable_voice()
     principal = principal_for_demo(DemoLoginRequest(role=Role.PERSONNEL, persona_id=persona))
     return mint_access_token(principal).access_token
 

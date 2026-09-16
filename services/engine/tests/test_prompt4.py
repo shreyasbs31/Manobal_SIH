@@ -433,33 +433,36 @@ def test_rights_killswitch_trend_and_break_glass_errors() -> None:
 
     set_killswitch("voice", True, "wdec")
     try:
-        set_killswitch("not-a-switch", True, "wdec")
-        raise AssertionError("unknown switch")
-    except KeyError:
-        pass
-    row = request_trend_share("MB-4091", "st_364aifljnxnxpqzk", "body_vitals")
-    assert row["status"] == "pending"
-    decide_trend_share("MB-4091", "body_vitals", "accepted")
-    try:
-        break_glass(
-            actor="uwo",
-            approver="uwo",
-            target_token="st_364aifljnxnxpqzk",
-            justification="Need to reach them",
-        )
-        raise AssertionError("same actor")
-    except ValueError:
-        pass
-    try:
-        break_glass(
-            actor="uwo",
-            approver="commander",
-            target_token="st_364aifljnxnxpqzk",
-            justification="short",
-        )
-        raise AssertionError("short note")
-    except ValueError:
-        pass
+        try:
+            set_killswitch("not-a-switch", True, "wdec")
+            raise AssertionError("unknown switch")
+        except KeyError:
+            pass
+        row = request_trend_share("MB-4091", "st_364aifljnxnxpqzk", "body_vitals")
+        assert row["status"] == "pending"
+        decide_trend_share("MB-4091", "body_vitals", "accepted")
+        try:
+            break_glass(
+                actor="uwo",
+                approver="uwo",
+                target_token="st_364aifljnxnxpqzk",
+                justification="Need to reach them",
+            )
+            raise AssertionError("same actor")
+        except ValueError:
+            pass
+        try:
+            break_glass(
+                actor="uwo",
+                approver="commander",
+                target_token="st_364aifljnxnxpqzk",
+                justification="short",
+            )
+            raise AssertionError("short note")
+        except ValueError:
+            pass
+    finally:
+        KILLSWITCHES["voice"] = False
 
 
 def test_commander_card_numeric_when_enough_asked() -> None:
