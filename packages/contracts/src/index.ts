@@ -1,4 +1,29 @@
 export type { components, paths } from "./schema";
+export {
+  PERSONA_IDS,
+  arjunHome,
+  arjunVoice,
+  arjunWorkspace,
+  checkInQuestions,
+  commandPosture,
+  demoPrincipal,
+  governanceOverview,
+  landingRibbon,
+  mePrivacy,
+  medicalAcute,
+  psMapping,
+  welfareQueue,
+} from "./ui-fixtures";
+export type {
+  CheckInQuestion,
+  CommandPosture,
+  FixtureTier,
+  FixtureTrajectory,
+  HomePayload,
+  PersonaId,
+  TrendPoint,
+  WelfareCase,
+} from "./ui-fixtures";
 
 export type ManobalRole =
   | "personnel"
