@@ -1,5 +1,3 @@
-"use client";
-
 import { SimClock } from "@manobal/ui";
 import type { Metadata } from "next";
 import Link from "next/link";
