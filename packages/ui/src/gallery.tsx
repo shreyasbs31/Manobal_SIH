@@ -14,6 +14,7 @@ import {
   OfflineChip,
   ProviderBadge,
   SimClock,
+  StatusChip,
   SyncQueueIndicator,
   TierBadge,
   TrajectoryArrow,
@@ -367,6 +368,13 @@ export function ComponentGallery() {
         </GalleryItem>
         <GalleryItem name="ModeChip">
           <ModeChip mode="demo" />
+        </GalleryItem>
+        <GalleryItem name="StatusChip">
+          <div className="mb-action-row">
+            <StatusChip kind="offline" queued={3} />
+            <StatusChip kind="syncing" />
+            <StatusChip kind="demo" />
+          </div>
         </GalleryItem>
         <GalleryItem name="SimClock">
           <SimClock value="2026-09-16 10:00 IST" />

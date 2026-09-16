@@ -35,7 +35,7 @@ export function CaptionStream({
   );
   return (
     <div className="mb-captions" aria-live="polite">
-      <span className="mb-chip">{language}</span>
+      {language ? <span className="mb-chip">{language}</span> : null}
       {normalised.map((line) => (
         <p className="mb-caption-line" data-speaker={line.speaker} key={line.text}>
           {line.text}
@@ -45,7 +45,7 @@ export function CaptionStream({
   );
 }
 
-export function SOSButton({ href = "/app/me" }: { href?: string | undefined }) {
+export function SOSButton({ href = "/app/safety" }: { href?: string | undefined }) {
   return (
     <a className="mb-sos-btn" href={href}>
       SOS

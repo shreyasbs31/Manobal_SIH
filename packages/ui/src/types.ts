@@ -46,6 +46,7 @@ export const COMPONENT_REGISTRY = [
   "ValidatedBadge",
   "MachineTranslatedBadge",
   "ModeChip",
+  "StatusChip",
   "SimClock",
   "EmptyState",
   "ErrorState",

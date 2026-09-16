@@ -23,9 +23,9 @@ const NAV: readonly NavItem[] = [
 ];
 
 const TITLES: Record<string, string> = {
-  "/command": "Unit posture",
+  "/command": "Bn C-02",
   "/command/roster": "Roster balancer",
-  "/welfare": "Support queue",
+  "/welfare": "Bn C-02 welfare",
   "/counsel": "Counsellor desk",
   "/medical": "Acute response",
   "/hq": "Force HQ",
@@ -38,6 +38,13 @@ const TITLES: Record<string, string> = {
   "/director": "Demo director",
 };
 
+function titleFor(pathname: string): string {
+  if (pathname.startsWith("/welfare/cases/")) {
+    return pathname.slice("/welfare/cases/".length);
+  }
+  return TITLES[pathname] ?? "Console";
+}
+
 export function ConsoleChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   return (
@@ -46,7 +53,7 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
       mode={manobalMode()}
       navItems={NAV}
       pathname={pathname}
-      title={TITLES[pathname] ?? "Console"}
+      title={titleFor(pathname)}
     >
       {children}
     </CommandShell>

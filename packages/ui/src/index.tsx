@@ -39,6 +39,7 @@ export {
   MachineTranslatedBadge,
   ModeChip,
   OfflineChip,
+  StatusChip,
   ProviderBadge,
   SimClock,
   SyncQueueIndicator,

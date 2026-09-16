@@ -123,8 +123,6 @@ export function CaseCard({
       <p>{drift}</p>
       {lever ? <p className="mb-sr">Recommended: {lever}</p> : null}
       {status ? <p className="mb-sr">{status}. {source}</p> : null}
-      {lever ? <p className="mb-sr">Recommended: {lever}</p> : null}
-      {status ? <p className="mb-sr">{status}. {source}</p> : null}
     </article>
   );
 }
@@ -239,15 +237,18 @@ export function ConsentToggleCard({
   whoCanSee,
   checked,
   onChange,
+  illustration,
 }: {
   title: string;
   leavesPhone: string;
   whoCanSee: string;
   checked: boolean;
   onChange: (next: boolean) => void;
+  illustration?: ReactNode | undefined;
 }) {
   return (
     <article className="mb-consent">
+      {illustration ? <div className="mb-consent-illust">{illustration}</div> : null}
       <div className="mb-consent-copy">
         <h3>{title}</h3>
         <p>What leaves your phone: {leavesPhone}</p>

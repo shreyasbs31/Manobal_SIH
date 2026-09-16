@@ -4,6 +4,7 @@ import { Command } from "cmdk";
 import {
   Bell,
   CalendarRange,
+  Clapperboard,
   FlaskConical,
   House,
   Inbox,
@@ -16,9 +17,10 @@ import {
   Search,
   Settings,
   Shield,
-  Sparkles,
   Stethoscope,
   User,
+  Volume2,
+  VolumeX,
   Wrench,
 } from "lucide-react";
 import {
@@ -30,10 +32,12 @@ import {
   useState,
 } from "react";
 
-import { ModeChip, OfflineChip, SimClock, SyncQueueIndicator } from "./badges";
+import { ModeChip, SimClock, StatusChip } from "./badges";
 import { RibbonMark, SyntheticMarker } from "./brand";
 import { SOSButton } from "./companion";
-import type { ManobalMode } from "./types";
+import { setSoundEnabled, soundEnabled } from "./sound";
+import { ContourTexture, MapGrid } from "./texture-view";
+import type { ManobalMode, ThemeName } from "./types";
 
 export interface NavItem {
   href: string;
@@ -48,62 +52,86 @@ const SAATHI_TABS: readonly NavItem[] = [
 ];
 
 const TAB_ICONS = [House, MessageCircle, Wrench, User] as const;
+const ICON_STROKE = 1.75;
 
 export function SaathiShell({
   children,
   pathname,
   greeting = "Saathi",
+  shiftLine,
   offline = false,
   queued = 0,
-  lastSync = "Just now",
+  syncing = false,
+  mode = "demo",
+  chrome = "full",
 }: {
   children: ReactNode;
   pathname: string;
   greeting?: string | undefined;
+  shiftLine?: string | undefined;
   offline?: boolean | undefined;
   queued?: number | undefined;
-  lastSync?: string | undefined;
+  syncing?: boolean | undefined;
+  mode?: ManobalMode | undefined;
+  chrome?: "full" | "flow" | "none" | undefined;
 }) {
+  if (chrome === "none") {
+    return <>{children}</>;
+  }
+
+  const showTabs = chrome === "full";
+  const showGreeting = chrome === "full";
+
   return (
     <div className="mb-theme mb-saathi" data-skin="saathi" data-theme="light">
       <a className="mb-skip" href="#main">
         Skip to content
       </a>
       <header className="mb-saathi-top">
-        <div className="mb-brand">
-          <RibbonMark />
-          <span>{greeting}</span>
-        </div>
-        <SOSButton href="/app/me" />
+        {showGreeting ? (
+          <div className="mb-saathi-greet">
+            <p className="mb-type-hero">{greeting}</p>
+            {shiftLine ? <p className="mb-saathi-shift">{shiftLine}</p> : null}
+          </div>
+        ) : (
+          <a className="mb-ghost" href="/app">
+            Close
+          </a>
+        )}
+        {chrome === "full" ? <SOSButton href="/app/safety" /> : null}
       </header>
-      <div className="mb-saathi-status">
-        <SyntheticMarker />
-        <OfflineChip offline={offline} />
-        {queued > 0 ? <SyncQueueIndicator count={queued} /> : null}
-        <span className="mb-chip">Last sync {lastSync}</span>
-      </div>
+      {showTabs ? (
+        <div className="mb-saathi-status">
+          {offline ? <StatusChip kind="offline" queued={queued} /> : null}
+          {syncing ? <StatusChip kind="syncing" /> : null}
+          {mode === "demo" ? <StatusChip kind="demo" /> : null}
+        </div>
+      ) : null}
       <main className="mb-saathi-main" id="main">
         {children}
       </main>
-      <nav className="mb-saathi-tabs" aria-label="Saathi">
-        {SAATHI_TABS.map((tab, index) => {
-          const Icon = TAB_ICONS[index] ?? House;
-          const current =
-            tab.href === "/app"
-              ? pathname === "/app"
-              : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-          return (
-            <a
-              aria-current={current ? "page" : undefined}
-              href={tab.href}
-              key={tab.href}
-            >
-              <Icon aria-hidden="true" size={20} />
-              {tab.label}
-            </a>
-          );
-        })}
-      </nav>
+      {showTabs ? (
+        <nav className="mb-saathi-tabs" aria-label="Saathi">
+          {SAATHI_TABS.map((tab, index) => {
+            const Icon = TAB_ICONS[index] ?? House;
+            const current =
+              tab.href === "/app"
+                ? pathname === "/app"
+                : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+            return (
+              <a
+                aria-current={current ? "page" : undefined}
+                href={tab.href}
+                key={tab.href}
+              >
+                <Icon aria-hidden="true" size={20} strokeWidth={ICON_STROKE} />
+                {tab.label}
+              </a>
+            );
+          })}
+        </nav>
+      ) : null}
+      <p className="mb-chip mb-chip--synthetic mb-saathi-synthetic">Synthetic data</p>
     </div>
   );
 }
@@ -132,7 +160,7 @@ const RAIL_ICONS: Record<string, typeof LayoutGrid> = {
   "/admin": Settings,
   "/lab": FlaskConical,
   "/architecture": Layers,
-  "/director": Sparkles,
+  "/director": Clapperboard,
 };
 
 export function CommandShell({
@@ -140,9 +168,10 @@ export function CommandShell({
   pathname,
   title,
   navItems = DEFAULT_COMMAND_NAV,
-  units = ["Synthetic sector North", "Company A", "Company B"],
+  units = ["Bn C-02", "Charlie Coy", "Alpha Coy"],
   mode = "demo",
   clock = "2026-09-16 10:00 IST",
+  theme = "dark",
 }: {
   children: ReactNode;
   pathname: string;
@@ -151,13 +180,20 @@ export function CommandShell({
   units?: readonly string[] | undefined;
   mode?: ManobalMode | undefined;
   clock?: string | undefined;
+  theme?: Extract<ThemeName, "dark" | "light"> | undefined;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [unit, setUnit] = useState(units[0] ?? "Synthetic sector North");
+  const [unit, setUnit] = useState(units[0] ?? "Bn C-02");
   const [language, setLanguage] = useState("English");
+  const [skinTheme, setSkinTheme] = useState<"dark" | "light">(theme);
+  const [soundOn, setSoundOn] = useState(false);
   const paletteId = useId();
   const items = useMemo(() => navItems, [navItems]);
+
+  useEffect(() => {
+    setSoundOn(soundEnabled());
+  }, []);
 
   const onKey = useCallback((event: KeyboardEvent) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -179,12 +215,16 @@ export function CommandShell({
       className="mb-theme mb-command"
       data-collapsed={collapsed ? "true" : "false"}
       data-skin="command"
-      data-theme="dark"
+      data-theme={skinTheme}
     >
       <a className="mb-skip" href="#main">
         Skip to content
       </a>
       <nav className="mb-rail" aria-label="Console">
+        <div className="mb-rail-texture" aria-hidden="true">
+          <ContourTexture height={640} opacity={0.08} seed="command-rail" width={220} />
+          <MapGrid />
+        </div>
         <div className="mb-brand">
           <RibbonMark title="MANOBAL ribbon" />
           <span className="mb-rail-label">MANOBAL</span>
@@ -194,7 +234,7 @@ export function CommandShell({
           onClick={() => setCollapsed((value) => !value)}
           type="button"
         >
-          <PanelLeft size={18} aria-hidden="true" />
+          <PanelLeft size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
           <span className="mb-rail-label">
             {collapsed ? "Expand menu" : "Collapse menu"}
           </span>
@@ -203,14 +243,14 @@ export function CommandShell({
           const current =
             item.href === pathname ||
             (item.href !== "/command" && pathname.startsWith(item.href));
-              const Icon = RAIL_ICONS[item.href] ?? LayoutGrid;
-              return (
+          const Icon = RAIL_ICONS[item.href] ?? LayoutGrid;
+          return (
             <a
               aria-current={current ? "page" : undefined}
               href={item.href}
               key={item.href}
             >
-              <Icon size={18} aria-hidden="true" />
+              <Icon size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
               <span className="mb-rail-label">{item.label}</span>
             </a>
           );
@@ -219,7 +259,7 @@ export function CommandShell({
       <div className="mb-command-main">
         <header className="mb-topbar">
           <label className="mb-unit">
-            <span className="mb-rail-label">Unit</span>
+            <span className="mb-sr">Unit</span>
             <select
               aria-label="Scoped unit"
               className="mb-unit"
@@ -233,12 +273,41 @@ export function CommandShell({
               ))}
             </select>
           </label>
-          <h1 style={{ margin: 0, fontSize: 20 }}>{title}</h1>
+          <h1 className="mb-type-title">{title}</h1>
           <div className="mb-topbar-end">
             <SimClock value={clock} />
             <ModeChip mode={mode} />
+            <button
+              aria-label={soundOn ? "Mute console chimes" : "Enable console chimes"}
+              className="mb-ghost"
+              onClick={() => {
+                const next = !soundOn;
+                setSoundEnabled(next);
+                setSoundOn(next);
+              }}
+              type="button"
+            >
+              {soundOn ? (
+                <Volume2 size={16} strokeWidth={ICON_STROKE} />
+              ) : (
+                <VolumeX size={16} strokeWidth={ICON_STROKE} />
+              )}
+            </button>
             <label>
-              <span className="mb-rail-label">Language</span>
+              <span className="mb-sr">Theme</span>
+              <select
+                aria-label="Theme"
+                onChange={(event) =>
+                  setSkinTheme(event.target.value === "light" ? "light" : "dark")
+                }
+                value={skinTheme}
+              >
+                <option value="dark">Night panel</option>
+                <option value="light">Survey paper</option>
+              </select>
+            </label>
+            <label>
+              <span className="mb-sr">Language</span>
               <select
                 aria-label="Language"
                 onChange={(event) => setLanguage(event.target.value)}
@@ -251,7 +320,7 @@ export function CommandShell({
               </select>
             </label>
             <button aria-label="Notifications" className="mb-ghost" type="button">
-              <Bell size={18} />
+              <Bell size={16} strokeWidth={ICON_STROKE} />
             </button>
             <button
               aria-expanded={paletteOpen}
@@ -260,7 +329,7 @@ export function CommandShell({
               onClick={() => setPaletteOpen(true)}
               type="button"
             >
-              <Search size={16} aria-hidden="true" />
+              <Search size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
               Search
             </button>
             <SyntheticMarker />
@@ -304,8 +373,11 @@ export function PublicHeader({ mode = "demo" }: { mode?: ManobalMode | undefined
       <div className="mb-topbar-end">
         <SyntheticMarker />
         <ModeChip mode={mode} />
+        <a className="mb-ghost" href="/trust">
+          Trust centre
+        </a>
         <a className="mb-secondary" href="/login">
-          Demo sign-in
+          Sign in
         </a>
       </div>
     </header>

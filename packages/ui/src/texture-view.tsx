@@ -27,7 +27,7 @@ export function ContourTexture({
       style={{ opacity }}
       viewBox={`0 0 ${width} ${height}`}
     >
-      {paths.map((path) => (
+      {paths.map((path: { d: string; level: number }) => (
         <path d={path.d} key={path.level} />
       ))}
     </svg>

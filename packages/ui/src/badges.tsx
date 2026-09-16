@@ -57,7 +57,32 @@ export function DriverList({ items }: { items: readonly string[] }) {
 
 export function ModeChip({ mode }: { mode: ManobalMode }) {
   return (
-    <span className="mb-mode">{mode === "demo" ? "Demo mode" : "Sovereign mode"}</span>
+    <span className="mb-status-chip" data-kind="demo">
+      {mode === "demo" ? "Demo" : "Sovereign"}
+    </span>
+  );
+}
+
+export function StatusChip({
+  kind,
+  queued = 0,
+}: {
+  kind: "offline" | "syncing" | "demo";
+  queued?: number | undefined;
+}) {
+  const label =
+    kind === "offline"
+      ? queued > 0
+        ? `Offline. ${queued} check-ins saved on this phone.`
+        : "Offline"
+      : kind === "syncing"
+        ? "Syncing"
+        : "Demo";
+  return (
+    <span className="mb-status-chip" data-kind={kind}>
+      {kind === "offline" ? <span className="mb-status-dot" aria-hidden="true" /> : null}
+      {label}
+    </span>
   );
 }
 
@@ -69,7 +94,7 @@ export function SimClock({
   playing?: boolean | undefined;
 }) {
   return (
-    <time className="mb-sim" dateTime={value}>
+    <time className="mb-sim mb-type-timer" dateTime={value}>
               Simulated {value}
     </time>
   );
