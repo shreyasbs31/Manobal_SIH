@@ -43,6 +43,7 @@ from .passkeys import (
 from .security import RowPredicate, require
 from .selftest import SelfTestReport, run_selftest
 from .sim_clock import ClockState, ClockUpdate, get_clock, update_clock
+from .voice.session import voice_router
 
 configure_logging()
 logger = structlog.get_logger()
@@ -71,6 +72,7 @@ app = FastAPI(
 )
 install_error_handlers(app)
 app.include_router(live_router)
+app.include_router(voice_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.web_origin],

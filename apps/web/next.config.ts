@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; connect-src 'self' http://localhost:8000 ws://localhost:8080; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'",
+              "default-src 'self'; connect-src 'self' http://localhost:8000 ws://localhost:8000 ws://localhost:8080; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'",
           },
         ],
       },

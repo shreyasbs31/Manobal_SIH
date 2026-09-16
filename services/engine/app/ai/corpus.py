@@ -49,6 +49,9 @@ def _chunk_text(text: str, size: int = 400) -> list[str]:
 
 def write_markdown() -> None:
     CORPUS_DIR.mkdir(parents=True, exist_ok=True)
+    marker = CORPUS_DIR / "sleep-rotating-en.md"
+    if marker.exists():
+        return
     for doc in DOCS:
         for lang in ("en", "hi"):
             title = doc["title_en"] if lang == "en" else doc["title_hi"]
