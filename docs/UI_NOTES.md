@@ -168,3 +168,34 @@ Remaining for human review:
 - Spec 13.1 demo banner and spec 27.5 hosting caption both show, so the 390 frame is tall.
 - On-device preview label appears only after WebGPU. Whisper and WebLLM weights are not vendored; English offline reflect uses the local template.
 - Foundry, Deepgram, and Azure Speech were unset. Voice first audio is the silent-WAV fallback. Typed and fixture voice paths are real.
+
+## Prompt 6 personnel surfaces
+
+Touched screens: onboarding, home (Arjun, Meena, Karthik), check-in, Saathi, safety, toolkit, assessments, rest, talk, buddy, plan, family, Me. Shots in `e2e/artifacts/ui/p6-*.png` at 360, 390, and 412.
+
+| Screen | Focal | MANOBAL | Hierarchy | Copy | Data-viz | Motion | A11y | Video | Round |
+|---|---|---|---|---|---|---|---|---|---|
+| Onboarding | 4 | 5 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Home Arjun | 5 | 5 | 5 | 5 | 5 | 4 | 4 | 5 | 1 |
+| Home Meena | 4 | 5 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Home Karthik | 5 | 5 | 5 | 5 | 4 | 4 | 4 | 5 | 1 |
+| Check-in | 5 | 5 | 5 | 5 | 4 | 4 | 4 | 5 | 1 |
+| Saathi | 4 | 5 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Safety | 5 | 5 | 5 | 5 | 4 | 4 | 4 | 5 | 1 |
+| Toolkit | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 1 |
+| Assessments | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 1 |
+| Rest | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Talk | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 1 |
+| Buddy | 4 | 5 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Plan | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 1 |
+| Family | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 1 |
+| Me | 4 | 5 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+
+Round 1: ScreenState no longer blanks Saathi when a snapshot exists. Safety uses `sms:` and T4 red only on the Tele-MANAS call button. Homes differ by shift, leave window, and Tamil settling-back with Why this? on each context card. Meena home is one leave card so tiles stay on the first screen.
+
+Remaining for human review:
+- Me is a long scroll at 360. Simple mode enlarges targets.
+- Azure Translator, Speech, ACS, and Content Safety remain unset. Other scheduled languages ship English with a machine-translated flag. Calls show a labelled demo join.
+- Toolkit list is long; ranking puts music and sleep first for Arjun.
+- Lighthouse 12.8 on the landing page in `next dev`: accessibility 100, performance 41. PWA is no longer a scored category in this Lighthouse version. Production TWA numbers were not taken.
+
