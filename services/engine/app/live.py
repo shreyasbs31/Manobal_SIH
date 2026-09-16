@@ -185,7 +185,45 @@ async def me_voice(
             },
         ],
         "audio_cleared_ms": 84,
-        "model_caption": "open",
+        "model_caption": (
+            "Prototype: open-weight model hosted on Azure. Deployable on force servers."
+        ),
+    }
+
+
+class CompanionTurnBody(BaseModel):
+    text: str
+    lang: str = "en"
+    mode: str = "checkin"
+
+
+@router.post("/companion/turn")
+async def companion_turn(
+    body: CompanionTurnBody,
+    principal: Annotated[Principal, Depends(require("me:write", RowPredicate.OWN))],
+) -> dict[str, object]:
+    from .ai.corpus import retrieve
+    from .ai.pipeline import HOSTING_CAPTION, run_pipeline
+
+    chunks = [{"id": chunk.id, "text": chunk.text} for chunk in retrieve(body.text, body.lang)]
+    result = await run_pipeline(
+        body.text,
+        lang=body.lang,
+        mode=body.mode,
+        token=principal.subject_token,
+        chunks=chunks,
+    )
+    return {
+        "acute": result.acute,
+        "injection": result.injection,
+        "reply": result.reply,
+        "script": result.script,
+        "mode": result.mode,
+        "provider": result.provider,
+        "citations": result.citations,
+        "model_reached": result.model_reached,
+        "gate": result.gate,
+        "hosting_caption": HOSTING_CAPTION,
     }
 
 
@@ -595,7 +633,9 @@ async def gov_models(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    if not REGISTRY:
+    from .ai.routing_gate import ensure_companion_routing
+
+    if "primary" not in REGISTRY:
         import numpy as np
 
         from .scoring.forecast import metrics, register_world_metrics, train_forecast
@@ -609,6 +649,7 @@ async def gov_models(
         register_world_metrics("primary", metrics(labels, probs), version=model.version)
         shifted = (features[:, 0] * 1.15 + features[:, 1] > 0.05).astype(int)
         register_world_metrics("shifted", metrics(shifted, probs), version=model.version)
+    ensure_companion_routing()
     return {"registry": REGISTRY}
 
 

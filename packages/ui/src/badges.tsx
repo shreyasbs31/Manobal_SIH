@@ -120,8 +120,9 @@ export function SyncQueueIndicator({ count }: { count: number }) {
   );
 }
 
-export function AudioClearedChip() {
-  return <span className="mb-audio">Audio cleared</span>;
+export function AudioClearedChip({ ms }: { ms?: number | undefined } = {}) {
+  const label = ms === undefined ? "Audio cleared" : `Audio cleared in ${ms} ms`;
+  return <span className="mb-audio">{label}</span>;
 }
 
 export function ValidatedBadge() {

@@ -2134,10 +2134,15 @@ textarea {
 }
 
 .mb-voice-tools {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.mb-hosting-caption {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mb-muted);
 }
 
 .mb-me-points {

@@ -248,4 +248,16 @@ export class ManobalClient {
   }): Promise<{ case_id: string; tier: string; alerts: number; llm_invoked: boolean }> {
     return this.request("/api/v1/acute", { method: "POST", body });
   }
+
+  companionTurn(body: { text: string; lang: string; mode: string }): Promise<{
+    acute: boolean;
+    injection: boolean;
+    reply: string | null;
+    script: string | null;
+    model_reached: boolean;
+    citations: string[];
+    hosting_caption: string;
+  }> {
+    return this.request("/api/v1/companion/turn", { method: "POST", body });
+  }
 }

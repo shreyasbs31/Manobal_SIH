@@ -18,10 +18,13 @@ export default function TrustPage() {
         </p>
         <article className="mb-card">
           <h2>Support, not surveillance</h2>
-          <p>
-            Check-ins, voice, and toolkit use stay in your control. You can
-            pause sync, download receipts, and ask for erasure.
-          </p>
+        <p>
+          Check-ins, voice, and toolkit use stay in your control. You can
+          pause sync, download receipts, and ask for erasure.
+        </p>
+        <p className="mb-hosting-caption">
+          Prototype: open-weight model hosted on Azure. Deployable on force servers.
+        </p>
         </article>
       </main>
     </div>

@@ -23,10 +23,13 @@ export default function ArchitecturePage() {
       <PublicHeader mode={manobalMode()} />
       <main className="mb-command-body">
         <h1 className="mb-type-title">Separated by design</h1>
-        <p>
-          Live self-tests prove the engine cannot reach identity storage or its keys.
-          Command routes never accept a person, case, or token parameter.
-        </p>
+          <p>
+            Live self-tests prove the engine cannot reach identity storage or its keys.
+            Command routes never accept a person, case, or token parameter.
+          </p>
+          <p className="mb-hosting-caption">
+            Prototype: open-weight model hosted on Azure. Deployable on force servers.
+          </p>
         <div className="mb-layers">
           {LAYERS.map((layer) => (
             <section className="mb-layer" key={layer.title}>
