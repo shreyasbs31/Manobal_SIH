@@ -35,52 +35,57 @@ function contrastRatio(foreground, background) {
 
 const themes = {
   "saathi-light": {
-    bg: "#F5F8F7",
+    bg: "#F4F8F6",
     surface: "#FFFFFF",
-    surface2: "#E4EFEA",
-    text: "#1B2127",
+    text: "#1B2427",
     muted: "#3D4F48",
     primary: "#2F5D50",
-    onPrimary: "#F5F8F7",
+    onPrimary: "#FFFFFF",
+    focus: "#2F5D50",
     sos: "#B83A2E",
     onSos: "#FFFFFF",
   },
   "saathi-dark": {
-    bg: "#0E1714",
-    surface: "#17241F",
-    text: "#E8F3EE",
+    bg: "#12211C",
+    surface: "#1F4238",
+    text: "#E8ECE9",
     muted: "#B7C9C1",
     primary: "#8FBEAD",
-    onPrimary: "#0E1714",
+    onPrimary: "#12211C",
+    focus: "#E2C56C",
     sos: "#E06A5C",
     onSos: "#140706",
   },
   "saathi-hc": {
     bg: "#FFFFFF",
+    surface: "#FFFFFF",
     text: "#0B0D0E",
-    muted: "#1B2127",
-    primary: "#16352E",
+    muted: "#1B2427",
+    primary: "#1F4238",
     onPrimary: "#FFFFFF",
+    focus: "#0B0D0E",
     sos: "#8E241C",
     onSos: "#FFFFFF",
   },
   "command-dark": {
     bg: "#131C24",
-    surface: "#1E2A35",
-    text: "#F3F1EA",
-    muted: "#D4C8A0",
-    primary: "#D7B45E",
+    surface: "#1B2630",
+    text: "#E8ECE9",
+    muted: "#BFB28A",
+    primary: "#C8A24A",
     onPrimary: "#131C24",
+    focus: "#C8A24A",
     sos: "#B83A2E",
     onSos: "#FFFFFF",
   },
   "command-light": {
-    bg: "#F3EEE4",
-    surface: "#FFFBF4",
-    text: "#131C24",
-    muted: "#3E3A32",
-    primary: "#6B5210",
-    onPrimary: "#FFFBF4",
+    bg: "#EEF1EB",
+    surface: "#F8FAF6",
+    text: "#1B2427",
+    muted: "#3E4A3F",
+    primary: "#8F6F1E",
+    onPrimary: "#FFFFFF",
+    focus: "#8F6F1E",
     sos: "#B83A2E",
     onSos: "#FFFFFF",
   },
@@ -90,21 +95,21 @@ const themeTiers = {
   "saathi-light": {
     t0: "#6E927F",
     t1: "#4D8BAE",
-    t2: "#B48733",
+    t2: "#9A6F12",
     t3: "#D06A34",
     t4: "#B83A2E",
   },
   "saathi-dark": {
     t0: "#6E927F",
-    t1: "#4D8BAE",
+    t1: "#62A4C4",
     t2: "#D6A13D",
     t3: "#D06A34",
-    t4: "#BB4236",
+    t4: "#E06A5C",
   },
   "saathi-hc": {
     t0: "#3F6B5C",
     t1: "#2F6A8C",
-    t2: "#8A6A1C",
+    t2: "#9A6F12",
     t3: "#A84A1C",
     t4: "#8E241C",
   },
@@ -113,79 +118,70 @@ const themeTiers = {
     t1: "#4D8BAE",
     t2: "#D6A13D",
     t3: "#D06A34",
-    t4: "#BF4E43",
+    t4: "#E06A5C",
   },
   "command-light": {
-    t0: "#5A7C6B",
-    t1: "#3D7394",
-    t2: "#AD8231",
+    t0: "#6E927F",
+    t1: "#4D8BAE",
+    t2: "#9A6F12",
     t3: "#D06A34",
     t4: "#B83A2E",
   },
 };
 
-const textPairings = [
-  ["saathi-light", "text", "bg", 4.5],
-  ["saathi-light", "text", "surface", 4.5],
-  ["saathi-light", "text", "surface2", 4.5],
-  ["saathi-light", "muted", "bg", 4.5],
-  ["saathi-light", "onPrimary", "primary", 4.5],
-  ["saathi-light", "onSos", "sos", 4.5],
-  ["saathi-light", "primary", "bg", 3],
-  ["saathi-dark", "text", "bg", 4.5],
-  ["saathi-dark", "text", "surface", 4.5],
-  ["saathi-dark", "muted", "bg", 4.5],
-  ["saathi-dark", "onPrimary", "primary", 4.5],
-  ["saathi-dark", "onSos", "sos", 4.5],
-  ["saathi-hc", "text", "bg", 4.5],
-  ["saathi-hc", "muted", "bg", 4.5],
-  ["saathi-hc", "onPrimary", "primary", 4.5],
-  ["saathi-hc", "onSos", "sos", 4.5],
-  ["command-dark", "text", "bg", 4.5],
-  ["command-dark", "text", "surface", 4.5],
-  ["command-dark", "muted", "bg", 4.5],
-  ["command-dark", "onPrimary", "primary", 4.5],
-  ["command-light", "text", "bg", 4.5],
-  ["command-light", "text", "surface", 4.5],
-  ["command-light", "muted", "bg", 4.5],
-  ["command-light", "onPrimary", "primary", 4.5],
-];
-
-const tierPairings = [
-  ["saathi-light", "bg"],
-  ["saathi-light", "surface"],
-  ["saathi-dark", "bg"],
-  ["saathi-dark", "surface"],
-  ["saathi-hc", "bg"],
-  ["command-dark", "bg"],
-  ["command-dark", "surface"],
-  ["command-light", "bg"],
-];
-
-test("semantic text pairings meet WCAG AA", () => {
+test("every theme text pairing meets 4.5:1", () => {
   const failures = [];
-  for (const [themeId, fgKey, bgKey, minimum] of textPairings) {
-    const theme = themes[themeId];
-    const ratio = contrastRatio(theme[fgKey], theme[bgKey]);
-    if (ratio < minimum) {
-      failures.push(
-        `${themeId} ${fgKey} on ${bgKey}: ${ratio.toFixed(2)} (need ${minimum})`,
-      );
+  for (const [themeId, theme] of Object.entries(themes)) {
+    const checks = [
+      ["text", "bg"],
+      ["text", "surface"],
+      ["muted", "bg"],
+      ["muted", "surface"],
+      ["onPrimary", "primary"],
+      ["onSos", "sos"],
+    ];
+    for (const [fg, bg] of checks) {
+      const ratio = contrastRatio(theme[fg], theme[bg]);
+      if (ratio < 4.5) {
+        failures.push(
+          `${themeId} ${fg} on ${bg}: ${ratio.toFixed(2)} (need 4.5)`,
+        );
+      }
     }
   }
   assert.deepEqual(failures, []);
 });
 
-test("tier glyphs meet 3:1 after per-theme lightness adjustment", () => {
+test("every theme glyph and focus pairing meets 3:1", () => {
   const failures = [];
-  for (const [themeId, bgKey] of tierPairings) {
-    const background = themes[themeId][bgKey];
-    for (const [name, hex] of Object.entries(themeTiers[themeId])) {
-      const ratio = contrastRatio(hex, background);
+  for (const [themeId, theme] of Object.entries(themes)) {
+    for (const [fg, bg] of [
+      ["focus", "bg"],
+      ["primary", "bg"],
+    ]) {
+      const ratio = contrastRatio(theme[fg], theme[bg]);
       if (ratio < 3) {
-        failures.push(`${name} on ${themeId} ${bgKey}: ${ratio.toFixed(2)}`);
+        failures.push(
+          `${themeId} ${fg} on ${bg}: ${ratio.toFixed(2)} (need 3)`,
+        );
+      }
+    }
+    for (const [name, hex] of Object.entries(themeTiers[themeId])) {
+      for (const bgKey of ["bg", "surface"]) {
+        const ratio = contrastRatio(hex, theme[bgKey]);
+        if (ratio < 3) {
+          failures.push(
+            `${themeId} ${name} on ${bgKey}: ${ratio.toFixed(2)} (need 3)`,
+          );
+        }
       }
     }
   }
   assert.deepEqual(failures, []);
+});
+
+test("survey paper is the command light theme", () => {
+  assert.equal(themes["command-light"].bg, "#EEF1EB");
+  assert.equal(themes["command-light"].surface, "#F8FAF6");
+  assert.equal(themes["command-light"].primary, "#8F6F1E");
 });

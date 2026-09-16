@@ -1,6 +1,6 @@
 /**
- * WCAG 2.2 relative luminance and contrast helpers.
- * Pairings are checked in scripts/check-contrast.mjs and tests/contrast.test.mjs.
+ * UI Direction v3 palette and WCAG 2.2 contrast helpers.
+ * Spec hues stay in specPalette. Semantic roles may shift lightness per theme.
  */
 
 export function hexToRgb(hex: string): readonly [number, number, number] {
@@ -41,27 +41,33 @@ export function contrastRatio(foreground: string, background: string): number {
 export function passesAa(
   foreground: string,
   background: string,
-  kind: "text" | "large" | "ui" = "text",
+  kind: "text" | "glyph" = "text",
 ): boolean {
   const ratio = contrastRatio(foreground, background);
-  if (kind === "text") {
-    return ratio >= 4.5;
-  }
-  return ratio >= 3;
+  return kind === "text" ? ratio >= 4.5 : ratio >= 3;
 }
 
 export const specPalette = {
-  neem700: "#2F5D50",
-  neem100: "#E4EFEA",
-  mist50: "#F5F8F7",
-  monsoon950: "#131C24",
-  monsoon800: "#1E2A35",
-  brass400: "#C8A24A",
-  khaki300: "#C9BB8E",
-  ink900: "#1B2127",
+  neem: "#2F5D50",
+  neemDeep: "#1F4238",
+  mist: "#F4F8F6",
+  contour: "#CFDDD6",
+  duskInk: "#1B2427",
+  dawn: "#F2C6A0",
+  monsoon: "#131C24",
+  slatePanel: "#1B2630",
+  mapLine: "#2A3945",
+  brass: "#C8A24A",
+  khaki: "#BFB28A",
+  chalk: "#E8ECE9",
+  surveyBg: "#EEF1EB",
+  surveyPanel: "#F8FAF6",
+  surveyMap: "#CBD3C8",
+  surveyBrass: "#8F6F1E",
   t0: "#6E927F",
   t1: "#4D8BAE",
   t2: "#D6A13D",
+  t2StrokeLight: "#9A6F12",
   t3: "#D06A34",
   t4: "#B83A2E",
 } as const;
@@ -86,142 +92,108 @@ export interface ThemeColors {
   focus: string;
   sos: string;
   onSos: string;
+  axis: string;
 }
 
-/**
- * Lightness is adjusted per theme so body text and primary buttons meet WCAG AA.
- * Spec hex values stay as the named palette; semantic roles may use a nearby step.
- */
 export const themes: Record<ThemeId, ThemeColors> = {
   "saathi-light": {
-    bg: specPalette.mist50,
+    bg: specPalette.mist,
     surface: "#FFFFFF",
-    surface2: specPalette.neem100,
-    text: specPalette.ink900,
+    surface2: specPalette.contour,
+    text: specPalette.duskInk,
     muted: "#3D4F48",
-    primary: specPalette.neem700,
-    onPrimary: specPalette.mist50,
-    accent: "#8A6A1C",
-    border: "#C5D4CE",
-    focus: specPalette.neem700,
+    primary: specPalette.neem,
+    onPrimary: "#FFFFFF",
+    accent: specPalette.neemDeep,
+    border: specPalette.contour,
+    focus: specPalette.neem,
     sos: specPalette.t4,
     onSos: "#FFFFFF",
+    axis: "#5A6B64",
   },
   "saathi-dark": {
-    bg: "#0E1714",
-    surface: "#17241F",
-    surface2: "#20322C",
-    text: "#E8F3EE",
+    bg: "#12211C",
+    surface: specPalette.neemDeep,
+    surface2: "#274A40",
+    text: specPalette.chalk,
     muted: "#B7C9C1",
     primary: "#8FBEAD",
-    onPrimary: "#0E1714",
+    onPrimary: "#12211C",
     accent: "#E2C56C",
     border: "#355048",
     focus: "#E2C56C",
     sos: "#E06A5C",
     onSos: "#140706",
+    axis: "#9BB0A8",
   },
   "saathi-hc": {
     bg: "#FFFFFF",
     surface: "#FFFFFF",
     surface2: "#EEF2F0",
     text: "#0B0D0E",
-    muted: "#1B2127",
-    primary: "#16352E",
+    muted: specPalette.duskInk,
+    primary: specPalette.neemDeep,
     onPrimary: "#FFFFFF",
     accent: "#5C4708",
     border: "#0B0D0E",
     focus: "#0B0D0E",
     sos: "#8E241C",
     onSos: "#FFFFFF",
+    axis: specPalette.duskInk,
   },
   "command-dark": {
-    bg: specPalette.monsoon950,
-    surface: specPalette.monsoon800,
-    surface2: "#263440",
-    text: "#F3F1EA",
-    muted: "#D4C8A0",
-    primary: "#D7B45E",
-    onPrimary: specPalette.monsoon950,
-    accent: specPalette.brass400,
-    border: "#3A4A57",
-    focus: specPalette.brass400,
+    bg: specPalette.monsoon,
+    surface: specPalette.slatePanel,
+    surface2: specPalette.mapLine,
+    text: specPalette.chalk,
+    muted: specPalette.khaki,
+    primary: specPalette.brass,
+    onPrimary: specPalette.monsoon,
+    accent: specPalette.brass,
+    border: specPalette.mapLine,
+    focus: specPalette.brass,
     sos: specPalette.t4,
     onSos: "#FFFFFF",
+    axis: specPalette.khaki,
   },
   "command-light": {
-    bg: "#F3EEE4",
-    surface: "#FFFBF4",
-    surface2: "#E8E0D0",
-    text: specPalette.monsoon950,
-    muted: "#3E3A32",
-    primary: "#6B5210",
-    onPrimary: "#FFFBF4",
-    accent: "#8A6A1C",
-    border: "#C9BFA8",
-    focus: "#6B5210",
+    bg: specPalette.surveyBg,
+    surface: specPalette.surveyPanel,
+    surface2: specPalette.surveyMap,
+    text: specPalette.duskInk,
+    muted: "#3E4A3F",
+    primary: specPalette.surveyBrass,
+    onPrimary: "#FFFFFF",
+    accent: specPalette.surveyBrass,
+    border: specPalette.surveyMap,
+    focus: specPalette.surveyBrass,
     sos: specPalette.t4,
     onSos: "#FFFFFF",
+    axis: "#3E4A3F",
   },
 };
 
-export const textPairings: readonly {
-  theme: ThemeId;
-  fg: keyof ThemeColors;
-  bg: keyof ThemeColors;
-  kind: "text" | "large" | "ui";
-}[] = [
-  { theme: "saathi-light", fg: "text", bg: "bg", kind: "text" },
-  { theme: "saathi-light", fg: "text", bg: "surface", kind: "text" },
-  { theme: "saathi-light", fg: "text", bg: "surface2", kind: "text" },
-  { theme: "saathi-light", fg: "muted", bg: "bg", kind: "text" },
-  { theme: "saathi-light", fg: "onPrimary", bg: "primary", kind: "text" },
-  { theme: "saathi-light", fg: "onSos", bg: "sos", kind: "text" },
-  { theme: "saathi-light", fg: "primary", bg: "bg", kind: "ui" },
-  { theme: "saathi-dark", fg: "text", bg: "bg", kind: "text" },
-  { theme: "saathi-dark", fg: "text", bg: "surface", kind: "text" },
-  { theme: "saathi-dark", fg: "muted", bg: "bg", kind: "text" },
-  { theme: "saathi-dark", fg: "onPrimary", bg: "primary", kind: "text" },
-  { theme: "saathi-dark", fg: "onSos", bg: "sos", kind: "text" },
-  { theme: "saathi-hc", fg: "text", bg: "bg", kind: "text" },
-  { theme: "saathi-hc", fg: "muted", bg: "bg", kind: "text" },
-  { theme: "saathi-hc", fg: "onPrimary", bg: "primary", kind: "text" },
-  { theme: "saathi-hc", fg: "onSos", bg: "sos", kind: "text" },
-  { theme: "command-dark", fg: "text", bg: "bg", kind: "text" },
-  { theme: "command-dark", fg: "text", bg: "surface", kind: "text" },
-  { theme: "command-dark", fg: "muted", bg: "bg", kind: "text" },
-  { theme: "command-dark", fg: "onPrimary", bg: "primary", kind: "text" },
-  { theme: "command-light", fg: "text", bg: "bg", kind: "text" },
-  { theme: "command-light", fg: "text", bg: "surface", kind: "text" },
-  { theme: "command-light", fg: "muted", bg: "bg", kind: "text" },
-  { theme: "command-light", fg: "onPrimary", bg: "primary", kind: "text" },
-];
-
 export type TierToken = "t0" | "t1" | "t2" | "t3" | "t4";
 
-/**
- * Spec hex values stay in specPalette. Glyphs are lightened or darkened per
- * theme so each pairing meets a 3:1 UI contrast floor on that theme's surface.
- */
 export const themeTiers: Record<ThemeId, Record<TierToken, string>> = {
   "saathi-light": {
     t0: specPalette.t0,
     t1: specPalette.t1,
-    t2: "#B48733",
+    t2: specPalette.t2StrokeLight,
     t3: specPalette.t3,
     t4: specPalette.t4,
   },
   "saathi-dark": {
     t0: specPalette.t0,
-    t1: specPalette.t1,
+    t1: "#62A4C4",
     t2: specPalette.t2,
     t3: specPalette.t3,
-    t4: "#BB4236",
+    t4: "#E06A5C",
   },
   "saathi-hc": {
     t0: "#3F6B5C",
     t1: "#2F6A8C",
-    t2: "#8A6A1C",
+    t2: specPalette.t2StrokeLight,
     t3: "#A84A1C",
     t4: "#8E241C",
   },
@@ -230,42 +202,60 @@ export const themeTiers: Record<ThemeId, Record<TierToken, string>> = {
     t1: specPalette.t1,
     t2: specPalette.t2,
     t3: specPalette.t3,
-    t4: "#BF4E43",
+    t4: "#E06A5C",
   },
   "command-light": {
-    t0: "#5A7C6B",
-    t1: "#3D7394",
-    t2: "#AD8231",
+    t0: specPalette.t0,
+    t1: specPalette.t1,
+    t2: specPalette.t2StrokeLight,
     t3: specPalette.t3,
     t4: specPalette.t4,
   },
 };
 
-export const tierOnBackground: readonly {
+const THEME_IDS = [
+  "saathi-light",
+  "saathi-dark",
+  "saathi-hc",
+  "command-dark",
+  "command-light",
+] as const;
+
+const TEXT_KEYS = ["text", "muted", "onPrimary", "onSos"] as const;
+
+export const textPairings: readonly {
+  theme: ThemeId;
+  fg: keyof ThemeColors;
+  bg: keyof ThemeColors;
+  kind: "text" | "glyph";
+}[] = THEME_IDS.flatMap((theme) => {
+  const rows: {
+    theme: ThemeId;
+    fg: keyof ThemeColors;
+    bg: keyof ThemeColors;
+    kind: "text" | "glyph";
+  }[] = [
+    { theme, fg: "text", bg: "bg", kind: "text" },
+    { theme, fg: "text", bg: "surface", kind: "text" },
+    { theme, fg: "muted", bg: "bg", kind: "text" },
+    { theme, fg: "muted", bg: "surface", kind: "text" },
+    { theme, fg: "onPrimary", bg: "primary", kind: "text" },
+    { theme, fg: "onSos", bg: "sos", kind: "text" },
+    { theme, fg: "focus", bg: "bg", kind: "glyph" },
+    { theme, fg: "primary", bg: "bg", kind: "glyph" },
+  ];
+  return rows;
+});
+
+export const glyphPairings: readonly {
   theme: ThemeId;
   tier: TierToken;
   background: keyof ThemeColors;
-}[] = [
-  { theme: "saathi-light", tier: "t0", background: "bg" },
-  { theme: "saathi-light", tier: "t1", background: "bg" },
-  { theme: "saathi-light", tier: "t2", background: "bg" },
-  { theme: "saathi-light", tier: "t3", background: "bg" },
-  { theme: "saathi-light", tier: "t4", background: "bg" },
-  { theme: "saathi-light", tier: "t2", background: "surface" },
-  { theme: "saathi-dark", tier: "t0", background: "bg" },
-  { theme: "saathi-dark", tier: "t4", background: "surface" },
-  { theme: "saathi-hc", tier: "t0", background: "bg" },
-  { theme: "saathi-hc", tier: "t2", background: "bg" },
-  { theme: "saathi-hc", tier: "t4", background: "bg" },
-  { theme: "command-dark", tier: "t0", background: "bg" },
-  { theme: "command-dark", tier: "t1", background: "bg" },
-  { theme: "command-dark", tier: "t2", background: "bg" },
-  { theme: "command-dark", tier: "t3", background: "bg" },
-  { theme: "command-dark", tier: "t4", background: "bg" },
-  { theme: "command-dark", tier: "t4", background: "surface" },
-  { theme: "command-light", tier: "t0", background: "bg" },
-  { theme: "command-light", tier: "t1", background: "bg" },
-  { theme: "command-light", tier: "t2", background: "bg" },
-  { theme: "command-light", tier: "t3", background: "bg" },
-  { theme: "command-light", tier: "t4", background: "bg" },
-];
+}[] = THEME_IDS.flatMap((theme) =>
+  (["t0", "t1", "t2", "t3", "t4"] as const).flatMap((tier) => [
+    { theme, tier, background: "bg" as const },
+    { theme, tier, background: "surface" as const },
+  ]),
+);
+
+void TEXT_KEYS;
