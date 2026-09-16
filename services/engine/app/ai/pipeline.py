@@ -161,6 +161,12 @@ async def run_pipeline(
             model_reached=False,
             gate="killswitch",
         )
+    if token:
+        from .remembers import context_for, get_remembers
+
+        store = get_remembers(token)
+        opt_in_remembers = store.opt_in
+        remembers = context_for(token)
     context: dict[str, Any] = {
         "text": raw,
         "mode": chosen,

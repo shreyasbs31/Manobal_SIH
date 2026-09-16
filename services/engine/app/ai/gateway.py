@@ -219,8 +219,10 @@ async def run(
         beat_id=beat_id,
         language=lang,
     )
+    from ..config import get_settings
+
     text = response.text
-    if response.provider in {"fail_safe"} or not text or text in {"ok", payload_text}:
+    if (not get_settings().foundry_endpoint) or response.provider == "fail_safe":
         text = local_task_text(task, inputs, lang)
     text = strip_dashes(text)
     if voice:
