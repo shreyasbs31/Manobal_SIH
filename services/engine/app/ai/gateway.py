@@ -88,9 +88,7 @@ def _paused_message(task: str) -> str:
 
 def local_brief_verify(brief: str, fields: dict[str, Any]) -> dict[str, Any]:
     allowed = {str(key).lower() for key in fields} | {
-        str(value).lower()
-        for value in fields.values()
-        if isinstance(value, str)
+        str(value).lower() for value in fields.values() if isinstance(value, str)
     }
     for value in fields.values():
         if isinstance(value, list):
