@@ -38,7 +38,7 @@ Bind live scoring, cases, acute, privacy, and seed data behind the Prompt 3 scre
 Choices implied by the spec (recorded, not blocked):
 - Identities enter core only after vault `POST /tokenise` (ingest identity). Persist uses concurrent `/tokenise` calls; generate keeps a `subject_index` until then.
 - `world=primary` is COPY'd into `manobal_core`. `world=shifted` writes parquet under `services/synth/artifacts/shifted/` plus `ground_truth` rows and is never used to train the forecast.
-- Load uses `COPY` after dropping secondary indexes. Prefer psycopg binary `write_row`; if that misses the 3-minute seed budget, fall back to CSV `COPY` for hypertables and note it here.
+- Load uses `COPY` after dropping secondary indexes. CPython binary `write_row` is too slow for 3.9M duty rows, so hypertables use polars CSV `COPY` (still `COPY`, indexes dropped during load).
 - LightGBM is in-scope (31.1 High). SHAP values come from LightGBM `pred_contrib` (TreeSHAP) and map through `infra/rulesets/phrases.yaml` (en, hi). `ruptures` PELT runs only when WSI > 0.35.
 - Pre-rendered audio: Azure Speech when `AZURE_SPEECH_KEY` is set; otherwise reviewed silent WAV files plus a manifest (31.1 TTS is High; local demo has no Speech account).
 - Realtime: local hub in `infra/realtime`; Azure Web PubSub when `WEBPUBSUB_CONNECTION_STRING` is set. Engine filters by role and unit before publish.

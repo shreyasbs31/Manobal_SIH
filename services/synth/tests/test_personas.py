@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from manobal_synth.cli import stable_id
+from manobal_synth.persist import _stable
 from manobal_synth.personas import PERSONAS
 
 
@@ -25,5 +25,5 @@ def test_arjun_token_matches_vault_hmac() -> None:
 
 
 def test_stable_ids_are_deterministic() -> None:
-    assert stable_id("unit:force") == stable_id("unit:force")
-    assert stable_id("unit:force") != stable_id("unit:force.central")
+    assert _stable("unit:force") == _stable("unit:force")
+    assert _stable("unit:force") != _stable("unit:force.central")
