@@ -18,6 +18,7 @@ RUN uv sync \
     --package manobal-engine \
     --no-install-package manobal-engine
 
+COPY infra/rulesets /workspace/infra/rulesets
 COPY services/engine services/engine
 
 RUN useradd --create-home --uid 10001 manobal

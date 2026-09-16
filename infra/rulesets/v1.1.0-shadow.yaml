@@ -1,5 +1,5 @@
-version: 1.0.0
-status: active
+version: 1.1.0-shadow
+status: shadow
 baseline:
   window_days: 90
   minimum_observations: 21
@@ -9,50 +9,50 @@ baseline:
 domains:
   workload:
     weight: 0.18
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: hr_derived
   leave:
     weight: 0.15
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: hr_derived
   hardship:
     weight: 0.12
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: hr_derived
   body_vitals:
     weight: 0.18
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: wearable
   self_report:
     weight: 0.22
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: self_report
   vocal_acoustics:
     weight: 0.08
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: voice_features
   engagement:
     weight: 0.07
-    threshold: 0.55
-    cusum_k: 0.1
-    cusum_h: 1.5
+    threshold: 0.5
+    cusum_k: 0.08
+    cusum_h: 1.3
     consent: self_report
 tiers:
-  t1: 0.35
-  t2: 0.55
-  t3: 0.75
+  t1: 0.32
+  t2: 0.52
+  t3: 0.72
 minimum_corroborating_domains: 2
 hysteresis_cycles: 2
 k_anonymity: 10
@@ -64,17 +64,9 @@ jitai:
   weekly_cap: 4
 floors:
   duty_hours_7d: 1.5
-  duty_hours_28d: 2.0
   consecutive_duty_days: 1.0
-  night_shift_ratio_28d: 0.05
-  roster_volatility_28d: 0.4
-  rest_denials_28d: 0.5
-  quick_returns_14d: 0.5
-  days_since_last_leave: 7.0
-  leave_rejections_90d: 0.25
   sleep_minutes_7d: 15.0
   ema_mood_7d: 0.2
-  checkin_completion_14d: 0.05
 acute:
   phq9_item9_above: 0
   sos_call_me: true
