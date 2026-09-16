@@ -16,10 +16,10 @@ export default function SaathiLayout({ children }: { children: ReactNode }) {
   return (
     <SaathiShell
       chrome={chrome}
-      greeting={arjunHome.greeting}
+      greeting={pathname === "/app" ? arjunHome.greeting : "Saathi"}
       pathname={pathname}
       queued={0}
-      shiftLine={chrome === "full" ? arjunHome.shift_line : undefined}
+      shiftLine={pathname === "/app" ? arjunHome.shift_line : undefined}
     >
       {children}
     </SaathiShell>

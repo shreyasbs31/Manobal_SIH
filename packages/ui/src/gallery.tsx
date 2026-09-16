@@ -230,7 +230,7 @@ export function ComponentGallery() {
         </GalleryItem>
         <GalleryItem name="CaseCard">
           <CaseCard
-            caseId="Case 7F2A"
+            caseId="MB-4091"
             domains={["Sleep", "Roster"]}
             drift="Drift began about 18 days ago"
             lever="Rest day restoration"

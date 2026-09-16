@@ -63,25 +63,25 @@ export function StageView({
 
   return (
     <div className="mb-stage">
-      <div className="mb-stage-bar">
-        <span className="mb-brand">
+      <header className="mb-stage-bar" aria-label="Recording">
+        <h1 className="mb-brand">
           <RibbonMark />
           MANOBAL
-        </span>
+        </h1>
         <SimClock value="2026-09-16 10:00 IST" />
         <span>Arjun home</span>
         <StatusChip kind="demo" />
         <SyntheticMarker />
-      </div>
-      <div className="mb-stage-split">
+      </header>
+      <main className="mb-stage-split" aria-label="Phone and console">
         <PhoneFrame title="Saathi phone">
-          <iframe src={phone} title="Saathi" />
+          <iframe src={phone} title="Saathi" loading="eager" />
         </PhoneFrame>
         <div className="mb-stage-console">
-          <iframe src={consoleSafe} title="Command console" />
+          <iframe src={consoleSafe} title="Command console" loading="eager" />
         </div>
-      </div>
-      <aside className="mb-stage-drawer" hidden={!drawer}>
+      </main>
+      <aside className="mb-stage-drawer" data-open={drawer ? "true" : "false"}>
         <p>Director drawer. Hidden during recording unless toggled with D.</p>
         <span>Phone {phone}</span>
         <span>Console {consoleSafe}</span>

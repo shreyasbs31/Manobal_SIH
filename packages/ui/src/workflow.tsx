@@ -139,12 +139,14 @@ export function CaseStrip({
   actions?: readonly number[] | undefined;
 }) {
   return (
-    <svg
-      className="mb-case-strip"
-      viewBox="0 0 240 28"
-      role="img"
-      aria-label="120-day stepped tier band"
-    >
+    <div className="mb-case-strip-wrap">
+      <svg
+        className="mb-case-strip"
+        preserveAspectRatio="none"
+        viewBox="0 0 240 28"
+        role="img"
+        aria-label="120-day stepped tier band"
+      >
       {days.map((point, index) => (
         <rect
           data-tier={point.tier}
@@ -179,6 +181,7 @@ export function CaseStrip({
         />
       ))}
     </svg>
+    </div>
   );
 }
 

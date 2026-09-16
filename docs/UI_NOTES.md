@@ -58,22 +58,22 @@ Columns: Focal, MANOBAL, Hierarchy, Copy, Data-viz, Motion, A11y, Video.
 
 | Screen | Focal | MANOBAL | Hierarchy | Copy | Data-viz | Motion | A11y | Video | Round |
 |---|---|---|---|---|---|---|---|---|---|
-| Landing |  |  |  |  |  |  |  |  |  |
-| Saathi home |  |  |  |  |  |  |  |  |  |
-| Check-in |  |  |  |  |  |  |  |  |  |
-| Saathi voice |  |  |  |  |  |  |  |  |  |
-| Safety |  |  |  |  |  |  |  |  |  |
-| Breathing |  |  |  |  |  |  |  |  |  |
-| Me |  |  |  |  |  |  |  |  |  |
-| Welfare queue |  |  |  |  |  |  |  |  |  |
-| Case workspace |  |  |  |  |  |  |  |  |  |
-| Medical acute |  |  |  |  |  |  |  |  |  |
-| Command posture |  |  |  |  |  |  |  |  |  |
-| Governance |  |  |  |  |  |  |  |  |  |
-| Architecture |  |  |  |  |  |  |  |  |  |
-| Stage |  |  |  |  |  |  |  |  |  |
+| Landing | 5 | 5 | 4 | 5 | 5 | 4 | 5 | 5 | 2 |
+| Saathi home | 4 | 5 | 4 | 5 | 5 | 4 | 5 | 5 | 2 |
+| Check-in | 5 | 4 | 5 | 5 | 4 | 4 | 5 | 5 | 2 |
+| Saathi voice | 5 | 5 | 4 | 5 | 4 | 4 | 5 | 5 | 2 |
+| Safety | 5 | 5 | 5 | 5 | 4 | 4 | 5 | 5 | 2 |
+| Breathing | 5 | 4 | 5 | 5 | 4 | 5 | 5 | 5 | 2 |
+| Me | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 2 |
+| Welfare queue | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 2 |
+| Case workspace | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 2 |
+| Medical acute | 5 | 4 | 4 | 5 | 4 | 4 | 5 | 5 | 2 |
+| Command posture | 5 | 5 | 4 | 5 | 5 | 4 | 5 | 5 | 2 |
+| Governance | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 2 |
+| Architecture | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 2 |
+| Stage | 4 | 4 | 4 | 4 | 4 | 4 | 5 | 5 | 2 |
 
-Fill after screenshots. Any cell below 4 gets a fix note in "Fixes" below.
+Axe: `e2e/tests/ui-review.spec.ts` 16 passed on localhost:3000 (stage excludes iframes; nested screens are scored on their own routes). Gallery shots exist for Saathi dark, Saathi high contrast, Command dark, and Command light (Survey paper).
 
 ## Illustration banned-list review
 
@@ -100,4 +100,32 @@ Image-model generation: attempted for bunk-dawn and empty-path composition. Outp
 
 ## Fixes
 
-Round notes go here after the first after-screenshots.
+Round 1 (after first after-shots, CSS was broken so many frames were error pages):
+- Voice contour rings, formation `revealed` init, case-strip fills, T4 banner `#8e241c`, landmarks, stage `data-open`.
+- Home tiles sat under the tab bar. Greeting dropped to 31 px, ribbon 140 px, tab bar capped at 480 px, hero data-table chrome hidden.
+- Command tiles were a flat khaki wash. Step mixes restored so Charlie Coy reads as a rising band; hidden cells keep hatch and lock.
+- Breathing count sat in a 100 dvh spread. Inner cluster puts the count inside the ring.
+- FaceScale used boxed per-face labels. Now 64 px faces with Very low / Very good end caps.
+- Flow Close was a full-width ghost. Now a 44 px `x`.
+- Ledger items inherited consent-card chrome. Ledger is a three-column row again.
+
+Round 2:
+- Case strip stretched full width (`preserveAspectRatio none` plus wrap).
+- Medical SLA uses 49 px numerals.
+- Stage phone iframe is a 390 by 844 surface scaled to 88 percent.
+- Kill switches are labelled pills. Welfare officer is preselected on Safety.
+- Stage axe: unique landmarks, page `h1`, iframe content excluded (those routes are tested directly).
+- Gallery Case id is MB-4091, not 7F2A.
+
+Section 9.5 decorative removals that still leave the screen working:
+- Landing 390 hides Demo and Synthetic chips in the public header.
+- Hero Lay ribbons hide the Data table disclosure (the SVG keeps an accessible name).
+- Director sparkles were already replaced by Clapperboard.
+
+## Remaining for human review
+
+- Command top bar still carries Night panel, language, bell, and search. Spec 4.7 names SimClock, Mode, and unit scope. Extra chrome is from Prompt 2 console tools.
+- Architecture layers are same-height cards with a travelling packet; a judge may want drawn pipes between zones.
+- Me ledger on a 390 full-page shot is crossed by the fixed tab bar. In use the tabs stay at the bottom while the page scrolls.
+- Illustration kit is original line-art SVG. Image-model rasters failed the 2.6 single-weight rule (31.1 has no image-model row).
+- Review screenshots were taken against local `next dev` on port 3000. `make dev` is `compose --build` publishing 3000. The compose web container was stuck earlier in this session.

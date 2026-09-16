@@ -14,7 +14,7 @@ const LAYERS = [
 
 export default function ArchitecturePage() {
   return (
-    <div className="mb-theme" data-skin="command" data-theme="dark">
+    <div className="mb-theme mb-arch" data-skin="command" data-theme="dark">
       <PublicHeader mode={manobalMode()} />
       <main className="mb-command-body">
         <h1 className="mb-type-title">Separated by design</h1>

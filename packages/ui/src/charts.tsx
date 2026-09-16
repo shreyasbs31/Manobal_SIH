@@ -294,7 +294,7 @@ export function FormationGrid({
 }) {
   const reduced = usePrefersReducedMotion();
   const [selected, setSelected] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(reduced ? units.length : 0);
+  const [revealed, setRevealed] = useState(units.length);
   const lookup = new Map(
     cells.map((cell) => [`${cell.unit}-${cell.week}`, cell]),
   );
@@ -305,7 +305,7 @@ export function FormationGrid({
   const letters = ["A", "B", "C", "D", "E", "F"];
 
   useEffect(() => {
-    if (reduced) {
+    if (reduced || revealed >= units.length) {
       return;
     }
     let row = 0;

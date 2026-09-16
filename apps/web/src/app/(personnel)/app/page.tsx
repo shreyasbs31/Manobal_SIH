@@ -13,7 +13,7 @@ export default function SaathiHomePage() {
   return (
     <div className="mb-home-stack">
       <div className="mb-ribbon-hero">
-        <ContourTexture height={180} seed={arjunHome.persona_id} width={390} />
+        <ContourTexture height={140} seed={arjunHome.persona_id} width={390} />
         <BaselineRibbonChart
           label="Your mood and sleep against your usual range"
           takeaway={arjunHome.takeaway}

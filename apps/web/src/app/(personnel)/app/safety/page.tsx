@@ -9,7 +9,7 @@ export default function SafetyPage() {
   const scale = 0.86 + breath * 0.22;
 
   return (
-    <div className="mb-safety">
+    <main className="mb-safety">
       <div className="mb-safety-inner">
         <ContourTexture height={640} opacity={0.2} seed="MB-6604" width={390} />
         <h1>You are not alone.</h1>
@@ -19,7 +19,7 @@ export default function SafetyPage() {
         <a className="mb-btn mb-call-btn" href="tel:14416">
           Call Tele-MANAS 14416
         </a>
-        <button className="mb-btn mb-outline-btn" type="button">
+        <button aria-pressed="true" className="mb-btn mb-outline-btn" type="button">
           Ask my welfare officer to call me
         </button>
         <button className="mb-btn mb-outline-btn" type="button">
@@ -33,6 +33,6 @@ export default function SafetyPage() {
           {muted ? "Unmute audio" : "Mute audio"}
         </button>
       </div>
-    </div>
+    </main>
   );
 }

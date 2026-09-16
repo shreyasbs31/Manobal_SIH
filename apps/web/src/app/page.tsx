@@ -74,6 +74,7 @@ export default function LandingPage() {
   return (
     <div className="mb-theme mb-landing" data-skin="saathi" data-theme="light">
       <PublicHeader mode={manobalMode()} />
+      <main>
       <section className="mb-landing-hero">
         <h1>
           Every jawan has a usual rhythm. MANOBAL notices when it changes, and makes sure
@@ -129,6 +130,7 @@ export default function LandingPage() {
           </tbody>
         </table>
       </section>
+      </main>
     </div>
   );
 }

@@ -60,10 +60,13 @@ export function FaceScale({
               type="button"
             >
               <Face score={score} />
-              <span>{faceLabel}</span>
             </button>
           );
         })}
+      </div>
+      <div aria-hidden="true" className="mb-emoji-ends">
+        <span>Very low</span>
+        <span>Very good</span>
       </div>
     </fieldset>
   );

@@ -30,13 +30,16 @@ export default function BreathePage() {
   const scale = reduced ? 1 : 0.86 + breath * 0.24;
 
   return (
-    <div className="mb-breathe">
+    <main className="mb-breathe">
+      <h1 className="mb-sr">Box breathing</h1>
       <Link className="mb-ghost mb-breathe-exit" href="/app/toolkit">
-        Exit
+        Close
       </Link>
-      <div className="mb-breath-ring" style={{ borderColor: "var(--neem)", transform: `scale(${scale})` }} />
-      <p className="mb-breathe-count">{count}</p>
-      <p>{inhale ? "Breathe in" : "Breathe out"}</p>
-    </div>
+      <div className="mb-breathe-inner">
+        <div className="mb-breath-ring" style={{ borderColor: "var(--neem)", transform: `scale(${scale})` }} />
+        <p className="mb-breathe-count">{count}</p>
+        <p>{inhale ? "Breathe in" : "Breathe out"}</p>
+      </div>
+    </main>
   );
 }

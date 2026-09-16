@@ -26,7 +26,7 @@ Choices implied by the spec (recorded, not blocked):
 12. [x] Rebuild landing to 4.15 (animated Lay ribbon hero, role doors, sourced figures, second-fold mapping table). Check: hero copy matches 4.15; mapping rows match spec 26.2.
 13. [x] Rebuild stage to 4.16 (1920 by 1080, recording top bar, Director drawer hidden until toggled). Check: top bar 44 px; drawer not in the default screenshot.
 14. [x] Static fixture-driven screens: Saathi home, check-in, voice, safety, breathing, Me, Welfare queue, case workspace, Medical acute, Command posture, Governance, Architecture. Fixtures match contracts and persona 29. Check: each route renders persona ids from spec 29; axe clean on each.
-15. Run the UI direction 9 review loop on all of the above; score in `docs/UI_NOTES.md`; fix anything below 4 (max three rounds). Check: every step-14 screen scores at least 4 on every rubric line; after screenshots in `e2e/artifacts/ui/`.
+15. [x] Run the UI direction 9 review loop on all of the above; score in `docs/UI_NOTES.md`; fix anything below 4 (max three rounds). Check: every step-14 screen scores at least 4 on every rubric line; after screenshots in `e2e/artifacts/ui/`.
 16. [x] `make dev` serves web on port 3000 and rebuilds the image when Dockerfiles or lockfiles change; add `make lint`. Check: `Makefile` `dev` target publishes 3000; `make lint` runs package lints.
 
 End-of-prompt gate: `make test`, `make lint`, `copy-lint`, UI review loop, both skins and all themes render, axe clean.

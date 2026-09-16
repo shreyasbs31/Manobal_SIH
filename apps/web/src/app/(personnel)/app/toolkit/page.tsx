@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function ToolkitPage() {
   return (
     <div className="mb-home-stack">
-      <h1 className="mb-type-title">Toolkit</h1>
+      <h2 className="mb-type-title">Toolkit</h2>
       <p>Breathing and rest guides work without a network.</p>
       <article className="mb-context-card">
         <SceneEmptyPath />

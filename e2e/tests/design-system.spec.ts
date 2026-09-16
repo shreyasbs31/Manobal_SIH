@@ -35,6 +35,7 @@ const galleryComponents = [
   "ValidatedBadge",
   "MachineTranslatedBadge",
   "ModeChip",
+  "StatusChip",
   "SimClock",
   "EmptyState",
   "ErrorState",
@@ -48,11 +49,12 @@ const galleryComponents = [
 
 const screenshotPages = [
   "/",
-  "/login",
   "/app",
   "/app/saathi",
   "/app/toolkit",
   "/app/me",
+  "/app/check-in",
+  "/app/safety",
   "/command",
   "/welfare",
   "/medical",
@@ -87,7 +89,8 @@ test("saathi and command shells navigate", async ({ page }) => {
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await page.getByRole("navigation", { name: "Saathi" }).getByRole("link", { name: "Saathi" }).click();
   await expect(page).toHaveURL(/\/app\/saathi/);
-  await page.getByRole("link", { name: "Toolkit" }).click();
+  await page.goto("/app", { waitUntil: "domcontentloaded" });
+  await page.getByRole("navigation", { name: "Saathi" }).getByRole("link", { name: "Toolkit" }).click();
   await expect(page).toHaveURL(/\/app\/toolkit/);
   await page.goto("/command", { waitUntil: "domcontentloaded" });
   await page.locator('a[href="/welfare"]').click();

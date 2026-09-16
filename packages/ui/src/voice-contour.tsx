@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { contourPaths, hashSeed } from "./texture.mjs";
+import { hashSeed } from "./texture.mjs";
 import { useBreath, usePrefersReducedMotion } from "./motion";
 
 export type VoiceState = "idle" | "listening" | "thinking" | "speaking" | "crisis";
@@ -22,6 +22,7 @@ export function VoiceContour({
   const reduced = usePrefersReducedMotion();
   const breath = useBreath(state === "speaking" || state === "listening");
   const lag = useRef(amplitude);
+  const phase = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,46 +33,41 @@ export function VoiceContour({
     if (!ctx) {
       return;
     }
-    const paths = contourPaths({
-      seed: String(hashSeed(seed)),
-      width: size,
-      height: size,
-      cols: 18,
-      rows: 18,
-      levels: 7,
-    });
+    const noiseSeed = hashSeed(seed);
     let raf = 0;
     const draw = () => {
-      const target = state === "crisis" ? 0.08 : amplitude;
+      const target = state === "crisis" ? 0.04 : amplitude;
       lag.current += (target - lag.current) * (reduced ? 1 : 0.12);
-      const scale =
-        state === "thinking"
-          ? 1 + Math.sin(performance.now() / 900) * 0.04
-          : 1 + lag.current * 0.35 + breath * 0.08;
-      ctx.clearRect(0, 0, size, size);
-      ctx.save();
-      ctx.translate(size / 2, size / 2);
-      ctx.scale(scale, scale);
       if (state === "thinking" && !reduced) {
-        ctx.rotate(performance.now() / 4000);
+        phase.current += 0.012;
       }
-      ctx.translate(-size / 2, -size / 2);
+      ctx.clearRect(0, 0, size, size);
       ctx.strokeStyle = getComputedStyle(canvas).color;
-      ctx.lineWidth = 1.25;
-      ctx.globalAlpha = state === "crisis" ? 0.35 : 0.7;
-      for (const path of paths) {
-        const outline = new Path2D(path.d);
-        ctx.stroke(outline);
-      }
-      if (state === "crisis") {
-        ctx.globalAlpha = 0.5;
-        for (let ring = 1; ring <= 4; ring += 1) {
-          ctx.beginPath();
-          ctx.arc(size / 2, size / 2, 18 * ring, 0, Math.PI * 2);
-          ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = "round";
+      const rings = state === "crisis" ? 4 : 7;
+      for (let ring = 1; ring <= rings; ring += 1) {
+        ctx.beginPath();
+        ctx.globalAlpha = 0.35 + ring / 16;
+        const base = (size / 2 - 16) * (ring / rings);
+        const jitter = state === "crisis" ? 0 : 5 + lag.current * 18 + breath * 6;
+        for (let step = 0; step <= 72; step += 1) {
+          const angle = (step / 72) * Math.PI * 2 + (state === "thinking" ? phase.current : 0);
+          const wobble =
+            Math.sin(angle * 3 + ring + noiseSeed) * jitter * 0.35 +
+            Math.sin(angle * 5 - ring * 0.7) * jitter * 0.2;
+          const radius = base + wobble;
+          const x = size / 2 + Math.cos(angle) * radius;
+          const y = size / 2 + Math.sin(angle) * radius;
+          if (step === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
         }
+        ctx.closePath();
+        ctx.stroke();
       }
-      ctx.restore();
       raf = window.requestAnimationFrame(draw);
     };
     raf = window.requestAnimationFrame(draw);

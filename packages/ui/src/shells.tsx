@@ -87,27 +87,27 @@ export function SaathiShell({
       <a className="mb-skip" href="#main">
         Skip to content
       </a>
-      <header className="mb-saathi-top">
+      <header className="mb-saathi-top" aria-label="Saathi">
         {showGreeting ? (
           <div className="mb-saathi-greet">
-            <p className="mb-type-hero">{greeting}</p>
+            <h1 className="mb-type-hero">{greeting}</h1>
             {shiftLine ? <p className="mb-saathi-shift">{shiftLine}</p> : null}
           </div>
         ) : (
-          <a className="mb-ghost" href="/app">
-            Close
+          <a aria-label="Close" className="mb-ghost mb-flow-close" href="/app">
+            x
           </a>
         )}
         {chrome === "full" ? <SOSButton href="/app/safety" /> : null}
+        {showTabs ? (
+          <div className="mb-saathi-status">
+            {offline ? <StatusChip kind="offline" queued={queued} /> : null}
+            {syncing ? <StatusChip kind="syncing" /> : null}
+            {mode === "demo" ? <StatusChip kind="demo" /> : null}
+          </div>
+        ) : null}
       </header>
-      {showTabs ? (
-        <div className="mb-saathi-status">
-          {offline ? <StatusChip kind="offline" queued={queued} /> : null}
-          {syncing ? <StatusChip kind="syncing" /> : null}
-          {mode === "demo" ? <StatusChip kind="demo" /> : null}
-        </div>
-      ) : null}
-      <main className="mb-saathi-main" id="main">
+      <main className="mb-saathi-main" id="main" aria-label="Saathi content">
         {children}
       </main>
       {showTabs ? (
@@ -131,7 +131,9 @@ export function SaathiShell({
           })}
         </nav>
       ) : null}
-      <p className="mb-chip mb-chip--synthetic mb-saathi-synthetic">Synthetic data</p>
+      <footer>
+        <p className="mb-chip mb-chip--synthetic mb-saathi-synthetic">Synthetic data</p>
+      </footer>
     </div>
   );
 }
@@ -257,7 +259,7 @@ export function CommandShell({
         })}
       </nav>
       <div className="mb-command-main">
-        <header className="mb-topbar">
+        <header className="mb-topbar" aria-label="Console">
           <label className="mb-unit">
             <span className="mb-sr">Unit</span>
             <select
@@ -335,7 +337,7 @@ export function CommandShell({
             <SyntheticMarker />
           </div>
         </header>
-        <main className="mb-command-body" id="main">
+        <main className="mb-command-body" id="main" aria-label="Console content">
           {children}
         </main>
       </div>
@@ -365,7 +367,7 @@ export function CommandShell({
 
 export function PublicHeader({ mode = "demo" }: { mode?: ManobalMode | undefined }) {
   return (
-    <header className="mb-public-header">
+    <header className="mb-public-header" aria-label="Site">
       <a className="mb-brand" href="/">
         <RibbonMark />
         MANOBAL

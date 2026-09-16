@@ -20,7 +20,7 @@ export default function SaathiCompanionPage() {
   return (
     <div className="mb-voice-page">
       <div className="mb-voice-head">
-        <strong>Saathi</strong>
+        <h1>Saathi</h1>
         <span>{arjunVoice.language}</span>
       </div>
       <div className="mb-segment" role="group" aria-label="Conversation mode">

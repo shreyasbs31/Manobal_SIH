@@ -20,7 +20,7 @@ export default function MePage() {
 
   return (
     <div className="mb-home-stack">
-      <h1 className="mb-type-title">Me</h1>
+      <h2 className="mb-type-title">Me</h2>
       <div className="mb-me-points">
         {mePrivacy.statements.map((line, index) => {
           const Icon = ICONS[index] ?? IconVaultKey;
