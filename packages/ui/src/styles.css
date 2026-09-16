@@ -327,11 +327,103 @@ body {
 
 h1,
 h2,
-h3,
-.mb-num {
+h3 {
   font-family: var(--mb-font-head);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  font-variation-settings: "wdth" var(--mb-wdth-normal);
+  letter-spacing: -0.02em;
+}
+
+.mb-type-hero {
+  font-family: var(--mb-font-head);
+  font-size: var(--mb-fs-39);
+  font-weight: 600;
+  font-stretch: 112%;
+  font-variation-settings: "wdth" var(--mb-wdth-expanded);
+  line-height: 1.15;
+}
+
+.mb-type-hero-xl {
+  font-family: var(--mb-font-head);
+  font-size: var(--mb-fs-61);
+  font-weight: 600;
+  font-stretch: 112%;
+  font-variation-settings: "wdth" var(--mb-wdth-expanded);
+  line-height: 1.1;
+}
+
+.mb-type-title {
+  font-family: var(--mb-font-head);
+  font-size: var(--mb-fs-25);
+  font-weight: 600;
+  font-variation-settings: "wdth" var(--mb-wdth-normal);
+}
+
+.mb-type-section {
+  font-family: var(--mb-font-body);
+  font-size: var(--mb-fs-16);
+  font-weight: 600;
+}
+
+.mb-num,
+.mb-type-numeral,
+.mb-type-timer,
+.mb-sim {
+  font-family: var(--mb-font-head);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-stretch: 75%;
+  font-variation-settings: "wdth" var(--mb-wdth-condensed);
+}
+
+[data-skin="command"] .mb-type-hero {
+  font-size: var(--mb-fs-31);
+  font-stretch: 100%;
+  font-variation-settings: "wdth" var(--mb-wdth-normal);
+}
+
+[data-skin="command"] .mb-type-title {
+  font-size: var(--mb-fs-20);
+}
+
+[data-skin="command"] .mb-type-section {
+  font-size: var(--mb-fs-14);
+}
+
+[data-skin="command"] .mb-type-numeral {
+  font-size: var(--mb-fs-39);
+}
+
+[data-skin="command"] .mb-type-timer {
+  font-size: var(--mb-fs-20);
+}
+
+.mb-type-numeral {
+  font-size: var(--mb-fs-49);
+  font-weight: 600;
+}
+
+.mb-type-timer {
+  font-size: var(--mb-fs-25);
+  font-weight: 600;
+}
+
+html[lang="hi"],
+html[lang="mr"],
+html[lang="ne"],
+html[lang="mai"],
+html[lang="doi"],
+html[lang="brx"],
+html[lang="kok"],
+html[lang="sa"],
+:lang(hi),
+:lang(mr),
+:lang(ne) {
+  line-height: 1.7;
+}
+
+.mb-yaml {
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  font-size: var(--mb-fs-12);
 }
 
 h1,
@@ -339,11 +431,6 @@ h2,
 h3,
 h4 {
   text-transform: none;
-}
-
-.mb-num {
-  font-variant-numeric: tabular-nums;
-  font-stretch: condensed;
 }
 
 button,

@@ -17,6 +17,7 @@ import {
 const anek = Anek_Latin({
   subsets: ["latin"],
   display: "swap",
+  axes: ["wdth"],
   variable: "--font-anek",
 });
 
@@ -24,6 +25,7 @@ const anekDeva = Anek_Devanagari({
   subsets: ["devanagari"],
   display: "swap",
   preload: false,
+  axes: ["wdth"],
   variable: "--font-anek-deva",
 });
 
