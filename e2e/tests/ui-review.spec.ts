@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { roleForRoute, signIn } from "./session";
+
 const screens = [
   ["landing", "/"],
   ["home", "/app"],
@@ -18,12 +20,14 @@ const screens = [
   ["stage", "/stage"],
 ] as const;
 
-const personas = ["MB-4091", "MB-6604", "MB-2217"] as const;
-
 for (const [slug, route] of screens) {
   test(`axe ${slug}`, async ({ page }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: 1440, height: 900 });
+    const session = roleForRoute(route);
+    if (session) {
+      await signIn(page, session.role, session.persona);
+    }
     await page.goto(route, { waitUntil: "domcontentloaded" });
     const builder = new AxeBuilder({ page });
     if (slug === "stage") {
@@ -35,18 +39,20 @@ for (const [slug, route] of screens) {
   });
 }
 
-test("persona tokens appear on fixture screens", async ({ page }) => {
+test("live persona tokens appear on signed-in screens", async ({ page }) => {
   test.setTimeout(90_000);
+  await signIn(page, "personnel", "arjun");
   await page.goto("/app");
   await expect(page.getByText("Suprabhat, Arjun")).toBeVisible();
+  await signIn(page, "uwo");
   await page.goto("/welfare");
-  for (const id of personas) {
-    await expect(page.getByText(id).first()).toBeVisible();
-  }
+  await expect(page.getByText("MB-4091").first()).toBeVisible();
   await page.goto("/welfare/cases/MB-4091");
   await expect(page.getByText("MB-4091").first()).toBeVisible();
+  await signIn(page, "mo");
   await page.goto("/medical");
   await expect(page.getByText("MB-6604").first()).toBeVisible();
+  await signIn(page, "commander");
   await page.goto("/command");
   await expect(page.getByText("Charlie Coy's workload has risen for three weeks.")).toBeVisible();
   await expect(page.getByText("MB-4091")).toHaveCount(0);

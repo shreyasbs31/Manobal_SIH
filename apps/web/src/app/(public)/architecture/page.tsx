@@ -1,9 +1,10 @@
+"use client";
+
 import { PublicHeader } from "@manobal/ui";
-import type { Metadata } from "next";
 
+import { ScreenState } from "@/components/screen-state";
+import { useEngine } from "@/lib/use-engine";
 import { manobalMode } from "@/lib/mode";
-
-export const metadata: Metadata = { title: "Architecture" };
 
 const LAYERS = [
   { title: "Device", detail: "Saathi PWA, offline packet, on-device gates" },
@@ -13,6 +14,10 @@ const LAYERS = [
 ] as const;
 
 export default function ArchitecturePage() {
+  const { data, error, loading, offline } = useEngine("selftest", (client, signal) =>
+    client.systemSelftest(signal),
+  );
+
   return (
     <div className="mb-theme mb-arch" data-skin="command" data-theme="dark">
       <PublicHeader mode={manobalMode()} />
@@ -38,11 +43,20 @@ export default function ArchitecturePage() {
         </div>
         <section>
           <h2>Self-test</h2>
-          <ul>
-            <li>Engine has no vault database access</li>
-            <li>Command URL scan rejects case and person parameters</li>
-            <li>Acute path cannot be switched off</li>
-          </ul>
+          <ScreenState error={error} loading={loading} offline={offline}>
+            <ul>
+              <li>
+                Engine has no vault database access
+                {data ? `: ${data.vault_database_isolated ? "held" : "failed"}` : ""}
+              </li>
+              <li>Command URL scan rejects case and person parameters</li>
+              <li>
+                Zone X unreachable
+                {data ? `: ${data.zone_x_unreachable ? "held" : "failed"}` : ""}
+              </li>
+              <li>Acute path cannot be switched off</li>
+            </ul>
+          </ScreenState>
         </section>
         <p>Mode: demo. Synthetic data only.</p>
       </main>

@@ -1,3 +1,11 @@
+import type {
+  CheckInQuestion,
+  CommandPosture,
+  HomePayload,
+  TrendPoint,
+  WelfareCase,
+} from "./ui-fixtures";
+
 export type { components, paths } from "./schema";
 export {
   PERSONA_IDS,
@@ -114,7 +122,7 @@ export class ManobalClient {
     options: {
       method?: "GET" | "POST";
       body?: TBody;
-      signal?: AbortSignal;
+      signal?: AbortSignal | undefined;
     } = {},
   ): Promise<TResponse> {
     const headers = new Headers({ accept: "application/json" });
@@ -127,7 +135,7 @@ export class ManobalClient {
       headers,
       cache: "no-store",
     };
-    if (options.signal !== undefined) {
+    if (options.signal) {
       init.signal = options.signal;
     }
     if (options.body !== undefined) {
@@ -150,5 +158,94 @@ export class ManobalClient {
       "/api/v1/auth/demo-login",
       { method: "POST", body },
     );
+  }
+
+  meHome(signal?: AbortSignal): Promise<HomePayload> {
+    return this.request<HomePayload>("/api/v1/me/home", { signal });
+  }
+
+  meTrends(signal?: AbortSignal): Promise<{ points: TrendPoint[] }> {
+    return this.request("/api/v1/me/trends", { signal });
+  }
+
+  meCheckIn(signal?: AbortSignal): Promise<{ questions: CheckInQuestion[] }> {
+    return this.request("/api/v1/me/check-in", { signal });
+  }
+
+  meVoice(signal?: AbortSignal): Promise<{
+    persona_id: string;
+    language: string;
+    lines: { speaker: "you" | "saathi"; text: string }[];
+    audio_cleared_ms: number;
+    model_caption: string;
+  }> {
+    return this.request("/api/v1/me/voice", { signal });
+  }
+
+  meConsents(signal?: AbortSignal): Promise<{
+    token: string | null;
+    items: { title: string; leavesPhone: string; whoCanSee: string; on: boolean }[];
+  }> {
+    return this.request("/api/v1/me/consents", { signal });
+  }
+
+  meLedger(signal?: AbortSignal): Promise<{ items: Record<string, string>[] }> {
+    return this.request("/api/v1/me/access-ledger", { signal });
+  }
+
+  mePurge(dataType: string): Promise<{ signature: string; row_count: number; sha256: string; at: string }> {
+    return this.request(`/api/v1/me/purge/${dataType}`, { method: "POST" });
+  }
+
+  welfareQueue(signal?: AbortSignal): Promise<WelfareCase[]> {
+    return this.request("/api/v1/welfare/queue", { signal });
+  }
+
+  welfareCase(caseId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/welfare/cases/${caseId}`, { signal });
+  }
+
+  medicalAcute(signal?: AbortSignal): Promise<WelfareCase[]> {
+    return this.request("/api/v1/medical/acute", { signal });
+  }
+
+  medicalAck(caseId: string): Promise<{ status: string }> {
+    return this.request(`/api/v1/medical/acute/${caseId}/ack`, { method: "POST" });
+  }
+
+  commandPosture(signal?: AbortSignal): Promise<CommandPosture> {
+    return this.request("/api/v1/command/posture", { signal });
+  }
+
+  govOverview(signal?: AbortSignal): Promise<{
+    kpis: { label: string; value: string; hint: string }[];
+  }> {
+    return this.request("/api/v1/gov/kpis", { signal });
+  }
+
+  govFairness(signal?: AbortSignal): Promise<{ fairness: { label: string; ratio: number }[] }> {
+    return this.request("/api/v1/gov/fairness", { signal });
+  }
+
+  govKillswitches(signal?: AbortSignal): Promise<Record<string, boolean>> {
+    return this.request("/api/v1/gov/killswitches", { signal });
+  }
+
+  systemSelftest(signal?: AbortSignal): Promise<{
+    healthy: boolean;
+    vault_database_isolated: boolean;
+    vault_identity_keys_isolated: boolean;
+    zone_x_unreachable: boolean;
+  }> {
+    return this.request("/api/v1/system/selftest", { signal });
+  }
+
+  postAcute(body: {
+    token: string;
+    trigger: string;
+    lang: string;
+    channel: string;
+  }): Promise<{ case_id: string; tier: string; alerts: number; llm_invoked: boolean }> {
+    return this.request("/api/v1/acute", { method: "POST", body });
   }
 }
