@@ -7,13 +7,14 @@ export const metadata: Metadata = { title: "Stage" };
 export default async function StagePage({
   searchParams,
 }: {
-  searchParams: Promise<{ phone?: string; console?: string }>;
+  searchParams: Promise<{ phone?: string | undefined; console?: string | undefined; shot?: string | undefined }>;
 }) {
   const params = await searchParams;
   return (
     <StageView
       consolePath={params.console ?? "/command"}
       phonePath={params.phone ?? "/app"}
+      shot={params.shot}
     />
   );
 }

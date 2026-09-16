@@ -111,7 +111,7 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
-      <section className="mb-mapping">
+      <section className="mb-mapping" id="ps-map">
         <h2>How the problem statement maps to screens</h2>
         <table>
           <thead>

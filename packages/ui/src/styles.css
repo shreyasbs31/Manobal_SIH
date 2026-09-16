@@ -2739,3 +2739,77 @@ textarea {
   color: inherit;
 }
 
+.mb-kpi-row-wide {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.mb-cost-banner {
+  padding: 12px 16px;
+  border: var(--mb-hairline) solid var(--brass);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brass) 18%, var(--mb-surface));
+}
+
+.mb-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--mb-fs-14);
+}
+
+.mb-compare caption {
+  text-align: start;
+  margin-block-end: 8px;
+  font-family: var(--mb-font-head);
+}
+
+.mb-compare th,
+.mb-compare td {
+  padding: 10px 8px;
+  border-block-end: var(--mb-hairline) solid var(--mb-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.mb-shot-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.mb-shot-list li {
+  display: grid;
+  gap: 4px;
+}
+
+.mb-packet[data-held="true"] {
+  animation-play-state: paused;
+  opacity: 0.45;
+}
+
+.mb-layers[data-link="down"] .mb-packet {
+  animation-play-state: paused;
+}
+
+.mb-mode-panel {
+  margin-block-start: 24px;
+}
+
+.mb-trust .mb-landing-hero,
+.mb-lab,
+.mb-dpo,
+.mb-integrate,
+.mb-admin,
+.mb-director,
+.mb-gov {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .mb-compare {
+    display: block;
+    overflow-x: auto;
+  }
+}
+

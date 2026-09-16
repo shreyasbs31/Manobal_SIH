@@ -12,6 +12,11 @@ const PHONES = new Set([
   "/app/check-in",
   "/app/safety",
   "/app/toolkit/breathe",
+  "/app/onboarding",
+  "/app/talk",
+  "/app/rest",
+  "/app/plan",
+  "/app/buddy",
 ]);
 const CONSOLES = new Set([
   "/command",
@@ -23,7 +28,35 @@ const CONSOLES = new Set([
   "/hq",
   "/governance",
   "/lab",
+  "/dpo",
+  "/integrations",
+  "/admin",
+  "/architecture",
+  "/trust",
 ]);
+
+const SHOT_LABELS: Record<string, string> = {
+  landing: "Landing ribbon",
+  onboarding: "Hindi onboarding",
+  checkin: "Twenty second check-in",
+  voice: "Hindi voice check-in",
+  drift: "Arjun time travel",
+  workspace: "Case workspace reveal",
+  "imran-thomas": "Imran and Thomas",
+  formation: "Formation and hidden tile",
+  copilot: "Copilot Hindi refusal",
+  roster: "Roster balancer",
+  deepak: "Deepak safety and T4",
+  governance: "Governance chain",
+  lab: "Validation lab",
+  offline: "Offline then sync",
+  architecture: "Zones and self-test",
+  close: "Landing second fold",
+  karthik: "Karthik Tamil voice",
+  rajesh: "Rajesh grievance",
+  lalit: "Lalit incident",
+  meena: "Meena leave planner",
+};
 
 function safePath(value: string | null, allowed: Set<string>, fallback: string): string {
   if (!value) {
@@ -38,13 +71,16 @@ function safePath(value: string | null, allowed: Set<string>, fallback: string):
 export function StageView({
   phonePath,
   consolePath,
+  shot,
 }: {
   phonePath: string;
   consolePath: string;
+  shot?: string | undefined;
 }) {
   const phone = safePath(phonePath, PHONES, "/app");
   const consoleSafe = safePath(consolePath, CONSOLES, "/command");
   const [drawer, setDrawer] = useState(false);
+  const label = (shot && SHOT_LABELS[shot]) || "Arjun home";
 
   const onKey = useCallback((event: KeyboardEvent) => {
     if (event.key.toLowerCase() === "d" && !event.metaKey && !event.ctrlKey) {
@@ -69,7 +105,7 @@ export function StageView({
           MANOBAL
         </h1>
         <SimClock value="2026-09-16 10:00 IST" />
-        <span>Arjun home</span>
+        <span>{label}</span>
         <StatusChip kind="demo" />
         <SyntheticMarker />
       </header>
@@ -88,14 +124,23 @@ export function StageView({
         <Link className="mb-secondary" href="/director">
           Open director
         </Link>
-        <Link className="mb-secondary" href="/stage?phone=/app/me&console=/welfare/cases/MB-4091">
+        <Link className="mb-secondary" href="/stage?phone=/app/me&console=/welfare/cases/MB-4091&shot=workspace">
           Arjun reveal plus ledger
         </Link>
-        <Link className="mb-secondary" href="/stage?phone=/app/saathi&console=/welfare">
+        <Link className="mb-secondary" href="/stage?phone=/app/saathi&console=/welfare&shot=voice">
           Companion plus queue
         </Link>
-        <Link className="mb-secondary" href="/stage?phone=/app/safety&console=/medical">
+        <Link className="mb-secondary" href="/stage?phone=/app/safety&console=/medical&shot=deepak">
           Safety plus acute
+        </Link>
+        <Link className="mb-secondary" href="/stage?phone=/app&console=/command&shot=formation">
+          Formation plus hidden tile
+        </Link>
+        <Link className="mb-secondary" href="/stage?phone=/app&console=/governance&shot=governance">
+          Governance chain
+        </Link>
+        <Link className="mb-secondary" href="/stage?phone=/app/check-in&console=/architecture&shot=offline">
+          Offline plus architecture
         </Link>
       </aside>
     </div>

@@ -65,6 +65,7 @@ export function DemoLogin({
   const [personaId, setPersonaId] = useState("arjun");
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState("Choose a role and continue.");
+  const [pin, setPin] = useState("");
   const client = useMemo(
     () =>
       new ManobalClient(
@@ -167,6 +168,39 @@ export function DemoLogin({
               type="button"
             >
               Use passkey
+            </button>
+            <label>
+              Device PIN fallback
+              <input
+                autoComplete="off"
+                inputMode="numeric"
+                maxLength={6}
+                onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                value={pin}
+              />
+            </label>
+            <button
+              className="mb-secondary"
+              disabled={pending || pin.length !== 6}
+              onClick={() => {
+                const stored = window.localStorage.getItem("manobal.device-pin");
+                if (!stored) {
+                  window.localStorage.setItem("manobal.device-pin", pin);
+                  setStatus("PIN stored on this device only.");
+                } else if (stored !== pin) {
+                  setStatus("That PIN does not match the one stored on this phone.");
+                  return;
+                }
+                void run(() =>
+                  client.demoLogin({
+                    role,
+                    persona_id: personaId,
+                  }),
+                );
+              }}
+              type="button"
+            >
+              Use device PIN
             </button>
           </>
         ) : null}
