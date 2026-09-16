@@ -141,3 +141,33 @@ Choices implied by the spec (recorded, not blocked):
 8. [x] Review loop at 1280, 1440, and 1920 in Command dark and Command light. Check: scores in `docs/UI_NOTES.md`; screenshots in `e2e/artifacts/ui/p7-*.png`.
 
 End-of-prompt gate: Arjun flow on `/stage` updates the ledger; Post D-7 shows the hidden tile; Copilot refuses the Hindi individual question with a useful aggregate; HQ brief exports; `make test`, `make lint`, `copy-lint`, UI review loop.
+
+## Prompt 8: Everything a judge needs to believe it
+
+Judge-facing governance, lab, architecture, director, Azure packaging, demo recording, and the 23.6 acceptance spine.
+
+Choices implied by the spec (recorded, not blocked):
+- Azure: ship Bicep, azd, and GitHub Actions for every resource in spec 20. If no subscription is present, the 31.1 local fallback is `make dev` (compose). Do not tick "deployed Azure URL passes E2E" unless that URL actually runs.
+- TWA: ship Bubblewrap `twa-manifest.json` plus PIN fallback (30.1). Real-phone passkey/push/offline verification is 31.1-blocked in this environment; do not tick it as done.
+- Transparency report: Foundry unset uses the signed prompt template plus on-device text PDF (same path as HQ brief).
+- Audit tamper/restore for the 8-minute demo is an in-memory chain so Governance works without Blob Storage. Daily anchors still use the real hash function.
+- Demo reset is an in-memory snapshot restore under 20 seconds, not a Docker volume wipe.
+- Validation Lab numbers are computed from the live forecast registry on primary vs shifted holdout in process. Command screens never receive them.
+- Cost guard is in-process estimated spend with a Governance and Director banner; companion routing already prefers `open` then `main`.
+- Provider outage opens the named circuit breaker. Resilience mode serves the last cached beat.
+- Observability: JSON logs with redaction, `/system/metrics`, App Insights in Bicep. No extra OpenTelemetry package, so tests stay offline.
+
+1. [ ] Governance (17.7) complete: exposure parity (28.7), provider health, model card, two-signer ruleset, transparency report, kill switches including locked acute, verify/tamper/restore chain. Check: WDEC session loads KPIs K1/K3/K10-K14; fairness ratios in band; POST acute kill returns 409; tamper fails verify then restore heals; report PDF starts with `%PDF`; two signers `wdec1` and `wdec2`.
+2. [ ] DPO Centre (14.3), Trust Centre (14.4) with read-aloud, Integration Console (15.1, 17.9) with schema/quarantine/quality, Admin (17.10). Check: DPO lists access/erasure/grievance with due dates; Trust matrix has four columns and an audio control; integrator sees a quarantined row; Admin has no acute flag.
+3. [ ] Validation Lab (17.11): primary and shifted worlds, calibration, ablations, zero-penalty proof, 8k benchmark. Check: world toggle changes metrics; zero-penalty lists excluded attributes; benchmark `subjects` is 8000; Imran stays T1 and Thomas stays T0 in the copy.
+4. [ ] Architecture (17.12) with live packets, edge queue and link toggle (27.4), self-tests, mode panel. Check: edge-down holds packets; self-test reports vault isolation and Zone X; mode panel shows demo vs sovereign.
+5. [ ] Director (17.15) with all scenarios, outage, resilience, warm-up, reset, a preset for every shot in 30.3; Stage presets per spec 24. Check: reset returns under 20s; each 30.3 shot has a stage URL; Deepak/Arjun/Lalit/Meena/Karthik/Rajesh scenarios exist.
+6. [ ] Azure (20): Bicep and azd for every named resource, managed identities, Key Vault split, Front Door, Web PubSub, ACS, Speech, Translator, Content Safety, Foundry deployments; GitHub Actions per 20.2. Check: `infra/bicep/main.bicep` names those resources; `azure.yaml` exists; `.github/workflows` has PR test and main deploy jobs.
+7. [ ] Observability and cost guard (22). Check: `/system/metrics` returns latency and estimated spend; over-cap sets `cost_guard` true and the banner copy appears on Governance.
+8. [ ] Package Saathi as a TWA with Bubblewrap; verify passkeys, push, offline cache on a real Android phone (30.1). Check: `apps/twa/twa-manifest.json` exists with PIN fallback documented. Real-phone verification: 31.1 if no device.
+9. [ ] Walk the weakness audit (32) screen by screen and fix anything that could show one. Check: pytest covers Command payload has no case ids; Copilot refuse; hidden Post D-7; Trust has no numeric scores; copy-lint clean.
+10. [ ] Playwright E2E for the full demo script (23.4) locally and on Azure, twice with a reset between. Check: local spine passes twice; Azure URL run only if `AZURE_WEB_URL` is set.
+11. [ ] Docs: `DEMO_RUNBOOK.md` (clicks, timings, fallbacks, resets, Q&A from spec 26 with the screen for each answer) and `SHOT_LIST.md` (preset, persona, click path per shot). Check: every 30.3 shot is listed; every 23.6 box is in the runbook.
+12. [ ] Final review loop across every screen; fix all scores below 4. Check: scores in `docs/UI_NOTES.md`; axe on new routes; screenshots in `e2e/artifacts/ui/p8-*.png`.
+
+End-of-prompt gate: spec 23.6 checklist ticked in this file; every `SHOT_LIST.md` shot has a reset path; local E2E spine passes twice. Azure URL and real-phone TWA stay open if 31.1.
