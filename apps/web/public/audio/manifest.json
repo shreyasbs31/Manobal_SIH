@@ -1,0 +1,18 @@
+{
+  "files": [
+    "safety.en.wav",
+    "safety.hi.wav",
+    "safety.ta.wav",
+    "safety.hi-Latn.wav",
+    "grounding.en.wav",
+    "grounding.hi.wav",
+    "grounding.ta.wav",
+    "grounding.hi-Latn.wav",
+    "breathing.en.wav",
+    "breathing.hi.wav",
+    "breathing.ta.wav",
+    "breathing.hi-Latn.wav"
+  ],
+  "provider": "silent-wav",
+  "live_tts": false
+}

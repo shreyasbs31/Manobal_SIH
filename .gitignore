@@ -19,4 +19,5 @@ infra/data/
 infra/keys/
 services/synth/snapshots/*.dump
 services/synth/artifacts/
+apps/web/public/audio/*.wav
 e2e/test-results/
