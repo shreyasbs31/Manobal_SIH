@@ -1,6 +1,7 @@
 "use client";
 
-import { CaseCard, EscalationLadder, SlaTimer } from "@manobal/ui";
+import { CaseCard, EscalationLadder, SlaTimer, chimeKindForQueue, playConsoleChime } from "@manobal/ui";
+import { useEffect } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
@@ -10,7 +11,16 @@ export default function MedicalPage() {
   const { data, error, loading, offline, reload } = useEngine("medical-acute", (client, signal) =>
     client.medicalAcute(signal),
   );
+  const extra = useEngine("medical-referrals", (client, signal) => client.medicalReferrals(signal));
   const items = data ?? [];
+
+  useEffect(() => {
+    const t4 = items.filter((item) => item.tier === "T4").length;
+    const kind = chimeKindForQueue(t4, 0);
+    if (kind) {
+      playConsoleChime(kind);
+    }
+  }, [items]);
 
   return (
     <ScreenState
@@ -43,10 +53,15 @@ export default function MedicalPage() {
               trajectory={item.trajectory}
             />
             <EscalationLadder
+              current={item.status === "ack" ? "Battalion MO" : "waiting"}
               steps={[
                 { role: "UWO", status: "notified", time: "09:41" },
                 { role: "Company welfare deputy", status: "waiting", time: "" },
-                { role: "Battalion MO", status: "waiting", time: "" },
+                {
+                  role: "Battalion MO",
+                  status: item.status === "ack" ? "acknowledged" : "waiting",
+                  time: item.status === "ack" ? "now" : "",
+                },
                 { role: "Sector counsellor", status: "waiting", time: "" },
               ]}
             />
@@ -63,6 +78,25 @@ export default function MedicalPage() {
             </button>
           </article>
         ))}
+        <details>
+          <summary>Referrals and guide</summary>
+          {extra.data?.items.map((item) => (
+            <p key={item.case_id}>
+              From {item.from}. {item.case_id}. {item.context}
+            </p>
+          ))}
+          {extra.data ? (
+            <>
+              <h2>{extra.data.guide.title}</h2>
+              <ol>
+                {extra.data.guide.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+              <p>{extra.data.guide.note}</p>
+            </>
+          ) : null}
+        </details>
       </div>
     </ScreenState>
   );
