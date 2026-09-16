@@ -1,0 +1,10 @@
+{
+  "en": "open",
+  "hi": "main",
+  "hi-Latn": "main",
+  "ta": "main",
+  "gate": "recorded",
+  "crisis_recall_open": 1.0,
+  "crisis_recall_main": 1.0,
+  "reason": "Hindi and Hinglish stay on main unless open matches (31.1)."
+}

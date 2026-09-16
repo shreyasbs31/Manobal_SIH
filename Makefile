@@ -45,9 +45,10 @@ test: copy-lint
 	corepack pnpm --filter @manobal/ui test
 	corepack pnpm --filter @manobal/contracts test
 	corepack pnpm --filter @manobal/illustrations test
+	PYTHONPATH=services/engine uv run pytest infra/evals
 
 eval:
-	uv run pytest infra/evals
+	PYTHONPATH=services/engine uv run pytest infra/evals
 
 e2e:
 	corepack pnpm --filter @manobal/e2e test
