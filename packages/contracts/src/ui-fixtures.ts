@@ -21,9 +21,19 @@ export interface HomePayload {
   greeting: string;
   shift_line: string;
   takeaway: string;
-  checkin: { title: string; duration_s: number; href: string };
+  checkin: { title: string; duration_s: number; href: string; done?: boolean };
   nudge: { title: string; detail: string; why: string };
   ribbon: readonly { day: number; value: number }[];
+  persona?: string;
+  simple_mode?: boolean;
+  language?: string;
+  context_cards?: readonly { title: string; detail: string; why: string; kind: string }[];
+  tiles?: readonly { href: string; label: string }[];
+  status?: { wearable?: string; last_sync?: string; queued?: number };
+  checkin_done?: boolean;
+  onboarding_done?: boolean;
+  lifecycle_state?: string;
+  device_tier?: string;
 }
 
 /** GET /api/v1/me/trends */
@@ -33,10 +43,10 @@ export interface TrendPoint {
 }
 
 /** POST /api/v1/edge/sync check-in item */
-export interface CheckInQuestion {
+export type CheckInQuestion = {
   id: "mood" | "energy" | "sleep";
   prompt: string;
-}
+};
 
 /** GET /api/v1/welfare/queue */
 export interface WelfareCase {

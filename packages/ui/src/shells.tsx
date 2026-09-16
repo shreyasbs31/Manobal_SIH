@@ -64,6 +64,7 @@ export function SaathiShell({
   syncing = false,
   mode = "demo",
   chrome = "full",
+  simple = false,
 }: {
   children: ReactNode;
   pathname: string;
@@ -74,6 +75,7 @@ export function SaathiShell({
   syncing?: boolean | undefined;
   mode?: ManobalMode | undefined;
   chrome?: "full" | "flow" | "none" | undefined;
+  simple?: boolean | undefined;
 }) {
   if (chrome === "none") {
     return <>{children}</>;
@@ -83,7 +85,12 @@ export function SaathiShell({
   const showGreeting = chrome === "full";
 
   return (
-    <div className="mb-theme mb-saathi" data-skin="saathi" data-theme="light">
+    <div
+      className="mb-theme mb-saathi"
+      data-simple={simple ? "true" : "false"}
+      data-skin="saathi"
+      data-theme="light"
+    >
       <a className="mb-skip" href="#main">
         Skip to content
       </a>

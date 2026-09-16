@@ -10,7 +10,7 @@
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node --test"
+    "test": "node --test tests/"
   },
   "devDependencies": {
     "typescript": "catalog:"

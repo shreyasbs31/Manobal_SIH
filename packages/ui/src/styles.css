@@ -1884,8 +1884,14 @@ textarea {
 
 .mb-ribbon-hero {
   position: relative;
-  min-height: 140px;
+  min-height: 180px;
   padding-block-start: 4px;
+}
+
+.mb-field,
+.mb-home-stack > label {
+  display: grid;
+  gap: 6px;
 }
 
 .mb-checkin-card {
@@ -2457,3 +2463,103 @@ textarea {
     stroke-dashoffset: 0;
   }
 }
+
+.mb-onboard .mb-primary,
+.mb-onboard .mb-secondary {
+  min-height: 48px;
+}
+
+.mb-check-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+}
+
+.mb-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mb-chip-row button[aria-pressed="true"] {
+  background: var(--mb-primary);
+  color: var(--mb-on-primary);
+}
+
+.mb-why {
+  margin: 8px 0 0;
+  font-size: var(--mb-fs-12);
+  opacity: 0.8;
+}
+
+.mb-status-strip,
+.mb-shift-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--mb-fs-12);
+}
+
+.mb-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mb-tag-row button {
+  min-height: 44px;
+}
+
+.mb-instrument {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: var(--mb-hairline) solid var(--mb-border);
+}
+
+.mb-self-only {
+  font-size: var(--mb-fs-12);
+}
+
+.mb-option-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.mb-option-stack button {
+  min-height: 48px;
+  text-align: start;
+}
+
+.mb-saathi[data-simple="true"] .mb-quick-tiles a,
+.mb-saathi[data-simple="true"] .mb-primary,
+.mb-saathi[data-simple="true"] .mb-secondary {
+  min-height: 56px;
+}
+
+.mb-drain {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--mb-border);
+  overflow: hidden;
+}
+
+.mb-drain span {
+  display: block;
+  height: 100%;
+  background: var(--mb-primary);
+}
+
+.mb-call-btn {
+  background: var(--mb-t4, #8b2e2e);
+  color: #fff;
+  border-color: var(--mb-t4, #8b2e2e);
+}
+
+.mb-sms-btn {
+  color: inherit;
+}
+

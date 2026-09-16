@@ -26,10 +26,14 @@ export const languages = [
   { tag: "sa", label: "संस्कृतम्", direction: "ltr", scheduled: true, reviewed: false },
   { tag: "sat", label: "ᱥᱟᱱᱛᱟᱲᱤ", direction: "ltr", scheduled: true, reviewed: false },
   { tag: "sd", label: "سنڌي", direction: "rtl", scheduled: true, reviewed: false },
-  { tag: "ta", label: "தமிழ்", direction: "ltr", scheduled: true, reviewed: false },
+  { tag: "ta", label: "தமிழ்", direction: "ltr", scheduled: true, reviewed: true },
   { tag: "te", label: "తెలుగు", direction: "ltr", scheduled: true, reviewed: false },
   { tag: "ur", label: "اردو", direction: "rtl", scheduled: true, reviewed: false },
   { tag: "en", label: "English", direction: "ltr", scheduled: false, reviewed: true },
 ] as const satisfies readonly LanguageDefinition[];
 
 export type LanguageTag = (typeof languages)[number]["tag"];
+
+export { machineTranslated, reviewedLang, t } from "./catalog";
+export { EN_STRINGS, HI_STRINGS, TA_STRINGS } from "./catalog";
+

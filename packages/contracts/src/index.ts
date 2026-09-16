@@ -168,8 +168,216 @@ export class ManobalClient {
     return this.request("/api/v1/me/trends", { signal });
   }
 
-  meCheckIn(signal?: AbortSignal): Promise<{ questions: CheckInQuestion[] }> {
+  meCheckIn(signal?: AbortSignal): Promise<{
+    questions: CheckInQuestion[];
+    busy_day?: boolean;
+    voice_default?: boolean;
+    tags?: string[];
+    saved?: string;
+  }> {
     return this.request("/api/v1/me/check-in", { signal });
+  }
+
+  meOnboarding(signal?: AbortSignal): Promise<{
+    languages: string[];
+    consents: {
+      id: string;
+      title: string;
+      leavesPhone: string;
+      whoCanSee: string;
+      default: boolean;
+    }[];
+    exception: string;
+    helpers: string[];
+    profile: Record<string, unknown>;
+    receipt: { hash: string; time: string } | null;
+  }> {
+    return this.request("/api/v1/me/onboarding", { signal });
+  }
+
+  completeOnboarding(body: Record<string, unknown>): Promise<{
+    receipt: { hash: string; time: string; skipped: Record<string, boolean> };
+    profile: { onboarding_done: boolean; language: string };
+  }> {
+    return this.request("/api/v1/me/onboarding", { method: "POST", body });
+  }
+
+  saveCheckIn(body: Record<string, unknown>): Promise<{
+    saved: boolean;
+    message?: string;
+    skipped?: boolean;
+  }> {
+    return this.request("/api/v1/me/check-in", { method: "POST", body });
+  }
+
+  meAssessments(signal?: AbortSignal): Promise<{
+    items: {
+      id: string;
+      title: string;
+      badge: string;
+      self_only: boolean;
+      badge_label: string;
+      items: number;
+    }[];
+  }> {
+    return this.request("/api/v1/me/assessments", { signal });
+  }
+
+  meAssessment(id: string, signal?: AbortSignal): Promise<{
+    id: string;
+    title: string;
+    self_only: boolean;
+    prompts: string[];
+    options: string[];
+    items: number;
+  }> {
+    return this.request(`/api/v1/me/assessments/${id}`, { signal });
+  }
+
+  saveAssessment(
+    id: string,
+    body: { item: number; value: number; conversational?: boolean },
+  ): Promise<{ saved: boolean; safety: boolean; self_only: boolean; verbatim?: boolean }> {
+    return this.request(`/api/v1/me/assessments/${id}`, { method: "POST", body });
+  }
+
+  meToolkit(signal?: AbortSignal): Promise<{
+    items: { id: string; title: string; detail: string; href: string; offline: boolean }[];
+    ranking: { order: string[]; context: Record<string, unknown> };
+  }> {
+    return this.request("/api/v1/me/toolkit", { signal });
+  }
+
+  meRest(signal?: AbortSignal): Promise<{
+    el_days: number;
+    cl_days: number;
+    window: { start: string; end: string; travel_days: number; note: string } | null;
+    copy: string;
+    days: { label: string; start: number; end: number; sleep: string; caffeine: string }[];
+  }> {
+    return this.request("/api/v1/me/rest", { signal });
+  }
+
+  meTalk(signal?: AbortSignal): Promise<{
+    requests: Record<string, unknown>[];
+    bookings: Record<string, unknown>[];
+    acs_configured: boolean;
+    demo_join: boolean;
+    demo_label: string;
+    anonymous_handle: string;
+  }> {
+    return this.request("/api/v1/me/talk", { signal });
+  }
+
+  saveTalk(body: Record<string, unknown>): Promise<{
+    request: Record<string, unknown>;
+    demo_join: boolean;
+    demo_label: string;
+  }> {
+    return this.request("/api/v1/me/talk", { method: "POST", body });
+  }
+
+  meBuddy(signal?: AbortSignal): Promise<{
+    paired: boolean;
+    code?: string;
+    lessons: string[];
+    privacy: string;
+  }> {
+    return this.request("/api/v1/me/buddy", { signal });
+  }
+
+  saveBuddy(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/me/buddy", { method: "POST", body });
+  }
+
+  meFamily(signal?: AbortSignal): Promise<{
+    reminder: string | null;
+    share_link: string;
+    personal_data: boolean;
+    resources: string[];
+  }> {
+    return this.request("/api/v1/me/family", { signal });
+  }
+
+  saveFamily(reminder = "sunday"): Promise<{ reminder: string; personal_data: boolean }> {
+    return this.request(`/api/v1/me/family?reminder=${reminder}`, { method: "POST" });
+  }
+
+  meRights(signal?: AbortSignal): Promise<{
+    notice: { version: string; hash: string; language: string };
+    actions: string[];
+    receipts: Record<string, unknown>[];
+    remembers_opt_in: boolean;
+    simple_mode: boolean;
+  }> {
+    return this.request("/api/v1/me/rights", { signal });
+  }
+
+  eraseRights(dataType = "self_report"): Promise<{
+    sha256: string;
+    signature: string;
+    at: string;
+  }> {
+    return this.request(`/api/v1/me/rights/erase?data_type=${dataType}`, { method: "POST" });
+  }
+
+  meRemembers(signal?: AbortSignal): Promise<{
+    opt_in: boolean;
+    items: { group: string; text: string }[];
+    groups: string[];
+  }> {
+    return this.request("/api/v1/me/remembers", { signal });
+  }
+
+  saveRemembers(body: Record<string, unknown>): Promise<{
+    opt_in: boolean;
+    items: { group: string; text: string }[];
+  }> {
+    return this.request("/api/v1/me/remembers", { method: "POST", body });
+  }
+
+  savePersonalisation(patch: Record<string, unknown>): Promise<{ profile: Record<string, unknown> }> {
+    return this.request("/api/v1/me/personalisation", { method: "POST", body: { patch } });
+  }
+
+  jitaiNotNow(): Promise<{ silenced_until: string }> {
+    return this.request("/api/v1/me/jitai/not-now", { method: "POST" });
+  }
+
+  savePulse(kind: "unit" | "trust", value: number): Promise<{ saved: boolean }> {
+    return this.request("/api/v1/me/pulse", { method: "POST", body: { kind, value } });
+  }
+
+  saveConcern(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/me/concerns", { method: "POST", body });
+  }
+
+  meConcerns(signal?: AbortSignal): Promise<{ items: Record<string, unknown>[] }> {
+    return this.request("/api/v1/me/concerns", { signal });
+  }
+
+  offlineSnapshot(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/me/offline-snapshot", { signal });
+  }
+
+  syncQueue(items: { kind: string; payload: Record<string, unknown>; client_id: string }[]): Promise<{
+    drained: number;
+    edge_up: boolean;
+  }> {
+    return this.request("/api/v1/me/sync", { method: "POST", body: items });
+  }
+
+  i18n(lang: string, signal?: AbortSignal): Promise<{
+    lang: string;
+    reviewed: boolean;
+    machine_translated: boolean;
+    strings: Record<string, string>;
+  }> {
+    return this.request(`/api/v1/i18n/${lang}`, { signal });
+  }
+
+  setEdgeLink(up: boolean): Promise<{ up: boolean; queued: number; drained: number }> {
+    return this.request("/api/v1/demo/edge-link", { method: "POST", body: { up } });
   }
 
   meVoice(signal?: AbortSignal): Promise<{

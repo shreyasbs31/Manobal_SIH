@@ -99,7 +99,7 @@ export {
   SafetyPlanEditor,
   ShiftTimeline,
 } from "./forms";
-export type { LanguageOption } from "./forms";
+export type { LanguageOption, SafetyPlanFields } from "./forms";
 export { CommandShell, PublicHeader, SaathiShell } from "./shells";
 export type { NavItem } from "./shells";
 export { ComponentGallery } from "./gallery";

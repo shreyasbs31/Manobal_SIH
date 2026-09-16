@@ -113,31 +113,70 @@ export function LanguageGrid({
   );
 }
 
-export function SafetyPlanEditor() {
-  const [warning, setWarning] = useState("Sleep dropping, shorter replies");
-  const [coping, setCoping] = useState("Box breathing, walk the perimeter");
-  const [people, setPeople] = useState("Buddy, counsellor desk");
+export type SafetyPlanFields = {
+  warning: string;
+  coping: string;
+  distract: string;
+  help: string;
+  professional: string;
+  environment: string;
+};
+
+const PLAN_DEFAULT: SafetyPlanFields = {
+  warning: "Sleep dropping, shorter replies",
+  coping: "Box breathing, walk the perimeter",
+  distract: "Tea with a buddy, a short walk",
+  help: "Buddy, partner",
+  professional: "Welfare officer, counsellor desk, Tele-MANAS 14416",
+  environment: "Keep medicines with someone I trust. Stay with people tonight.",
+};
+
+export function SafetyPlanEditor({
+  value,
+  onChange,
+}: {
+  value?: SafetyPlanFields | undefined;
+  onChange?: ((next: SafetyPlanFields) => void) | undefined;
+} = {}) {
+  const [internal, setInternal] = useState(PLAN_DEFAULT);
+  const plan = value ?? internal;
+  function patch(key: keyof SafetyPlanFields, next: string) {
+    const updated = { ...plan, [key]: next };
+    if (!value) {
+      setInternal(updated);
+    }
+    onChange?.(updated);
+  }
   return (
-    <form className="mb-card mb-safety">
+    <form className="mb-card mb-plan-editor">
       <label>
         Warning signs I notice
+        <textarea onChange={(event) => patch("warning", event.target.value)} value={plan.warning} />
+      </label>
+      <label>
+        What I can do on my own
+        <textarea onChange={(event) => patch("coping", event.target.value)} value={plan.coping} />
+      </label>
+      <label>
+        People and places that help me shift attention
+        <textarea onChange={(event) => patch("distract", event.target.value)} value={plan.distract} />
+      </label>
+      <label>
+        People I can ask for help
+        <textarea onChange={(event) => patch("help", event.target.value)} value={plan.help} />
+      </label>
+      <label>
+        Professionals I can contact
         <textarea
-          onChange={(event) => setWarning(event.target.value)}
-          value={warning}
+          onChange={(event) => patch("professional", event.target.value)}
+          value={plan.professional}
         />
       </label>
       <label>
-        What helps me
+        Making my space safer
         <textarea
-          onChange={(event) => setCoping(event.target.value)}
-          value={coping}
-        />
-      </label>
-      <label>
-        People I can reach
-        <textarea
-          onChange={(event) => setPeople(event.target.value)}
-          value={people}
+          onChange={(event) => patch("environment", event.target.value)}
+          value={plan.environment}
         />
       </label>
     </form>
