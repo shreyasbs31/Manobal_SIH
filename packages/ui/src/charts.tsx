@@ -281,16 +281,39 @@ function bandStep(band: FormationCell["band"]): (typeof BAND_STEPS)[number] {
   return "step-1";
 }
 
+function Spark({ values }: { values: readonly number[] }) {
+  if (values.length < 2) {
+    return null;
+  }
+  const max = Math.max(...values, 1);
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * 36;
+      const y = 12 - (value / max) * 10;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <svg aria-hidden="true" className="mb-spark" height="14" width="40">
+      <polyline fill="none" points={points} stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export function FormationGrid({
   units,
   weeks,
   cells,
   takeaway = "Charlie Coy's workload has risen for three weeks.",
+  sparks,
+  onSelect,
 }: {
   units: readonly string[];
   weeks: number;
   cells: readonly FormationCell[];
   takeaway?: string | undefined;
+  sparks?: Record<string, readonly number[]> | undefined;
+  onSelect?: ((cell: FormationCell & { weekLabel: string }) => void) | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const [selected, setSelected] = useState<string | null>(null);
@@ -342,18 +365,36 @@ export function FormationGrid({
               <th scope="row">
                 <span className="mb-formation-ref">{letters[unitIndex] ?? unit[0]}</span>
                 {unit}
+                {sparks?.[unit] ? <Spark values={sparks[unit] ?? []} /> : null}
               </th>
               {Array.from({ length: weeks }, (_, index) => {
                 const week = index + 1;
                 const cell = lookup.get(`${unit}-${week}`);
                 const key = `${unit}-${week}`;
+                const weekLabel = weekLabels[index] ?? `W${week}`;
                 if (!cell || cell.band === "hidden") {
                   return (
                     <td key={key}>
-                      <HiddenTile
-                        compact
-                        reason="Hidden to protect individuals. Fewer than 10 people or recent large changes."
-                      />
+                      <button
+                        aria-pressed={selected === key}
+                        className="mb-hidden-select"
+                        onClick={() => {
+                          setSelected(key);
+                          onSelect?.({
+                            unit,
+                            week,
+                            band: "hidden",
+                            weekLabel,
+                          });
+                        }}
+                        title="Hidden to protect individuals. Fewer than 10 people or recent large changes."
+                        type="button"
+                      >
+                        <HiddenTile
+                          compact
+                          reason="Hidden to protect individuals. Fewer than 10 people or recent large changes."
+                        />
+                      </button>
                     </td>
                   );
                 }
@@ -364,8 +405,11 @@ export function FormationGrid({
                       className="mb-tile"
                       data-band={cell.band}
                       data-step={bandStep(cell.band)}
-                      onClick={() => setSelected(key)}
-                      title={cell.shareLabel ?? `${unit} ${weekLabels[index]}`}
+                      onClick={() => {
+                        setSelected(key);
+                        onSelect?.({ ...cell, weekLabel });
+                      }}
+                      title={cell.shareLabel ?? `${unit} ${weekLabel}`}
                       type="button"
                     >
                       <span className="mb-sr">
