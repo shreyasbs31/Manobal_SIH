@@ -30,3 +30,33 @@ Choices implied by the spec (recorded, not blocked):
 16. [x] `make dev` serves web on port 3000 and rebuilds the image when Dockerfiles or lockfiles change; add `make lint`. Check: `Makefile` `dev` target publishes 3000; `make lint` runs package lints.
 
 End-of-prompt gate: `make test`, `make lint`, `copy-lint`, UI review loop, both skins and all themes render, axe clean.
+
+## Prompt 4: Real data and real decisions
+
+Bind live scoring, cases, acute, privacy, and seed data behind the Prompt 3 screens.
+
+Choices implied by the spec (recorded, not blocked):
+- Identities enter core only after vault `POST /tokenise` (ingest identity). Persist uses concurrent `/tokenise` calls; generate keeps a `subject_index` until then.
+- `world=primary` is COPY'd into `manobal_core`. `world=shifted` writes parquet under `services/synth/artifacts/shifted/` plus `ground_truth` rows and is never used to train the forecast.
+- Load uses `COPY` after dropping secondary indexes. Prefer psycopg binary `write_row`; if that misses the 3-minute seed budget, fall back to CSV `COPY` for hypertables and note it here.
+- LightGBM is in-scope (31.1 High). SHAP values come from LightGBM `pred_contrib` (TreeSHAP) and map through `infra/rulesets/phrases.yaml` (en, hi). `ruptures` PELT runs only when WSI > 0.35.
+- Pre-rendered audio: Azure Speech when `AZURE_SPEECH_KEY` is set; otherwise reviewed silent WAV files plus a manifest (31.1 TTS is High; local demo has no Speech account).
+- Realtime: local hub in `infra/realtime`; Azure Web PubSub when `WEBPUBSUB_CONNECTION_STRING` is set. Engine filters by role and unit before publish.
+- Ruleset signatures: two demo WDEC Ed25519 keys in `infra/keys` (Azure Key Vault in deployment). Shadow ruleset `v1.1.0-shadow` writes `shadow_assessment`.
+- Acute isolation: Redis queue plus compose service `engine-acute`. `POST /acute` waits up to 2 s for the worker; if the worker is absent it processes inline so the demo SLA still holds.
+- `make seed` generates the primary world (7200 x 540), tokenises, COPY-loads, scores the eight personas plus the 500-person sample, and trains the forecast on primary only.
+
+1. [ ] Synthetic generator (spec 5): full org tree, causal order 5.2, primary and shifted worlds, volume rules, vault tokenise, ground truth, fairness attrs, consent, buddy pairs, climate pulse, grievances, spec 29 personas, CLI generate/personas/snapshot/restore. Check: `uv run pytest services/synth/tests`; `uv run synth personas` prints eight spec 5.3 rows; generate 80x60 finishes and respects volume rules; restore path exists.
+2. [ ] Engine core (8.1 to 8.5, 8.8, 8.9): indicators, de-seasonalisation, regimes, cold start, floors, z, EWMA, CUSUM, coverage and consent gating, renormalised WSI, tiers, corroboration, hysteresis, acute override, limited_data, change points, signed and shadow rulesets, polars. Check: `uv run pytest services/engine/tests/test_scoring.py` covers those behaviours; nightly window uses last 90 days; PELT gated on WSI > 0.35.
+3. [ ] Forecast and drivers (8.6, 8.7): LightGBM with monotone constraints, isotonic calibration, conformal interval, excluded attributes, SHAP through phrases.yaml (en, hi), trajectory and forecast authority, model registry metrics on both worlds. Check: tests prove excluded attrs are absent, forecast never lifts above T1 without corroboration, registry has primary and shifted metrics.
+4. [ ] Levers and closed loop (9.1, 9.2): full lever library, rank from (tier, dominant_domain, lifecycle_state) plus 21-day de-escalation, weekly re-rank, unit constraints. Check: Arjun ranks REST_48H; Meena LEAVE_PRIORITISE; Rajesh GRIEVANCE_EXPEDITE and LEGAL_AID_REFERRAL; NO_ACTION always present.
+5. [ ] Cases, SLAs, alerts, digest, escalation ladder with compressed timers. Check: T2+ open cases; T4 15-minute SLA compresses by `sim_time_compression`; digest lists T2/T3; tests cover ack and escalation steps.
+6. [ ] Acute module (10.1, 10.2): isolated worker, automatic grant, vault resolve, access ledger, WDEC audit category, `POST /acute`. Check: `POST /acute` for Deepak returns T4 case and alerts in under 2 s; LLM is not invoked; kill switch list cannot include acute.
+7. [ ] Incident protocol (11): HMAC webhook, 72-hour cards, 28-day follow-up, aggregate commander card with k-anonymity. Check: invalid HMAC rejected; Lalit-style ask-to-talk appears on the UWO board; commander card suppresses counts below 3 as "a few" and needs unit n >= 10.
+8. [ ] Pre-rendered audio (10.6): manifest, generation job, Blob storage, service-worker cache list. Check: manifest lists safety, grounding, and breathing in configured languages; SW cache list matches; Azure Speech or silent-WAV fallback is recorded.
+9. [ ] Privacy plane (14.1): k-anonymity with complementary suppression and churn, trend neighbour suppression, simulator and tool enforcement, grants with 24 h contact-note, break-glass with approver, trend-share, consent withdrawal with purge and signed receipts, kill switches (acute excluded), Zone X test, audit anchors. Check: full 23.2 suite green.
+10. [ ] Realtime events (spec 18): Azure Web PubSub or local hub; server-side filter by role and unit. Check: commander/HQ payloads cannot contain token/case/person keys; personnel groups are token-scoped; negotiate issues a short-lived group token.
+11. [ ] Replace Prompt 3 fixtures with live API data on those screens; keep fixtures on the gallery page only. Check: home, check-in, me, welfare, case, medical, command, governance fetch `/api/v1/...`; `/dev/components` still uses `@manobal/contracts` fixtures; Command/HQ routes still reject person parameters.
+12. [ ] Tests: 23.1 engine-core coverage gate and 23.2 privacy suite as CI. Check: `make test` runs both; scoring/privacy modules meet the 90% coverage bar on those modules.
+
+End-of-prompt gate: `make seed` under 3 minutes; eight personas match spec 5.3; `POST /acute` T4+alerts under 2 s; privacy suite green; Prompt 3 screens show live data; `make test`, `make lint`, `copy-lint`, UI review loop.
