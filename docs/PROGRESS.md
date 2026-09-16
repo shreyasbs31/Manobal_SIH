@@ -86,3 +86,35 @@ Choices implied by the spec (recorded, not blocked):
 10. [x] Optional P2 on-device preview (27.3) behind a capability check. Check: UI offers On-device preview only after WebGPU passes; Hindi is not offered that path. Fallback: Whisper/WebLLM weights are not vendored; English reflect uses the local template plus output guard until weights cache (31.1 P2).
 
 End-of-prompt gate: English, Hindi, and Tamil voice check-ins within the 13.3 budget; typed and spoken Hinglish distress never reaches the model and opens the acute path; eval crisis recall 100%; routing decision in the model registry; `make test`, `make lint`, `copy-lint`, UI review loop.
+
+## Prompt 6: Personnel app a constable would keep using
+
+Ship the full Saathi surface: onboarding through Me, JITAI, lifecycle, genuine offline, and reviewed i18n. Personalisation never reaches scoring or officer payloads.
+
+Choices implied by the spec (recorded, not blocked):
+- Grok on the provided Foundry project is `alt` only. It is never selected for companion, crisis, guards, check-in, or other personnel or safety tasks.
+- The provided Foundry project does not expose `main`, `fast`, or `open`. OpenAI `gpt-4o-mini` stands in for those classes on companion_text and companion_voice when Foundry those classes are unset. Crisis classify and output_guard stay on the local fail-safe path.
+- Deepgram is wired from the local secret store. The key's documented model is nova-2; STT still requests nova-3 first and falls back to nova-2 (spec 13.2 vs the key card).
+- Azure Speech, Translator, Content Safety, and ACS connection strings were not supplied. TTS stays on silent-WAV first byte; remaining UI languages ship English with a machine-translated flag until Translator is set; ACS calls show booking and a labelled demo join (31.1 scheduling fallback).
+- Keys live only in gitignored `.env` files. Rotate every value that was pasted into chat.
+- ScreenState must not blank Saathi when offline. Snapshots plus the encrypted queue serve 27.2.
+
+1. [ ] Onboarding (17.1.1) with language grid, consent cards, the one exception, receipt, optional buddy, safety plan, wearable, device check, and 28.2 questions. Check: `/app/onboarding` completes for Arjun; receipt hash shown; skippable extras do not block Home.
+2. [ ] Home (17.1.2) Lay hero, at most two context cards, quick tiles, status strip, shift strip. Check: Arjun, Meena, and Karthik homes differ (shift vs leave vs settling-back) and each context card has Why this?
+3. [ ] Check-in (17.1.3) FaceScale, tags, adaptive length (28.5), ribbon join on save. Check: busy-day mode is one question; full mode has tags and sleep hours; completion copy matches UI 5.2.
+4. [ ] Saathi screen (17.1.4) integrated with Prompt 5 plus end summary and private journal. Check: journal stays on device; crisis still routes to `/app/safety`.
+5. [ ] Assessments (17.1.5) including conversational mode, validated and self-only badges, PHQ-9 item 9 safety flow. Check: item 9 above 0 opens safety; AUDIT-C is marked self-only; conversational mode asks items verbatim.
+6. [ ] Toolkit (17.1.6) all items, pre-rendered audio, Thompson-sampling recommender with offline cache (28.3). Check: ranking never uses tier or scores; Arjun sees music or sleep first; items work from cache.
+7. [ ] Plan my rest (17.1.7) leave planner and shift and sleep planner. Check: Meena sees EL/CL and a feasible window; copy says MANOBAL does not submit leave.
+8. [ ] Talk to a person (17.1.8) requests, counsellor booking, ACS voice and video. Check: anonymous and named counsellor requests exist; ACS unset shows booking plus a labelled demo join (31.1).
+9. [ ] My safety plan (10.4, 17.1.9) and safety screen (10.3) with SMS SOS. Check: `sms:` link present; plan stored on device; T4 red only on call buttons.
+10. [ ] Buddy (17.1.10) with strict privacy. Check: buddy payloads have no tier, score, or token of the other person; unpair does not notify.
+11. [ ] Family connect (17.1.11). Check: shareable family link has no personal data; Meena can set a Sunday reminder.
+12. [ ] Me (17.1.12) trends, Rights Centre (14.2), ledger, receipts, requests, concerns with SLA, unit pulse, trust pulse, personalisation, remembers, settings including simple mode. Check: rights erase returns a receipt; simple mode enlarges targets; remembers opt-in stays off by default.
+13. [ ] JITAI (9.3) with caps and quiet hours; lifecycle pathways (9.4). Check: at most one prompt per day and four per week; Not now silences 72 h; Karthik sees a settling-back card for return_from_leave.
+14. [ ] Offline (17.1.13 and every row of 27.2): encrypted queue, structured offline voice check-in, cached assessments and toolkit, lexicon gate, local nudge rules, trends from snapshot, acute retry, resync drain, edge link. Check: with navigator.onLine false, check-in, toolkit, safety, lexicon, and trends still work; Director edge-down holds packets.
+15. [ ] i18n: reviewed English and Hindi from UI 5.2; Tamil for Karthik; other scheduled languages flagged machine-translated. Check: `t("safety.title", "hi")` is आप अकेले नहीं हैं।; Tamil home greeting path works; non-reviewed langs expose MachineTranslatedBadge.
+16. [ ] Tests proving no personalisation field reaches scoring or officer payloads. Check: pytest asserts profile keys are absent from forecast features, `/command/posture`, and `/welfare/queue`.
+17. [ ] Review loop on every Saathi screen at 360, 390, and 412 widths. Check: scores in `docs/UI_NOTES.md`; axe clean; screenshots in `e2e/artifacts/ui/`.
+
+End-of-prompt gate: Arjun, Meena, and Karthik show visibly different, explained home screens; every 27.2 row works with the network off; Lighthouse PWA installable, mobile performance 90+, accessibility 95+; `make test`, `make lint`, `copy-lint`, UI review loop.
