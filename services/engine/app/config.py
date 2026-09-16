@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     vault_api_url: str = "http://localhost:8100"
     realtime_url: str = "ws://localhost:8080"
     sim_time_compression: float = Field(default=60.0, gt=0)
+    realtime_jwt_secret: SecretStr = SecretStr("realtime_dev_only_change_me_32bx")
+    incident_hmac_secret: SecretStr = SecretStr("incident_dev_only_change_me")
+    webpubsub_connection_string: str = ""
 
     access_jwt_secret: SecretStr = SecretStr("access_dev_only_change_me_32bytes")
     access_token_minutes: int = Field(default=15, ge=1, le=60)
