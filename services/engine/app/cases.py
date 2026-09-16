@@ -171,6 +171,31 @@ def queue_items(scope_path: str) -> list[CaseRecord]:
     return [case for case in CASES.values() if case.unit_path.startswith(scope_path)]
 
 
+def ensure_demo_cases() -> None:
+    specs = {
+        "arjun": ("T3", ["workload", "body_vitals"], ["REST_48H"], "rising", "engine"),
+        "meena": ("T2", ["leave", "self_report"], ["LEAVE_PRIORITISE"], "rising", "engine"),
+        "deepak": ("T4", ["acute"], ["MO_REFERRAL"], "rising", "acute"),
+        "rajesh": ("T2", ["hardship", "self_report"], ["GRIEVANCE_EXPEDITE"], "stable", "engine"),
+    }
+    now = datetime.now(UTC)
+    for persona_id, (tier, domains, levers, trajectory, source) in specs.items():
+        persona = PERSONAS[persona_id]
+        if persona.case_id in CASES:
+            continue
+        open_case(
+            case_id=persona.case_id,
+            token=persona.token,
+            unit_path=persona.unit_path,
+            tier=tier,
+            domains=domains,
+            recommended=levers,
+            source=source,
+            trajectory=trajectory,
+            now=now - timedelta(days=2),
+        )
+
+
 def persona_case_id(token: str) -> str | None:
     for persona in PERSONAS.values():
         if persona.token == token:

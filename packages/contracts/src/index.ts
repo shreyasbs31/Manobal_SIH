@@ -593,17 +593,220 @@ export class ManobalClient {
   }
 
   govOverview(signal?: AbortSignal): Promise<{
-    kpis: { label: string; value: string; hint: string }[];
+    kpis: { label: string; value: string; hint: string; code?: string }[];
+    cost_guard?: boolean;
+    cost_banner?: string;
   }> {
     return this.request("/api/v1/gov/kpis", { signal });
   }
 
-  govFairness(signal?: AbortSignal): Promise<{ fairness: { label: string; ratio: number }[] }> {
+  govFairness(signal?: AbortSignal): Promise<{
+    fairness: { label: string; ratio: number }[];
+    exposure_parity?: { slice: string; ratio: number; within_band: boolean }[];
+    band?: string;
+    note?: string;
+  }> {
     return this.request("/api/v1/gov/fairness", { signal });
   }
 
   govKillswitches(signal?: AbortSignal): Promise<Record<string, boolean>> {
     return this.request("/api/v1/gov/killswitches", { signal });
+  }
+
+  setKillswitch(name: string): Promise<{ name: string; enabled: boolean }> {
+    return this.request(`/api/v1/gov/killswitches/${name}`, { method: "POST", body: {} });
+  }
+
+  govProviders(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/gov/providers", { signal });
+  }
+
+  govModels(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/gov/models", { signal });
+  }
+
+  govRulesets(signal?: AbortSignal): Promise<{
+    active: string;
+    shadow: string;
+    signed: boolean;
+    signers: string[];
+    yaml: string;
+    needs: number;
+  }> {
+    return this.request("/api/v1/gov/rulesets", { signal });
+  }
+
+  govAudit(signal?: AbortSignal): Promise<{
+    mode: string;
+    valid: boolean;
+    checked: number;
+    broken_seq: number | null;
+    head_hash: string;
+    blocks: number;
+  }> {
+    return this.request("/api/v1/gov/audit", { signal });
+  }
+
+  govAuditVerify(): Promise<{ valid: boolean; checked: number; broken_seq: number | null }> {
+    return this.request("/api/v1/gov/audit/verify", { method: "POST", body: {} });
+  }
+
+  govAuditTamper(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/gov/audit/tamper", { method: "POST", body: {} });
+  }
+
+  govAuditRestore(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/gov/audit/restore", { method: "POST", body: {} });
+  }
+
+  govTransparency(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/gov/transparency-report", { method: "POST", body: {} });
+  }
+
+  govTransparencyPdf(signal?: AbortSignal): Promise<Blob> {
+    return this.requestBlob("/api/v1/gov/transparency-report.pdf", signal);
+  }
+
+  govReviews(signal?: AbortSignal): Promise<{ items: Record<string, string>[] }> {
+    return this.request("/api/v1/gov/reviews", { signal });
+  }
+
+  govAgentSafety(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/gov/agent-safety", { signal });
+  }
+
+  publicTrust(signal?: AbortSignal): Promise<{
+    title: string;
+    promise: string;
+    hosting: string;
+    read_aloud: string;
+    matrix: {
+      collects: string;
+      leaves_phone: string;
+      who: string;
+      exception: string;
+    }[];
+    languages: { code: string; name: string; reviewed: boolean }[];
+  }> {
+    return this.request("/api/v1/public/trust", { signal });
+  }
+
+  publicArchitecture(signal?: AbortSignal): Promise<{
+    edge_up: boolean;
+    queued: number;
+    packets: { id: string; kind: string; held: boolean }[];
+    mode: string;
+    foundry: boolean;
+    acs: boolean;
+    speech: boolean;
+    translator: boolean;
+    content_safety: boolean;
+    cost_guard: boolean;
+  }> {
+    return this.request("/api/v1/public/architecture", { signal });
+  }
+
+  dpoRequests(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/dpo/requests", { signal });
+  }
+
+  dpoDecide(id: string, decision: string): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/dpo/requests/${id}`, {
+      method: "POST",
+      body: { decision },
+    });
+  }
+
+  integrationsJobs(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/integrations/jobs", { signal });
+  }
+
+  integrationsUpload(filename: string, rows: Record<string, unknown>[]): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/integrations/hrms/upload", {
+      method: "POST",
+      body: { filename, rows },
+    });
+  }
+
+  adminConsole(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/admin/console", { signal });
+  }
+
+  adminFlag(name: string, enabled: boolean): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/admin/flags", { method: "POST", body: { name, enabled } });
+  }
+
+  labOverview(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/lab/overview", { signal });
+  }
+
+  labMetrics(world: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/lab/metrics?world=${encodeURIComponent(world)}`, { signal });
+  }
+
+  labBenchmark(): Promise<{ subjects: number; seconds: number }> {
+    return this.request("/api/v1/lab/benchmark", { method: "POST", body: {} });
+  }
+
+  directorBoard(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/director/board", { signal });
+  }
+
+  demoScenario(name: string): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/demo/scenario/${name}`, { method: "POST", body: {} });
+  }
+
+  demoReset(): Promise<{ status: string; seconds: number; scenario: string }> {
+    return this.request("/api/v1/demo/reset", { method: "POST", body: {} });
+  }
+
+  demoTamper(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/tamper", { method: "POST", body: {} });
+  }
+
+  demoRestore(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/restore", { method: "POST", body: {} });
+  }
+
+  demoOutage(provider: string, opened: boolean): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/outage", { method: "POST", body: { provider, opened } });
+  }
+
+  demoResilience(enabled: boolean): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/resilience", { method: "POST", body: { enabled } });
+  }
+
+  demoWarmup(): Promise<Record<string, string>> {
+    return this.request("/api/v1/demo/warmup", { method: "POST", body: {} });
+  }
+
+  demoClockJump(body: { days?: number; running?: boolean; speed?: number }): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/director-clock", { method: "POST", body });
+  }
+
+  demoNightly(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/nightly", { method: "POST", body: {} });
+  }
+
+  demoCostExceeded(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/demo/cost-exceeded", { method: "POST", body: {} });
+  }
+
+  edgeQueue(signal?: AbortSignal): Promise<{ up: boolean; queued: number; items?: Record<string, unknown>[] }> {
+    return this.request("/api/v1/demo/edge-queue", { signal });
+  }
+
+  systemMode(signal?: AbortSignal): Promise<{
+    mode: string;
+    foundry: boolean;
+    acs: boolean;
+    speech: boolean;
+  }> {
+    return this.request("/api/v1/system/mode", { signal });
+  }
+
+  systemMetrics(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/system/metrics", { signal });
   }
 
   systemSelftest(signal?: AbortSignal): Promise<{

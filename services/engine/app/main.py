@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .audit import AuditVerification, append_audit, verify_audit
+from .audit import AuditVerification, append_audit
 from .auth import (
     OFFICER_PERSONAS,
     PERSONAS,
@@ -92,8 +92,13 @@ async def request_context(
     trace_id = request.headers.get("x-trace-id", str(uuid.uuid4()))
     request.state.trace_id = trace_id
     structlog.contextvars.bind_contextvars(trace_id=trace_id)
+    started = datetime.now(UTC)
     try:
         response = await call_next(request)
+        elapsed = (datetime.now(UTC) - started).total_seconds()
+        from .observability import record_request
+
+        record_request(request.url.path, elapsed, response.status_code)
         response.headers["x-trace-id"] = trace_id
         response.headers["x-content-type-options"] = "nosniff"
         response.headers["referrer-policy"] = "no-referrer"
@@ -114,6 +119,12 @@ class DemoCatalog(BaseModel):
 
 class ModeResponse(BaseModel):
     mode: str
+    foundry: bool = False
+    acs: bool = False
+    speech: bool = False
+    translator: bool = False
+    content_safety: bool = False
+    web_pubsub: bool = False
 
 
 class HealthResponse(BaseModel):
@@ -244,7 +255,15 @@ async def health() -> HealthResponse | JSONResponse:
 
 @app.get("/api/v1/system/mode", response_model=ModeResponse)
 async def mode() -> ModeResponse:
-    return ModeResponse(mode=settings.manobal_mode)
+    return ModeResponse(
+        mode=settings.manobal_mode,
+        foundry=bool(settings.foundry_endpoint),
+        acs=bool(settings.acs_connection_string.get_secret_value()),
+        speech=bool(settings.speech_key.get_secret_value()),
+        translator=bool(settings.translator_key.get_secret_value()),
+        content_safety=bool(settings.content_safety_key.get_secret_value()),
+        web_pubsub=bool(settings.webpubsub_connection_string),
+    )
 
 
 @app.get("/api/v1/system/selftest", response_model=SelfTestReport)
@@ -258,10 +277,17 @@ async def audit_verify(
         Principal,
         Depends(require("gov:read", RowPredicate.GOVERNANCE)),
     ],
-    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AuditVerification:
-    await apply_rls_context(session, principal)
-    return await verify_audit(session)
+    from .oversight import verify_chain
+
+    del principal
+    body = verify_chain()
+    return AuditVerification(
+        valid=bool(body["valid"]),
+        checked=int(body["checked"]),
+        broken_seq=int(body["broken_seq"]) if body["broken_seq"] is not None else None,
+        head_hash=str(body["head_hash"]),
+    )
 
 
 @app.get("/api/v1/demo/clock", response_model=ClockState)

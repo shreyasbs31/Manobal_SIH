@@ -1235,7 +1235,7 @@ async def get_edge_queue(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, Any]:
     del principal
-    return {"up": EDGE_LINK_UP, "queued": len(EDGE_QUEUE)}
+    return {"up": EDGE_LINK_UP, "queued": len(EDGE_QUEUE), "items": list(EDGE_QUEUE[-20:])}
 
 
 @router.get("/i18n/{lang}")

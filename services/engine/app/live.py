@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Request
@@ -10,7 +9,7 @@ from pydantic import BaseModel
 from .acute import AcuteRequest, AcuteResponse
 from .audio import generate_audio, manifest, sw_cache_list
 from .auth import PERSONAS, Principal
-from .cases import CASES, acknowledge, digest_items, open_case, queue_items, remaining_ratio
+from .cases import CASES, acknowledge, digest_items, ensure_demo_cases, queue_items, remaining_ratio
 from .config import get_settings
 from .errors import ApiError
 from .incident import (
@@ -56,8 +55,38 @@ from .privacy.rights import (
     set_killswitch,
 )
 from .realtime import groups_for, negotiate_token
-from .scoring.forecast import REGISTRY
-from .scoring.ruleset import load_ruleset, verify_yaml
+from .oversight import (
+    admin_payload,
+    advance_clock,
+    architecture_payload,
+    chain_state,
+    dpo_decide,
+    dpo_payload,
+    director_payload,
+    ensure_lab_worlds,
+    gov_accuracy,
+    gov_agent_safety,
+    gov_enrolment,
+    gov_fairness,
+    gov_kpis,
+    gov_models as gov_models_payload,
+    gov_reviews,
+    gov_rulesets,
+    integrations_payload,
+    integrations_upload,
+    lab_payload,
+    public_trust,
+    reset_demo_state,
+    restore_chain,
+    set_admin_flag,
+    set_outage,
+    set_resilience,
+    set_scenario,
+    tamper_chain,
+    transparency_pdf,
+    transparency_report,
+    decide_review,
+)
 from .security import RowPredicate, require
 
 router = APIRouter(prefix="/api/v1")
@@ -101,28 +130,7 @@ class WelfareCaseOut(BaseModel):
 
 
 def _ensure_persona_cases() -> None:
-    now = datetime.now(UTC)
-    specs = {
-        "arjun": ("T3", ["workload", "body_vitals"], ["REST_48H"], "rising", "engine"),
-        "meena": ("T2", ["leave", "self_report"], ["LEAVE_PRIORITISE"], "rising", "engine"),
-        "deepak": ("T4", ["acute"], ["MO_REFERRAL"], "rising", "acute"),
-        "rajesh": ("T2", ["hardship", "self_report"], ["GRIEVANCE_EXPEDITE"], "stable", "engine"),
-    }
-    for persona_id, (tier, domains, levers, trajectory, source) in specs.items():
-        persona = PERSONAS[persona_id]
-        if persona.case_id in CASES:
-            continue
-        open_case(
-            case_id=persona.case_id,
-            token=persona.token,
-            unit_path=persona.unit_path,
-            tier=tier,
-            domains=domains,
-            recommended=levers,
-            source=source,
-            trajectory=trajectory,
-            now=now - timedelta(days=2),
-        )
+    ensure_demo_cases()
 
 
 @router.get("/me/home", response_model=HomePayload)
@@ -797,73 +805,32 @@ async def hq_levers(
 
 
 @router.get("/gov/kpis")
-async def gov_kpis(
+async def gov_kpis_route(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    return {
-        "kpis": [
-            {
-                "label": "Lead time",
-                "value": "4.2 d",
-                "hint": "Median days from onset to first action",
-            },
-            {
-                "label": "False-positive rate",
-                "value": "0.11",
-                "hint": "Alerts with no later corroboration",
-            },
-            {
-                "label": "Break-glass rate",
-                "value": "0.4%",
-                "hint": "Identity reveals per open case",
-            },
-            {"label": "Trust index", "value": "Held", "hint": "Opt-out does not change scoring"},
-            {
-                "label": "Ack time T4",
-                "value": "3.1 min",
-                "hint": "Median until a human acknowledges",
-            },
-        ]
-    }
+    return gov_kpis()
 
 
 @router.get("/gov/fairness")
-async def gov_fairness(
+async def gov_fairness_route(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    return {
-        "fairness": [
-            {"label": "Flag rate by rank band", "ratio": 0.92},
-            {"label": "Flag rate by theatre", "ratio": 1.08},
-        ]
-    }
+    return gov_fairness()
 
 
 @router.get("/gov/models")
-async def gov_models(
+async def gov_models_route(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    from .ai.routing_gate import ensure_companion_routing
+    return gov_models_payload()
 
-    if "primary" not in REGISTRY:
-        import numpy as np
 
-        from .scoring.forecast import metrics, register_world_metrics, train_forecast
-
-        rng = np.random.default_rng(4)
-        features = rng.normal(size=(48, 4))
-        labels = (features[:, 0] + features[:, 1] > 0).astype(int)
-        names = ["workload_z", "body_vitals_z", "cusum_max", "coverage"]
-        model = train_forecast(features, labels, names)
-        probs = model.calibrator.predict(model.booster.predict(features))
-        register_world_metrics("primary", metrics(labels, probs), version=model.version)
-        shifted = (features[:, 0] * 1.15 + features[:, 1] > 0.05).astype(int)
-        register_world_metrics("shifted", metrics(shifted, probs), version=model.version)
-    ensure_companion_routing()
-    return {"registry": REGISTRY}
+async def gov_models(principal: Principal) -> dict[str, object]:
+    del principal
+    return gov_models_payload()
 
 
 @router.get("/gov/killswitches")
@@ -892,17 +859,102 @@ async def gov_set_killswitch(
 
 
 @router.get("/gov/rulesets")
-async def gov_rulesets(
+async def gov_rulesets_route(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    active = load_ruleset("v1.0.0")
-    shadow = load_ruleset("v1.1.0-shadow")
-    return {
-        "active": active.version,
-        "shadow": shadow.version,
-        "signed": verify_yaml(active.yaml_text, active.signature),
-    }
+    return gov_rulesets()
+
+
+@router.get("/gov/accuracy")
+async def gov_accuracy_route(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return gov_accuracy()
+
+
+@router.get("/gov/audit")
+async def gov_audit_route(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return chain_state()
+
+
+@router.post("/gov/audit/tamper")
+async def gov_audit_tamper(
+    principal: Annotated[Principal, Depends(require("gov:write", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return tamper_chain()
+
+
+@router.post("/gov/audit/restore")
+async def gov_audit_restore(
+    principal: Annotated[Principal, Depends(require("gov:write", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return restore_chain()
+
+
+@router.get("/gov/reviews")
+async def gov_reviews_route(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return gov_reviews()
+
+
+class ReviewBody(BaseModel):
+    status: str
+
+
+@router.post("/gov/reviews/{review_id}")
+async def gov_review_decide(
+    review_id: str,
+    body: ReviewBody,
+    principal: Annotated[Principal, Depends(require("gov:write", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return decide_review(review_id, body.status)
+
+
+@router.get("/gov/agent-safety")
+async def gov_agent_safety_route(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return gov_agent_safety()
+
+
+@router.get("/gov/enrolment-integrity")
+async def gov_enrolment_route(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return gov_enrolment()
+
+
+@router.post("/gov/transparency-report")
+async def gov_transparency(
+    principal: Annotated[Principal, Depends(require("gov:write", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return transparency_report()
+
+
+@router.get("/gov/transparency-report.pdf")
+async def gov_transparency_pdf(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> Response:
+    del principal
+    transparency_report()
+    return Response(
+        content=transparency_pdf(),
+        media_type="application/pdf",
+        headers={"content-disposition": 'attachment; filename="transparency.pdf"'},
+    )
 
 
 @router.post("/incidents")
@@ -1001,20 +1053,7 @@ async def seed_ready() -> dict[str, str]:
             "scope_denied", "Seed hook is demo only", hint="Use demo mode", status_code=403
         )
     _ensure_persona_cases()
-    if not REGISTRY:
-        import numpy as np
-
-        from .scoring.forecast import metrics, register_world_metrics, train_forecast
-
-        rng = np.random.default_rng(4)
-        features = rng.normal(size=(48, 4))
-        labels = (features[:, 0] + features[:, 1] > 0).astype(int)
-        names = ["workload_z", "body_vitals_z", "cusum_max", "coverage"]
-        model = train_forecast(features, labels, names)
-        probs = model.calibrator.predict(model.booster.predict(features))
-        register_world_metrics("primary", metrics(labels, probs), version=model.version)
-        shifted = (features[:, 0] * 1.15 + features[:, 1] > 0.05).astype(int)
-        register_world_metrics("shifted", metrics(shifted, probs), version=model.version)
+    ensure_lab_worlds()
     return {"status": "ready"}
 
 
@@ -1031,6 +1070,235 @@ async def lab_benchmark(
     for _ in range(8000):
         z_score(12.0, 8.0, 1.0, 0.5, 1.0)
     return {"subjects": 8000, "seconds": time_mod.perf_counter() - started}
+
+
+class DpoDecision(BaseModel):
+    decision: str
+
+
+class FlagBody(BaseModel):
+    name: str
+    enabled: bool
+
+
+class UploadBody(BaseModel):
+    filename: str
+    rows: list[dict[str, Any]] = []
+
+
+class OutageBody(BaseModel):
+    provider: str
+    opened: bool = True
+
+
+class ResilienceBody(BaseModel):
+    enabled: bool
+
+
+class ClockJump(BaseModel):
+    days: int = 0
+    running: bool | None = None
+    speed: float | None = None
+
+
+@router.get("/public/trust")
+async def public_trust_route() -> dict[str, object]:
+    return public_trust()
+
+
+@router.get("/public/architecture")
+async def public_architecture_route() -> dict[str, object]:
+    return architecture_payload()
+
+
+@router.get("/dpo/requests")
+async def dpo_requests(
+    principal: Annotated[Principal, Depends(require("dpo:read", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return dpo_payload()
+
+
+@router.post("/dpo/requests/{request_id}")
+async def dpo_request_decide(
+    request_id: str,
+    body: DpoDecision,
+    principal: Annotated[Principal, Depends(require("dpo:write", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return dpo_decide(request_id, body.decision)
+
+
+@router.get("/integrations/jobs")
+async def integrations_jobs(
+    principal: Annotated[
+        Principal, Depends(require("integrations:read", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_payload()
+
+
+@router.get("/integrations/quality")
+async def integrations_quality(
+    principal: Annotated[
+        Principal, Depends(require("integrations:read", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_payload()
+
+
+@router.post("/integrations/hrms/upload")
+async def integrations_hrms_upload(
+    body: UploadBody,
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_upload(body.filename, body.rows)
+
+
+@router.get("/admin/console")
+async def admin_console(
+    principal: Annotated[Principal, Depends(require("admin:read", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return admin_payload()
+
+
+@router.post("/admin/flags")
+async def admin_flags(
+    body: FlagBody,
+    principal: Annotated[Principal, Depends(require("admin:write", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return set_admin_flag(body.name, body.enabled)
+
+
+@router.get("/lab/metrics")
+async def lab_metrics(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+    world: str = "primary",
+) -> dict[str, object]:
+    del principal
+    return lab_payload(world)
+
+
+@router.get("/lab/overview")
+async def lab_overview(
+    principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
+) -> dict[str, object]:
+    del principal
+    return lab_payload("primary")
+
+
+@router.get("/architecture/live")
+async def architecture_live(
+    principal: Annotated[Principal, Depends(require("system:read", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return architecture_payload()
+
+
+@router.get("/director/board")
+async def director_board(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return director_payload()
+
+
+@router.post("/demo/scenario/{name}")
+async def demo_scenario(
+    name: str,
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return set_scenario(name)
+
+
+@router.post("/demo/reset")
+async def demo_reset(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return reset_demo_state()
+
+
+@router.post("/demo/tamper")
+async def demo_tamper(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return tamper_chain()
+
+
+@router.post("/demo/restore")
+async def demo_restore(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return restore_chain()
+
+
+@router.post("/demo/outage")
+async def demo_outage(
+    body: OutageBody,
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return set_outage(body.provider, body.opened)
+
+
+@router.post("/demo/resilience")
+async def demo_resilience(
+    body: ResilienceBody,
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return set_resilience(body.enabled)
+
+
+@router.post("/demo/director-clock")
+async def demo_director_clock(
+    body: ClockJump,
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    return advance_clock(days=body.days, running=body.running, speed=body.speed)
+
+
+@router.post("/demo/nightly")
+async def demo_nightly(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    _ensure_persona_cases()
+    ensure_lab_worlds()
+    return {"status": "scored", "subjects": 8000}
+
+
+@router.post("/demo/cost-exceeded")
+async def demo_cost_exceeded(
+    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+) -> dict[str, object]:
+    del principal
+    from .observability import set_cost_guard
+
+    set_cost_guard(True)
+    return {"cost_guard": True}
+
+
+@router.get("/system/metrics")
+async def system_metrics(
+    principal: Annotated[Principal, Depends(require("system:read", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    from .observability import metrics_payload
+
+    return metrics_payload()
 
 
 def _sla_label(tier: str) -> str:
