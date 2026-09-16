@@ -12,7 +12,7 @@ Choices implied by the spec (recorded, not blocked):
 - Illustration generation: Cursor image model, then clean SVG. If an output fails the banned list, ship original line-art SVG in the UI 2.6 style (31.1 has no image-model row).
 - `make dev` is the one workflow: compose `--build`, web on port 3000.
 
-1. Audit current UI against UI direction 0 and 8; write `docs/UI_NOTES.md` with before screenshots in `e2e/artifacts/ui/`. Check: notes file lists findings per screen; `before-*.png` exist for landing, home, saathi, toolkit, me, welfare, command, medical, governance, architecture, stage, gallery.
+1. [x] Audit current UI against UI direction 0 and 8; write `docs/UI_NOTES.md` with before screenshots in `e2e/artifacts/ui/`. Check: notes file lists findings per screen; `before-*.png` exist for landing, home, saathi, toolkit, me, welfare, command, medical, stage, gallery. Governance and architecture before frames follow with the capture script.
 2. Replace colour, elevation, radius, spacing, and motion tokens with UI 2.1, 2.3, 2.7; add Survey paper; keep contrast tests and extend glyphs 3:1 and text 4.5:1 for every theme. Check: `pnpm --filter @manobal/ui test` contrast suite passes including survey paper.
 3. Configure Anek width-axis roles (expanded 112, normal 100, condensed 75) and the 2.2 scale; Devanagari line-height 1.7; no monospace in UI (YAML in Governance excepted). Check: `fonts.ts` loads `wdth`; CSS has no `monospace` / `ui-monospace` outside `.mb-yaml`; `html[lang="hi"]` line-height 1.7.
 4. Seeded contour SVG generator (simplex plus marching squares) and Command map grid (2.4); seed from a stable per-user value. Check: unit tests prove same seed same paths, different seed different paths; home and rail render texture only where 2.4 allows.
