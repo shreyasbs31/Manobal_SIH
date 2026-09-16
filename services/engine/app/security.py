@@ -20,6 +20,7 @@ class RowPredicate(StrEnum):
     AGGREGATE_ONLY = "aggregate_only"
     GOVERNANCE = "governance"
     DEMO_CONTROL = "demo_control"
+    AUTHENTICATED = "authenticated"
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -40,6 +41,8 @@ def ltree_predicate(column: str, predicate: RowPredicate) -> TextClause:
 
 
 def _enforce_predicate(principal: Principal, predicate: RowPredicate) -> None:
+    if predicate is RowPredicate.AUTHENTICATED:
+        return
     if predicate is RowPredicate.OWN and principal.subject_token is None:
         raise ApiError(
             "scope_denied",

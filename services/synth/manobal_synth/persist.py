@@ -223,6 +223,17 @@ def persist_world(world: World, database_url: str) -> None:
         connection.commit()
 
 
+def _notify_engine() -> bool:
+    url = os.environ.get("ENGINE_API_URL")
+    if not url:
+        return False
+    try:
+        response = httpx.post(f"{url.rstrip('/')}/api/v1/demo/seed-ready", timeout=20.0)
+        return response.status_code < 400
+    except httpx.HTTPError:
+        return False
+
+
 def seed_primary(
     *,
     personnel: int = 7200,
@@ -242,6 +253,7 @@ def seed_primary(
     persist_world(world, database_url)
     shifted = generate_world(world="shifted", personnel=min(personnel, 3000), days=days, seed=7)
     write_artifacts(shifted)
+    engine_ready = _notify_engine()
     return {
         "status": "seeded",
         "personnel": world.personnel,
@@ -250,6 +262,7 @@ def seed_primary(
         "sample": len(world.sample_tokens),
         "shifted_personnel": shifted.personnel,
         "plan": world.persist_plan(),
+        "engine_ready": engine_ready,
         "synthetic": True,
     }
 

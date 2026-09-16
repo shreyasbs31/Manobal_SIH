@@ -80,9 +80,7 @@ def test_command_and_hq_routes_omit_person_parameters() -> None:
     for route in app.routes:
         if not isinstance(route, APIRoute):
             continue
-        if not (
-            route.path.startswith("/api/v1/command") or route.path.startswith("/api/v1/hq")
-        ):
+        if not (route.path.startswith("/api/v1/command") or route.path.startswith("/api/v1/hq")):
             continue
         path_lower = route.path.lower()
         for name in forbidden:

@@ -29,6 +29,7 @@ from .config import get_settings
 from .database import apply_rls_context, close_database, core_ping, get_session
 from .errors import ApiError, install_error_handlers
 from .grants import GrantRequest, GrantToken, mint_grant
+from .live import router as live_router
 from .logging import configure_logging
 from .passkeys import (
     PasskeyOptionsRequest,
@@ -69,6 +70,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 install_error_handlers(app)
+app.include_router(live_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.web_origin],
