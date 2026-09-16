@@ -225,4 +225,30 @@ Remaining for human review:
 - ACS, Speech, and Foundry remain on 31.1 fallbacks. Counsellor join is a labelled demo join. HQ PDF is a small on-device text PDF.
 - `/stage?phone=/app/me&console=/welfare/cases/MB-4091` updates the phone ledger by poll plus BroadcastChannel after reveal. Cross-origin iframe cookies are not used; both frames share the origin.
 
+## Prompt 8 judge surfaces and recording
+
+Touched screens: Governance, DPO, Trust, Integrations, Admin, Validation Lab, Architecture, Director, Stage. Shots in `e2e/artifacts/ui/p8-*.png`. Axe clean on those routes. Local demo spine Playwright passed twice with reset. Azure URL and a real Android TWA were not available (31.1).
+
+| Screen | Focal | MANOBAL | Hierarchy | Copy | Data-viz | Motion | A11y | Video | Round |
+|---|---|---|---|---|---|---|---|---|---|
+| Governance | 5 | 4 | 4 | 5 | 4 | 4 | 4 | 5 | 2 |
+| DPO centre | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Trust centre | 5 | 5 | 5 | 5 | 4 | 4 | 4 | 5 | 1 |
+| Integrations | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Admin | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 2 |
+| Validation lab | 5 | 4 | 4 | 5 | 4 | 4 | 4 | 5 | 2 |
+| Architecture | 5 | 5 | 4 | 5 | 4 | 4 | 4 | 5 | 2 |
+| Director | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 5 | 2 |
+| Stage | 5 | 5 | 4 | 5 | 4 | 4 | 4 | 5 | 1 |
+
+Round 1: Lab KPI digits overflowed across tiles. Director shot list was twenty identical full-width buttons. Architecture showed Zone X twice (layers plus ZoneDiagram). Admin languages were a chip-like list.
+
+Round 2: Lab values are two decimal places. Director shots are a table. Architecture keeps one five-zone row with live packets. Admin languages are a table.
+
+Remaining for human review:
+- Command top bar still carries extra chrome from Prompt 7.
+- Azure `azd up` and a real-phone TWA check need a subscription and a handset.
+- Foundry, Speech, ACS, Translator, and Content Safety stay on labelled 31.1 fallbacks.
+- Architecture self-test `healthy` is false when core Postgres is down locally; vault isolation and Zone X still report held.
+
 

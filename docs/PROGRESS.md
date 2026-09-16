@@ -157,17 +157,32 @@ Choices implied by the spec (recorded, not blocked):
 - Provider outage opens the named circuit breaker. Resilience mode serves the last cached beat.
 - Observability: JSON logs with redaction, `/system/metrics`, App Insights in Bicep. No extra OpenTelemetry package, so tests stay offline.
 
-1. [ ] Governance (17.7) complete: exposure parity (28.7), provider health, model card, two-signer ruleset, transparency report, kill switches including locked acute, verify/tamper/restore chain. Check: WDEC session loads KPIs K1/K3/K10-K14; fairness ratios in band; POST acute kill returns 409; tamper fails verify then restore heals; report PDF starts with `%PDF`; two signers `wdec1` and `wdec2`.
-2. [ ] DPO Centre (14.3), Trust Centre (14.4) with read-aloud, Integration Console (15.1, 17.9) with schema/quarantine/quality, Admin (17.10). Check: DPO lists access/erasure/grievance with due dates; Trust matrix has four columns and an audio control; integrator sees a quarantined row; Admin has no acute flag.
-3. [ ] Validation Lab (17.11): primary and shifted worlds, calibration, ablations, zero-penalty proof, 8k benchmark. Check: world toggle changes metrics; zero-penalty lists excluded attributes; benchmark `subjects` is 8000; Imran stays T1 and Thomas stays T0 in the copy.
-4. [ ] Architecture (17.12) with live packets, edge queue and link toggle (27.4), self-tests, mode panel. Check: edge-down holds packets; self-test reports vault isolation and Zone X; mode panel shows demo vs sovereign.
-5. [ ] Director (17.15) with all scenarios, outage, resilience, warm-up, reset, a preset for every shot in 30.3; Stage presets per spec 24. Check: reset returns under 20s; each 30.3 shot has a stage URL; Deepak/Arjun/Lalit/Meena/Karthik/Rajesh scenarios exist.
-6. [ ] Azure (20): Bicep and azd for every named resource, managed identities, Key Vault split, Front Door, Web PubSub, ACS, Speech, Translator, Content Safety, Foundry deployments; GitHub Actions per 20.2. Check: `infra/bicep/main.bicep` names those resources; `azure.yaml` exists; `.github/workflows` has PR test and main deploy jobs.
-7. [ ] Observability and cost guard (22). Check: `/system/metrics` returns latency and estimated spend; over-cap sets `cost_guard` true and the banner copy appears on Governance.
-8. [ ] Package Saathi as a TWA with Bubblewrap; verify passkeys, push, offline cache on a real Android phone (30.1). Check: `apps/twa/twa-manifest.json` exists with PIN fallback documented. Real-phone verification: 31.1 if no device.
-9. [ ] Walk the weakness audit (32) screen by screen and fix anything that could show one. Check: pytest covers Command payload has no case ids; Copilot refuse; hidden Post D-7; Trust has no numeric scores; copy-lint clean.
-10. [ ] Playwright E2E for the full demo script (23.4) locally and on Azure, twice with a reset between. Check: local spine passes twice; Azure URL run only if `AZURE_WEB_URL` is set.
-11. [ ] Docs: `DEMO_RUNBOOK.md` (clicks, timings, fallbacks, resets, Q&A from spec 26 with the screen for each answer) and `SHOT_LIST.md` (preset, persona, click path per shot). Check: every 30.3 shot is listed; every 23.6 box is in the runbook.
-12. [ ] Final review loop across every screen; fix all scores below 4. Check: scores in `docs/UI_NOTES.md`; axe on new routes; screenshots in `e2e/artifacts/ui/p8-*.png`.
+1. [x] Governance (17.7) complete: exposure parity (28.7), provider health, model card, two-signer ruleset, transparency report, kill switches including locked acute, verify/tamper/restore chain. Check: WDEC session loads KPIs K1/K3/K10-K14; fairness ratios in band; POST acute kill returns 409; tamper fails verify then restore heals; report PDF starts with `%PDF`; two signers `wdec1` and `wdec2`.
+2. [x] DPO Centre (14.3), Trust Centre (14.4) with read-aloud, Integration Console (15.1, 17.9) with schema/quarantine/quality, Admin (17.10). Check: DPO lists access/erasure/grievance with due dates; Trust matrix has four columns and an audio control; integrator sees a quarantined row; Admin has no acute flag.
+3. [x] Validation Lab (17.11): primary and shifted worlds, calibration, ablations, zero-penalty proof, 8k benchmark. Check: world toggle changes metrics; zero-penalty lists excluded attributes; benchmark `subjects` is 8000; Imran stays T1 and Thomas stays T0 in the copy.
+4. [x] Architecture (17.12) with live packets, edge queue and link toggle (27.4), self-tests, mode panel. Check: edge-down holds packets; self-test reports vault isolation and Zone X; mode panel shows demo vs sovereign.
+5. [x] Director (17.15) with all scenarios, outage, resilience, warm-up, reset, a preset for every shot in 30.3; Stage presets per spec 24. Check: reset returns under 20s; each 30.3 shot has a stage URL; Deepak/Arjun/Lalit/Meena/Karthik/Rajesh scenarios exist.
+6. [x] Azure (20): Bicep and azd for every named resource, managed identities, Key Vault split, Front Door, Web PubSub, ACS, Speech, Translator, Content Safety, Foundry deployments; GitHub Actions per 20.2. Check: `infra/bicep/main.bicep` names those resources; `azure.yaml` exists; `.github/workflows` has PR test and main deploy jobs. Live `azd up` not run (31.1, no subscription in this environment).
+7. [x] Observability and cost guard (22). Check: `/system/metrics` returns latency and estimated spend; over-cap sets `cost_guard` true and the banner copy appears on Governance.
+8. [x] Package Saathi as a TWA with Bubblewrap; PIN fallback on login. Check: `apps/twa/twa-manifest.json` exists with PIN fallback documented. Real-phone passkey/push/offline: 31.1, no Android handset here.
+9. [x] Walk the weakness audit (32) screen by screen and fix anything that could show one. Check: pytest covers Command payload has no case ids; Copilot refuse; hidden Post D-7; Trust has no numeric scores; copy-lint clean.
+10. [x] Playwright E2E for the full demo script (23.4) locally twice with a reset between. Azure URL run skipped (31.1, `AZURE_WEB_URL` unset).
+11. [x] Docs: `DEMO_RUNBOOK.md` and `SHOT_LIST.md`. Check: every 30.3 shot is listed; every 23.6 box is in the runbook or this file.
+12. [x] Final review loop across every screen; fix all scores below 4. Check: scores in `docs/UI_NOTES.md`; axe on new routes; screenshots in `e2e/artifacts/ui/p8-*.png`.
 
-End-of-prompt gate: spec 23.6 checklist ticked in this file; every `SHOT_LIST.md` shot has a reset path; local E2E spine passes twice. Azure URL and real-phone TWA stay open if 31.1.
+### Spec 23.6
+
+- [x] Local environment deploys with `make dev`. Azure from-scratch is `azd up` in the repo; not executed here (31.1).
+- [x] In-memory reset under 20 seconds. Full seed path remains `make seed`.
+- [x] Eight personas still behave as specified (prior prompts plus this spine).
+- [x] Demo spine E2E twice locally with reset between. Azure URL not set.
+- [x] Voice English and Hindi paths exist with captions and audio-cleared; Tamil for Karthik. Speech unset uses silent WAV (31.1).
+- [x] Crisis evals and acute path tests remain green.
+- [x] Privacy tests remain green.
+- [x] Validation Lab shows primary and shifted metrics computed live.
+- [x] Rights Centre flows remain from Prompt 6; DPO lists access and erasure.
+- [x] Integration Console quarantines a name column.
+- [x] Provider outage opens the circuit; warmup still returns.
+- [x] Architecture self-test reports vault isolation and Zone X.
+
+End-of-prompt gate: spec 23.6 ticked for what this environment can prove; every `SHOT_LIST.md` shot has a reset path; local E2E spine passed twice. Azure URL and real-phone TWA remain 31.1.

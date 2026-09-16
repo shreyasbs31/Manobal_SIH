@@ -43,8 +43,20 @@ export function roleForRoute(route: string): { role: string; persona?: string } 
   if (route.startsWith("/command")) {
     return { role: "commander" };
   }
-  if (route.startsWith("/governance")) {
+  if (route.startsWith("/governance") || route.startsWith("/lab")) {
     return { role: "wdec" };
+  }
+  if (route.startsWith("/dpo")) {
+    return { role: "dpo" };
+  }
+  if (route.startsWith("/integrations")) {
+    return { role: "hrms_integrator" };
+  }
+  if (route.startsWith("/admin")) {
+    return { role: "admin" };
+  }
+  if (route.startsWith("/director")) {
+    return { role: "director" };
   }
   return null;
 }

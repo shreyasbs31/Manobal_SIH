@@ -26,7 +26,13 @@ const screens = [
   ["roster", "/command/roster"],
   ["hq", "/hq"],
   ["governance", "/governance"],
+  ["dpo", "/dpo"],
+  ["integrations", "/integrations"],
+  ["admin", "/admin"],
+  ["lab", "/lab"],
+  ["trust", "/trust"],
   ["architecture", "/architecture"],
+  ["director", "/director"],
   ["stage", "/stage"],
 ] as const;
 
