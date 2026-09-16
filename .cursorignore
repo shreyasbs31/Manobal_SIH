@@ -1,0 +1,10 @@
+infra/.env
+infra/.env.*
+!infra/.env.example
+infra/secrets.env
+infra/keys/
+**/*.pem
+**/*.p12
+**/*.p8
+**/*.keystore
+**/*.jks

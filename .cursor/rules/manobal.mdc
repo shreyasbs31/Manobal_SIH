@@ -16,3 +16,5 @@ alwaysApply: true
 - Copy: sentence case, plain, kind, non-clinical. Banned: diagnosis, disorder, suicide risk score, mentally ill, unfit, abnormal.
 - TypeScript strict, no any. Python typed, Pydantic v2, mypy-clean. Loading, empty, error and offline states on every screen. WCAG 2.2 AA.
 - One dev workflow: `make dev` runs everything; the web app always serves on port 3000. Rebuild images when Dockerfiles or dependencies change.
+- Secrets live in infra/.env, infra/secrets.env and infra/keys/. Never open, print, or echo them; use the settings loader and masked checks. Never ask the user to paste a secret into chat.
+- The primary phone is an iPhone (Home Screen web app). The development machine is an Apple Silicon Mac; images for Azure must be built for linux/amd64 (remote build in Azure Container Registry).
