@@ -305,6 +305,49 @@ html {
   background: var(--mb-bg);
 }
 
+.mb-contour-texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: var(--contour);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.mb-map-grid {
+  position: relative;
+  min-height: 48px;
+  background-image:
+    linear-gradient(var(--mb-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mb-grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.mb-map-refs-x,
+.mb-map-refs-y {
+  display: flex;
+  color: var(--mb-accent);
+  font-family: var(--mb-font-head);
+  font-size: var(--mb-fs-12);
+  font-variation-settings: "wdth" var(--mb-wdth-condensed);
+}
+
+.mb-map-refs-x {
+  justify-content: space-between;
+  padding-inline: 28px 8px;
+}
+
+.mb-map-refs-y {
+  flex-direction: column;
+  justify-content: space-between;
+  position: absolute;
+  inset-block: 8px;
+  inset-inline-start: 4px;
+}
+
 *,
 *::before,
 *::after {

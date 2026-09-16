@@ -11,7 +11,9 @@ export {
   themes,
 } from "./contrast";
 export type { ThemeColors, ThemeId, TierToken } from "./contrast";
-export { ThemeRoot } from "./theme-root";
+export { ContourTexture, MapGrid } from "./texture-view";
+export { contourPaths, contourSvg, hashSeed } from "./texture";
+export type { ContourPath } from "./texture-types";
 export { RibbonMark, SyntheticMarker } from "./brand";
 export {
   AudioClearedChip,
