@@ -3,21 +3,76 @@ levers:
   - code: REST_48H
     label: Sanction a 48-hour rest cycle
     owner: welfare_and_command
+    domains: [workload, body_vitals]
+  - code: ROSTER_NIGHT_ROTATE
+    label: Rotate off night duty for 7 days
+    owner: welfare_and_command
+    domains: [workload]
+  - code: ROSTER_QUICK_RETURN_FIX
+    label: Remove quick-return shifts for 14 days
+    owner: command
+    domains: [workload]
   - code: LEAVE_PRIORITISE
     label: Prioritise pending earned leave
     owner: welfare_and_command
-  - code: GRIEVANCE_EXPEDITE
-    label: Expedite a pending administrative concern
+    domains: [leave]
+  - code: LEAVE_SHORT_FAMILY
+    label: Approve short family leave
+    owner: welfare_and_command
+    domains: [leave, hardship]
+  - code: FAMILY_CONNECT
+    label: Arrange a private video call home
     owner: welfare
+    domains: [hardship, leave]
+  - code: GRIEVANCE_EXPEDITE
+    label: Expedite pending administrative grievance
+    owner: welfare
+    domains: [hardship]
   - code: LEGAL_AID_REFERRAL
     label: Connect with legal aid for a land or family concern
     owner: welfare
+    domains: [hardship]
+  - code: FINANCE_COUNSEL
+    label: Financial counselling session
+    owner: welfare
+    domains: [hardship]
+  - code: INFORMAL_CHAT
+    label: Informal one-to-one conversation, no paperwork
+    owner: welfare
+    domains: [self_report, engagement]
+  - code: BUDDY_CHECKIN
+    label: Ask the buddy to check in, without sharing any details
+    owner: welfare
+    domains: [engagement]
+  - code: CONFLICT_RESOLUTION
+    label: Facilitated conversation for a colleague conflict
+    owner: welfare
+    domains: [hardship]
+  - code: SLEEP_SUPPORT
+    label: Sleep session and quiet billet arrangement
+    owner: welfare
+    domains: [body_vitals]
+  - code: YOGA_GROUP
+    label: Unit yoga or breathing session
+    owner: welfare_and_command
+    domains: [body_vitals, self_report]
   - code: COUNSELLOR_OFFER
     label: Offer a confidential counsellor session
     owner: welfare
+    domains: [self_report]
   - code: MO_REFERRAL
     label: Refer to a medical officer
     owner: welfare
+    domains: [body_vitals, self_report]
+  - code: POST_INCIDENT_CHECKIN
+    label: Voluntary post-incident check-in
+    owner: welfare
+    domains: [hardship]
+  - code: REINTEGRATION_CHAT
+    label: Return-from-leave or post-transfer welcome conversation
+    owner: welfare
+    domains: [leave]
   - code: NO_ACTION
     label: No action needed
     owner: welfare
+    domains: []
