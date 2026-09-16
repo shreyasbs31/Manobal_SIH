@@ -1,7 +1,6 @@
 "use client";
 
 import { AudioClearedChip, CaptionStream, VoiceContour, type VoiceState } from "@manobal/ui";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
@@ -291,9 +290,6 @@ export default function SaathiCompanionPage() {
           <div className="mb-voice-head">
             <h1>Saathi</h1>
             <span>{data.language}</span>
-            <Link aria-label="Close" className="mb-flow-close" href="/app">
-              x
-            </Link>
           </div>
           <div className="mb-segment" role="group" aria-label="Conversation mode">
             {MODES.map((item) => (

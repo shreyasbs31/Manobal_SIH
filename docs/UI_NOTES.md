@@ -147,3 +147,24 @@ Touched screens were walked with a signed-in session against a local engine on 8
 | Gallery | fixtures | `/dev/components` still uses `@manobal/contracts` fixtures. |
 
 Welfare queue is thinner than the Prompt 3 fixture board because UWO Sunita only sees Bn C-02. That is the spec, not a Direction v3 miss.
+
+## Prompt 5 companion and voice review
+
+Touched screens: Saathi voice, Architecture, Trust centre. Shots in `e2e/artifacts/ui/p5-*.png` at 390 by 844 and 1440 by 900, light and dark. Axe clean on `/app/saathi` and `/architecture`. Typed Hindi turn on Arjun returned a live companion reply and captions.
+
+| Screen | Focal | MANOBAL | Hierarchy | Copy | Data-viz | Motion | A11y | Video | Round |
+|---|---|---|---|---|---|---|---|---|---|
+| Saathi voice | 4 | 5 | 4 | 5 | 4 | 4 | 5 | 4 | 2 |
+| Architecture | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 1 |
+| Trust centre | 4 | 4 | 4 | 5 | 4 | 4 | 5 | 4 | 1 |
+
+Round 1: two Close controls (shell plus page); captions used Dusk ink and Neem tokens that washed out in dark; keyboard mode had no visible field.
+
+Round 2: dropped the extra Close; captions use `--mb-ink` and `--mb-primary`; keyboard field is 44 px with a theme border.
+
+Section 9.5: the extra in-page Close was removed. The shell Close remains.
+
+Remaining for human review:
+- Spec 13.1 demo banner and spec 27.5 hosting caption both show, so the 390 frame is tall.
+- On-device preview label appears only after WebGPU. Whisper and WebLLM weights are not vendored; English offline reflect uses the local template.
+- Foundry, Deepgram, and Azure Speech were unset. Voice first audio is the silent-WAV fallback. Typed and fixture voice paths are real.

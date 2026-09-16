@@ -1215,12 +1215,12 @@ button.mb-toggle[aria-pressed="true"] {
 }
 
 .mb-caption-line[data-speaker="you"] {
-  color: var(--dusk-ink);
+  color: var(--mb-ink);
   text-align: start;
 }
 
 .mb-caption-line[data-speaker="saathi"] {
-  color: var(--neem);
+  color: var(--mb-primary);
 }
 
 .mb-emoji {
@@ -2093,6 +2093,26 @@ textarea {
 
 .mb-voice-page .mb-audio {
   justify-self: start;
+}
+
+.mb-voice-page form {
+  display: grid;
+  gap: 8px;
+}
+
+.mb-voice-page form label {
+  display: grid;
+  gap: 6px;
+  font-size: var(--mb-fs-14);
+}
+
+.mb-voice-page form input {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: var(--mb-hairline) solid var(--mb-border);
+  border-radius: 8px;
+  background: var(--mb-surface);
+  color: var(--mb-ink);
 }
 
 .mb-breathe-exit {
