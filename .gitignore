@@ -17,6 +17,7 @@ playwright-report/
 test-results/
 infra/data/
 infra/keys/
+infra/secrets.env
 services/synth/snapshots/*.dump
 services/synth/artifacts/
 apps/web/public/audio/*.wav
