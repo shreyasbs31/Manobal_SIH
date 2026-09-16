@@ -185,6 +185,8 @@ services:
       REALTIME_URL: ws://realtime:8080
       SIM_TIME_COMPRESSION: "60"
       ACCESS_JWT_SECRET: access_dev_only_change_me_32bytes
+      REALTIME_JWT_SECRET: realtime_dev_only_change_me_32bx
+      INCIDENT_HMAC_SECRET: incident_dev_only_change_me
       GRANT_PRIVATE_KEY_FILE: /run/manobal/grant-private.pem
       BLOB_ENDPOINT: http://azurite:10000/devstoreaccount1
       BLOB_ACCOUNT_NAME: devstoreaccount1
@@ -217,6 +219,39 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+    networks:
+      - app
+      - core-data
+
+  engine-acute:
+    build:
+      context: ..
+      dockerfile: services/engine/Dockerfile
+    command: ["python", "-m", "app.acute_worker"]
+    environment:
+      MANOBAL_MODE: demo
+      CORE_DATABASE_URL: postgresql+asyncpg://core_app:core_app_dev_only@core-db:5432/manobal_core
+      REDIS_URL: redis://redis:6379/0
+      VAULT_API_URL: http://vault:8100
+      REALTIME_URL: ws://realtime:8080
+      SIM_TIME_COMPRESSION: "60"
+      ACCESS_JWT_SECRET: access_dev_only_change_me_32bytes
+      REALTIME_JWT_SECRET: realtime_dev_only_change_me_32bx
+      INCIDENT_HMAC_SECRET: incident_dev_only_change_me
+      GRANT_PRIVATE_KEY_FILE: /run/manobal/grant-private.pem
+      BLOB_ENDPOINT: http://azurite:10000/devstoreaccount1
+      BLOB_ACCOUNT_NAME: devstoreaccount1
+      BLOB_ACCOUNT_KEY: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+      BLOB_CONTAINER: audit-anchors
+    volumes:
+      - ./keys/grant-private.pem:/run/manobal/grant-private.pem:ro
+    depends_on:
+      engine:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
     networks:
       - app
       - core-data
@@ -259,6 +294,7 @@ services:
       CORE_ADMIN_DATABASE_URL: postgresql://core_owner:core_owner_dev_only@core-db:5432/manobal_core
       VAULT_API_URL: http://vault:8100
       TOKENISE_INGEST_SECRET: ingest_dev_only_change_me
+      ENGINE_API_URL: http://engine:8000
     depends_on:
       engine:
         condition: service_healthy
