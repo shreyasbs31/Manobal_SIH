@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "@manobal/ui/styles.css";
+
+
+a {
+  color: inherit;
+}
+
+.offline-banner {
+  position: fixed;
+  z-index: 20;
+  inset-block-start: 12px;
+  inset-inline: 50%;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  border: 1px solid var(--mb-t2);
+  border-radius: 999px;
+  color: var(--mb-text);
+  background: var(--mb-surface);
+  transform: translateX(-50%);
+}
+
+.mb-login {
+  display: grid;
+  gap: 20px;
+  width: min(760px, calc(100% - 32px));
+  margin-inline: auto;
+  padding-block: 24px 64px;
+}
+
+.role-grid,
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice-button {
+  min-height: 48px;
+  padding: 10px 12px;
+  border: var(--mb-hairline) solid var(--mb-border);
+  border-radius: 12px;
+  color: inherit;
+  background: var(--mb-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.choice-button[aria-pressed="true"] {
+  border-color: var(--mb-primary);
+  background: var(--mb-surface-2);
+}
+
+.form-status {
+  min-height: 28px;
+  margin: 0;
+}
+
+.mb-promise {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--mb-primary);
+  background: var(--mb-surface-2);
+  font-size: 14px;
+}

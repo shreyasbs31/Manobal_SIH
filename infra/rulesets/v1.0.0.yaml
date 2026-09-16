@@ -1,0 +1,56 @@
+version: 1.0.0
+status: draft
+baseline:
+  window_days: 90
+  minimum_observations: 21
+  warmup_days: 21
+  coverage_minimum: 0.6
+domains:
+  workload:
+    weight: 0.18
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+  leave:
+    weight: 0.15
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+  hardship:
+    weight: 0.12
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+  body_vitals:
+    weight: 0.18
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+  self_report:
+    weight: 0.22
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+  vocal_acoustics:
+    weight: 0.08
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+  engagement:
+    weight: 0.07
+    threshold: 0.55
+    cusum_k: 0.1
+    cusum_h: 1.5
+tiers:
+  t1: 0.35
+  t2: 0.55
+  t3: 0.75
+minimum_corroborating_domains: 2
+hysteresis_cycles: 2
+k_anonymity: 10
+slas:
+  acute_minutes: 15
+  first_escalation_minutes: 5
+jitai:
+  daily_cap: 1
+  weekly_cap: 4

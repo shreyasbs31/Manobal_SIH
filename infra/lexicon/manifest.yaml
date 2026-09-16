@@ -1,0 +1,8 @@
+version: foundation-1
+status: clinician_review_required
+languages:
+  - en
+  - hi
+  - hi-Latn
+fail_safe_on_error: true
+content_files: []

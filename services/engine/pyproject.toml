@@ -1,0 +1,30 @@
+[project]
+name = "manobal-engine"
+version = "0.1.0"
+description = "Token-only analytics and API service"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic>=1.16.5",
+  "asyncpg>=0.30.0",
+  "psycopg[binary]>=3.2.10",
+  "azure-identity>=1.25.0",
+  "azure-storage-blob>=12.26.0",
+  "fastapi>=0.116.1",
+  "httpx>=0.28.1",
+  "pydantic>=2.11.9",
+  "pydantic-settings>=2.10.1",
+  "pyjwt[crypto]>=2.10.1",
+  "python-multipart>=0.0.20",
+  "redis>=6.4.0",
+  "sqlalchemy[asyncio]>=2.0.43",
+  "structlog>=25.4.0",
+  "uvicorn[standard]>=0.35.0",
+  "webauthn>=2.6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

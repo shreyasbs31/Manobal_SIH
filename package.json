@@ -1,0 +1,19 @@
+{
+  "name": "manobal",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "scripts": {
+    "build": "pnpm --recursive build",
+    "dev": "pnpm --filter @manobal/web dev",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm --recursive test",
+    "contracts": "pnpm --filter @manobal/contracts generate",
+    "copy-lint": "python3 scripts/copy-lint",
+    "e2e": "pnpm --filter @manobal/e2e test"
+  }
+}

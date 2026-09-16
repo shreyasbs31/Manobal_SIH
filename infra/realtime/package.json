@@ -1,0 +1,16 @@
+{
+  "name": "@manobal/realtime-local",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "build": "node --check server.mjs",
+    "typecheck": "node --check server.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "jose": "^6.1.0",
+    "ws": "^8.18.3"
+  }
+}

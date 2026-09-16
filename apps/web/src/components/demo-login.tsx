@@ -1,0 +1,179 @@
+"use client";
+
+import {
+  ManobalClient,
+  type LoginResponse,
+  type ManobalRole,
+} from "@manobal/contracts";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+
+import { loginWithPasskey, registerPasskey } from "@/lib/passkeys";
+
+const roles: readonly { id: ManobalRole; label: string }[] = [
+  { id: "personnel", label: "Personnel" },
+  { id: "uwo", label: "Welfare officer" },
+  { id: "counsellor", label: "Counsellor" },
+  { id: "mo", label: "Medical officer" },
+  { id: "commander", label: "Commander" },
+  { id: "hq", label: "Force HQ" },
+  { id: "wdec", label: "Governance" },
+  { id: "dpo", label: "DPO" },
+  { id: "hrms_integrator", label: "HRMS integrator" },
+  { id: "admin", label: "System admin" },
+  { id: "director", label: "Demo director" },
+];
+
+const personas = [
+  { id: "arjun", label: "Arjun", language: "Hindi" },
+  { id: "meena", label: "Meena", language: "Hindi" },
+  { id: "imran", label: "Imran", language: "English" },
+  { id: "thomas", label: "Thomas", language: "English" },
+  { id: "lalit", label: "Lalit", language: "Hindi" },
+  { id: "deepak", label: "Deepak", language: "Hinglish" },
+  { id: "rajesh", label: "Rajesh", language: "Hindi" },
+  { id: "karthik", label: "Karthik", language: "Tamil" },
+] as const;
+
+const roleRoutes: Record<ManobalRole, string> = {
+  personnel: "/app",
+  uwo: "/welfare",
+  counsellor: "/counsel",
+  mo: "/medical",
+  commander: "/command",
+  hq: "/hq",
+  wdec: "/governance",
+  dpo: "/dpo",
+  hrms_integrator: "/integrations",
+  admin: "/admin",
+  director: "/director",
+};
+
+const roleIds = new Set<string>(roles.map((role) => role.id));
+
+export function DemoLogin({
+  initialRole,
+}: {
+  initialRole?: string | undefined;
+}) {
+  const router = useRouter();
+  const [role, setRole] = useState<ManobalRole>(
+    initialRole && roleIds.has(initialRole)
+      ? (initialRole as ManobalRole)
+      : "personnel",
+  );
+  const [personaId, setPersonaId] = useState("arjun");
+  const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState("Choose a role and continue.");
+  const client = useMemo(
+    () =>
+      new ManobalClient(
+        process.env.NEXT_PUBLIC_ENGINE_URL ?? "http://localhost:8000",
+      ),
+    [],
+  );
+
+  function finish(login: LoginResponse) {
+    sessionStorage.setItem("manobal.access_token", login.access_token);
+    sessionStorage.setItem(
+      "manobal.principal",
+      JSON.stringify(login.principal),
+    );
+    router.push(roleRoutes[login.principal.role]);
+  }
+
+  async function run(action: () => Promise<LoginResponse>) {
+    setPending(true);
+    setStatus("Signing in.");
+    try {
+      finish(await action());
+    } catch (error: unknown) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "The sign-in could not be completed.",
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mb-home-stack">
+      <fieldset className="role-grid">
+        <legend>Access as</legend>
+        {roles.map((item) => (
+          <button
+            aria-pressed={role === item.id}
+            className="choice-button"
+            key={item.id}
+            onClick={() => setRole(item.id)}
+            type="button"
+          >
+            {item.label}
+          </button>
+        ))}
+      </fieldset>
+
+      {role === "personnel" ? (
+        <fieldset className="persona-grid">
+          <legend>Persona</legend>
+          {personas.map((persona) => (
+            <button
+              aria-pressed={personaId === persona.id}
+              className="choice-button"
+              key={persona.id}
+              onClick={() => setPersonaId(persona.id)}
+              type="button"
+            >
+              <strong>{persona.label}</strong>
+              <br />
+              <small>{persona.language}</small>
+            </button>
+          ))}
+        </fieldset>
+      ) : null}
+
+      <div className="mb-action-row">
+        <button
+          className="mb-primary"
+          disabled={pending}
+          onClick={() =>
+            void run(() =>
+              client.demoLogin({
+                role,
+                persona_id: role === "personnel" ? personaId : null,
+              }),
+            )
+          }
+          type="button"
+        >
+          {pending ? "Signing in" : "Continue"}
+        </button>
+        {role === "personnel" ? (
+          <>
+            <button
+              className="mb-secondary"
+              disabled={pending}
+              onClick={() => void run(() => registerPasskey(personaId))}
+              type="button"
+            >
+              Create passkey
+            </button>
+            <button
+              className="mb-secondary"
+              disabled={pending}
+              onClick={() => void run(() => loginWithPasskey(personaId))}
+              type="button"
+            >
+              Use passkey
+            </button>
+          </>
+        ) : null}
+      </div>
+      <p className="form-status" role="status">
+        {status}
+      </p>
+    </div>
+  );
+}

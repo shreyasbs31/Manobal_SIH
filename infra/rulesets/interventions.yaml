@@ -1,0 +1,23 @@
+version: 1
+levers:
+  - code: REST_48H
+    label: Sanction a 48-hour rest cycle
+    owner: welfare_and_command
+  - code: LEAVE_PRIORITISE
+    label: Prioritise pending earned leave
+    owner: welfare_and_command
+  - code: GRIEVANCE_EXPEDITE
+    label: Expedite a pending administrative concern
+    owner: welfare
+  - code: LEGAL_AID_REFERRAL
+    label: Connect with legal aid for a land or family concern
+    owner: welfare
+  - code: COUNSELLOR_OFFER
+    label: Offer a confidential counsellor session
+    owner: welfare
+  - code: MO_REFERRAL
+    label: Refer to a medical officer
+    owner: welfare
+  - code: NO_ACTION
+    label: No action needed
+    owner: welfare

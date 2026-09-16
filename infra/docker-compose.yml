@@ -1,0 +1,283 @@
+name: manobal
+
+services:
+  core-db:
+    image: timescale/timescaledb-ha:pg16
+    shm_size: 256mb
+    environment:
+      POSTGRES_DB: manobal_core
+      POSTGRES_USER: core_owner
+      POSTGRES_PASSWORD: core_owner_dev_only
+    volumes:
+      - core-db-data:/home/postgres/pgdata/data
+      - ./postgres/core-init.sql:/docker-entrypoint-initdb.d/010-core-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U core_owner -d manobal_core"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    networks:
+      - core-data
+
+  vault-db:
+    image: timescale/timescaledb-ha:pg16
+    shm_size: 256mb
+    environment:
+      POSTGRES_DB: manobal_vault
+      POSTGRES_USER: vault_owner
+      POSTGRES_PASSWORD: vault_owner_dev_only
+    volumes:
+      - vault-db-data:/home/postgres/pgdata/data
+      - ./postgres/vault-init.sql:/docker-entrypoint-initdb.d/010-vault-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vault_owner -d manobal_vault"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    networks:
+      - vault-data
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--location", "/data"]
+    volumes:
+      - azurite-data:/data
+    ports:
+      - "10000:10000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:10000/devstoreaccount1?comp=list').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app
+
+  realtime:
+    build:
+      context: ..
+      dockerfile: infra/realtime/Dockerfile
+    environment:
+      PORT: "8080"
+      JWT_SECRET: realtime_dev_only_change_me
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - app
+
+  core-migrate:
+    build:
+      context: ..
+      dockerfile: services/engine/Dockerfile
+    command:
+      [
+        "alembic",
+        "-c",
+        "services/engine/alembic.ini",
+        "upgrade",
+        "head",
+      ]
+    environment:
+      CORE_DATABASE_URL: postgresql+asyncpg://core_owner:core_owner_dev_only@core-db:5432/manobal_core
+    depends_on:
+      core-db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - core-data
+
+  vault-migrate:
+    build:
+      context: ..
+      dockerfile: services/vault/Dockerfile
+    command:
+      [
+        "alembic",
+        "-c",
+        "services/vault/alembic.ini",
+        "upgrade",
+        "head",
+      ]
+    environment:
+      VAULT_DATABASE_URL: postgresql+asyncpg://vault_owner:vault_owner_dev_only@vault-db:5432/manobal_vault
+    depends_on:
+      vault-db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - vault-data
+
+  vault:
+    build:
+      context: ..
+      dockerfile: services/vault/Dockerfile
+    environment:
+      MANOBAL_MODE: demo
+      VAULT_DATABASE_URL: postgresql+asyncpg://vault_app:vault_app_dev_only@vault-db:5432/manobal_vault
+      REDIS_URL: redis://redis:6379/1
+      KEY_PROVIDER: local
+      LOCAL_KEY_FILE: /run/manobal/dev-vault-keys.json
+      GRANT_PUBLIC_KEY_FILE: /run/manobal/grant-public.pem
+      TOKENISE_INGEST_SECRET: ingest_dev_only_change_me
+      RESOLVE_RATE_LIMIT: "5"
+    volumes:
+      - ./keys/dev-vault-keys.json:/run/manobal/dev-vault-keys.json:ro
+      - ./keys/grant-public.pem:/run/manobal/grant-public.pem:ro
+    ports:
+      - "8100:8100"
+    depends_on:
+      vault-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app
+      - vault-data
+
+  engine:
+    build:
+      context: ..
+      dockerfile: services/engine/Dockerfile
+    environment:
+      MANOBAL_MODE: demo
+      WEB_ORIGIN: http://localhost:3000
+      CORE_DATABASE_URL: postgresql+asyncpg://core_app:core_app_dev_only@core-db:5432/manobal_core
+      REDIS_URL: redis://redis:6379/0
+      VAULT_API_URL: http://vault:8100
+      REALTIME_URL: ws://realtime:8080
+      SIM_TIME_COMPRESSION: "60"
+      ACCESS_JWT_SECRET: access_dev_only_change_me_32bytes
+      GRANT_PRIVATE_KEY_FILE: /run/manobal/grant-private.pem
+      BLOB_ENDPOINT: http://azurite:10000/devstoreaccount1
+      BLOB_ACCOUNT_NAME: devstoreaccount1
+      BLOB_ACCOUNT_KEY: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+      BLOB_CONTAINER: audit-anchors
+      ENTRA_ROLE_MAP: '{"MANOBAL.Personnel":"personnel","MANOBAL.Welfare":"uwo","MANOBAL.Counsellor":"counsellor","MANOBAL.Medical":"mo","MANOBAL.Command":"commander","MANOBAL.HQ":"hq","MANOBAL.WDEC":"wdec","MANOBAL.DPO":"dpo","MANOBAL.Integrations":"hrms_integrator","MANOBAL.Admin":"admin","MANOBAL.Director":"director"}'
+    volumes:
+      - ./keys/grant-private.pem:/run/manobal/grant-private.pem:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      core-migrate:
+        condition: service_completed_successfully
+      vault:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      azurite:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/system/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app
+      - core-data
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_ENGINE_URL: http://localhost:8000
+        NEXT_PUBLIC_MANOBAL_MODE: demo
+    environment:
+      NEXT_PUBLIC_ENGINE_URL: http://localhost:8000
+      NEXT_PUBLIC_MANOBAL_MODE: demo
+      ENGINE_INTERNAL_URL: http://engine:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      engine:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app
+
+  synth:
+    build:
+      context: ..
+      dockerfile: services/synth/Dockerfile
+    environment:
+      CORE_ADMIN_DATABASE_URL: postgresql://core_owner:core_owner_dev_only@core-db:5432/manobal_core
+      VAULT_API_URL: http://vault:8100
+      TOKENISE_INGEST_SECRET: ingest_dev_only_change_me
+    depends_on:
+      engine:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    profiles: ["tools"]
+    networks:
+      - app
+      - core-data
+
+volumes:
+  core-db-data:
+  vault-db-data:
+  redis-data:
+  azurite-data:
+
+networks:
+  app:
+  core-data:
+    internal: true
+  vault-data:
+    internal: true
