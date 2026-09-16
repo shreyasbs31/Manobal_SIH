@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import sys
 from contextlib import suppress
@@ -29,6 +30,30 @@ class AuditAnchor(BaseModel):
     checked: int
     created_at: datetime
     blob_uri: str | None = None
+
+
+GENESIS_HASH = "0" * 64
+
+
+def chain_hash(prev: str, canonical: str) -> str:
+    return hashlib.sha256((prev + canonical).encode()).hexdigest()
+
+
+def verify_chain_entries(rows: list[dict[str, str | int]]) -> AuditVerification:
+    prev = GENESIS_HASH
+    checked = 0
+    for row in rows:
+        checked += 1
+        expected = chain_hash(prev, str(row["canonical"]))
+        if str(row["prev_hash"]) != prev or str(row["hash"]) != expected:
+            return AuditVerification(
+                valid=False,
+                checked=checked,
+                broken_seq=int(row["seq"]),
+                head_hash=prev,
+            )
+        prev = str(row["hash"])
+    return AuditVerification(valid=True, checked=checked, broken_seq=None, head_hash=prev)
 
 
 async def append_audit(
