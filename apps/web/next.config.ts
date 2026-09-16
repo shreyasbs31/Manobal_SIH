@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,
-  reactStrictMode: true,
-  transpilePackages: ["@manobal/ui", "@manobal/contracts", "@manobal/i18n"],
+  devIndicators: false,
+    transpilePackages: ["@manobal/ui", "@manobal/contracts", "@manobal/i18n", "@manobal/illustrations"],
   env: {
     NEXT_PUBLIC_MANOBAL_MODE: process.env.NEXT_PUBLIC_MANOBAL_MODE ?? "demo",
   },

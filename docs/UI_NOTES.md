@@ -81,22 +81,22 @@ Each of the 14 scenes is original line-art SVG (no stock). Checks: no insignia, 
 
 | Slot | Source | Banned list | Notes |
 |---|---|---|---|
-| bunkDawn | line-art SVG | pending |  |
-| highPost | line-art SVG | pending |  |
-| jungleCamp | line-art SVG | pending |  |
-| cityNight | line-art SVG | pending |  |
-| familyCall | line-art SVG | pending |  |
-| buddyTea | line-art SVG | pending |  |
-| sleepWindDown | line-art SVG | pending |  |
-| informalWalk | line-art SVG | pending |  |
-| counsellorCall | line-art SVG | pending |  |
-| leaveWindow | line-art SVG | pending |  |
-| shiftMoon | line-art SVG | pending |  |
-| onboardingPhone | line-art SVG | pending |  |
-| emptyPath | line-art SVG | pending |  |
-| circleSupport | line-art SVG | pending |  |
+| bunkDawn | original SVG | pass | Dawn window fill only; no insignia. |
+| highPost | original SVG | pass | Hut and ridgeline; no faces, flags, or weapons. |
+| jungleCamp | original SVG | pass | Tent under trees; rain as short strokes. |
+| cityNight | original SVG | pass | Street light and standing figure; no barricade spikes. |
+| familyCall | original SVG | pass | Screen rectangle with a small waving figure. |
+| buddyTea | original SVG | pass | Two seated outlines sharing a cup. |
+| sleepWindDown | original SVG | pass | Headphones; eyes closed as simple arcs. |
+| informalWalk | original SVG | pass | Two walking outlines, equal height. |
+| counsellorCall | original SVG | pass | Desk and laptop; counsellor side only. |
+| leaveWindow | original SVG | pass | Calendar box and distant bus silhouette. |
+| shiftMoon | original SVG | pass | Barrack roof and moon disc. |
+| onboardingPhone | original SVG | pass | Hands and phone with contour lines on the screen. |
+| emptyPath | original SVG | pass | Path through hills; empty state. |
+| circleSupport | original SVG | pass | Five seated marks; faces not detailed. |
 
-Image-model generation: attempted for composition reference. Spec 31.1 has no image-model row; UI 2.6 allows original line-art placeholders when generation cannot be cleaned.
+Image-model generation: attempted for bunk-dawn and empty-path composition. Outputs were filled rasters, not single-weight SVG, so they were not shipped. Spec 31.1 has no image-model row; UI 2.6 original line-art is the fallback. No raster stock images in the app.
 
 ## Fixes
 

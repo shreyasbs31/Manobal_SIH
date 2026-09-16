@@ -13,6 +13,7 @@
   "dependencies": {
     "@manobal/contracts": "workspace:*",
     "@manobal/i18n": "workspace:*",
+    "@manobal/illustrations": "workspace:*",
     "@manobal/ui": "workspace:*",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/types": "^12.0.0",

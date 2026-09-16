@@ -7,6 +7,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/i18n/package.json packages/i18n/package.json
+COPY packages/illustrations/package.json packages/illustrations/package.json
 COPY infra/realtime/package.json infra/realtime/package.json
 COPY e2e/package.json e2e/package.json
 RUN pnpm install --frozen-lockfile --filter @manobal/web...
@@ -23,6 +24,7 @@ COPY apps/web apps/web
 COPY packages/ui packages/ui
 COPY packages/contracts packages/contracts
 COPY packages/i18n packages/i18n
+COPY packages/illustrations packages/illustrations
 ARG NEXT_PUBLIC_ENGINE_URL=http://localhost:8000
 ARG NEXT_PUBLIC_MANOBAL_MODE=demo
 ENV NEXT_PUBLIC_ENGINE_URL=$NEXT_PUBLIC_ENGINE_URL

@@ -180,6 +180,9 @@ importers:
       '@manobal/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@manobal/illustrations':
+        specifier: workspace:*
+        version: link:../../packages/illustrations
       '@manobal/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -259,6 +262,19 @@ importers:
 
   packages/i18n:
     devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/illustrations:
+    dependencies:
+      react:
+        specifier: ^19.1.1
+        version: 19.1.1
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.12
+        version: 19.3.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
