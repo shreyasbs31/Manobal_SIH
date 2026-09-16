@@ -55,6 +55,9 @@ export const COMPONENT_REGISTRY = [
   "SafetyPlanEditor",
   "LeaveWindowPicker",
   "ShiftTimeline",
+  "FaceScale",
+  "CaseStrip",
+  "VoiceContour",
 ] as const;
 
 export type ComponentName = (typeof COMPONENT_REGISTRY)[number];

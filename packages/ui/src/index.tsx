@@ -59,6 +59,7 @@ export {
   AuditRow,
   BriefPanel,
   CaseCard,
+  CaseStrip,
   ChainStatus,
   ConsentToggleCard,
   EscalationLadder,
@@ -75,8 +76,23 @@ export {
   VoiceOrb,
   ZoneDiagram,
 } from "./companion";
+export { VoiceContour } from "./voice-contour";
+export type { VoiceState } from "./voice-contour";
+export { MOTION, motionToOpacityOnly, useBreath, usePrefersReducedMotion } from "./motion";
+export {
+  breathPulse,
+  chimeT3,
+  chimeT4,
+  hapticsEnabled,
+  setSoundEnabled,
+  soundEnabled,
+  tickCheckIn,
+  tickComplete,
+  vibrate,
+} from "./sound";
 export {
   EmojiScale,
+  FaceScale,
   LanguageGrid,
   LeaveWindowPicker,
   SafetyPlanEditor,

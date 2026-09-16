@@ -27,13 +27,26 @@ import {
   ReliabilityChart,
 } from "./charts";
 import { CaptionStream, CallPanel, PhoneFrame, SOSButton, VoiceOrb, ZoneDiagram } from "./companion";
+import { VoiceContour } from "./voice-contour";
 import {
   EmojiScale,
+  FaceScale,
   LanguageGrid,
   LeaveWindowPicker,
   SafetyPlanEditor,
   ShiftTimeline,
 } from "./forms";
+import {
+  IconBuddyPair,
+  IconEdgeQueue,
+  IconHiddenLock,
+  IconLayRibbon,
+  IconLeaveWindow,
+  IconShiftMoon,
+  IconVaultKey,
+  IconVoiceContour,
+  TierGlyph,
+} from "./icons";
 import { PublicHeader } from "./shells";
 import { ThemeRoot } from "./theme-root";
 import type { Skin, ThemeName, TierId } from "./types";
@@ -43,6 +56,7 @@ import {
   AuditRow,
   BriefPanel,
   CaseCard,
+  CaseStrip,
   ChainStatus,
   ConsentToggleCard,
   EscalationLadder,
@@ -161,6 +175,19 @@ export function ComponentGallery() {
               <TierBadge key={tier} tier={tier} />
             ))}
           </div>
+          <div className="mb-action-row">
+            {(["T0", "T1", "T2", "T3", "T4"] as const).map((tier) => (
+              <TierGlyph key={`g-${tier}`} tier={tier} />
+            ))}
+            <IconLayRibbon width={24} height={24} />
+            <IconVoiceContour width={24} height={24} />
+            <IconHiddenLock width={24} height={24} />
+            <IconEdgeQueue width={24} height={24} />
+            <IconVaultKey width={24} height={24} />
+            <IconBuddyPair width={24} height={24} />
+            <IconLeaveWindow width={24} height={24} />
+            <IconShiftMoon width={24} height={24} />
+          </div>
         </GalleryItem>
         <GalleryItem name="TrajectoryArrow">
           <div className="mb-action-row">
@@ -212,6 +239,19 @@ export function ComponentGallery() {
             status="Open"
             tier="T3"
             trajectory="rising"
+          />
+        </GalleryItem>
+        <GalleryItem name="CaseStrip">
+          <CaseStrip
+            days={[
+              { day: 1, tier: "T0" },
+              { day: 40, tier: "T1" },
+              { day: 80, tier: "T3" },
+              { day: 120, tier: "T3" },
+            ]}
+            onsetDay={40}
+            incidents={[90]}
+            actions={[100]}
           />
         </GalleryItem>
         <GalleryItem name="LeverOption">
@@ -294,6 +334,9 @@ export function ComponentGallery() {
         <GalleryItem name="VoiceOrb">
           <VoiceOrb state="listening" />
         </GalleryItem>
+        <GalleryItem name="VoiceContour">
+          <VoiceContour amplitude={0.5} seed="MB-4091" state="listening" />
+        </GalleryItem>
         <GalleryItem name="CaptionStream">
           <CaptionStream
             language="Hindi"
@@ -305,6 +348,9 @@ export function ComponentGallery() {
         </GalleryItem>
         <GalleryItem name="EmojiScale">
           <EmojiScale label="Mood" onChange={setMood} value={mood} />
+        </GalleryItem>
+        <GalleryItem name="FaceScale">
+          <FaceScale label="Mood" onChange={setMood} value={mood} />
         </GalleryItem>
         <GalleryItem name="LanguageGrid">
           <LanguageGrid

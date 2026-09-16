@@ -2,7 +2,38 @@
 
 import { useState } from "react";
 
-export function EmojiScale({
+import { tickCheckIn } from "./sound.mjs";
+
+const FACE_LABELS = [
+  "Very low",
+  "Low",
+  "Okay",
+  "Good",
+  "Very good",
+] as const;
+
+function Face({ score }: { score: number }) {
+  const mouth =
+    score === 1
+      ? "M8 16 Q12 13 16 16"
+      : score === 2
+        ? "M8 15.5 Q12 14 16 15.5"
+        : score === 3
+          ? "M8 15.5 H16"
+          : score === 4
+            ? "M8 15 Q12 17 16 15"
+            : "M8 14.5 Q12 18 16 14.5";
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="mb-face">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="9" cy="10" r="1.1" fill="currentColor" />
+      <circle cx="15" cy="10" r="1.1" fill="currentColor" />
+      <path d={mouth} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function FaceScale({
   label,
   value,
   onChange,
@@ -11,28 +42,39 @@ export function EmojiScale({
   value: number;
   onChange: (next: number) => void;
 }) {
-  const faces = ["😞", "🙁", "😐", "🙂", "😊"] as const;
   return (
     <fieldset className="mb-emoji">
       <legend>{label}</legend>
       <div className="mb-emoji-row">
-        {faces.map((face, index) => {
+        {FACE_LABELS.map((faceLabel, index) => {
           const score = index + 1;
           return (
             <button
-              aria-label={`${label} ${score} of 5`}
+              aria-label={`${label} ${faceLabel}`}
               aria-pressed={value === score}
-              key={face}
-              onClick={() => onChange(score)}
+              key={faceLabel}
+              onClick={() => {
+                tickCheckIn();
+                onChange(score);
+              }}
               type="button"
             >
-              <span aria-hidden="true">{face}</span>
+              <Face score={score} />
+              <span>{faceLabel}</span>
             </button>
           );
         })}
       </div>
     </fieldset>
   );
+}
+
+export function EmojiScale(props: {
+  label: string;
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return <FaceScale {...props} />;
 }
 
 export interface LanguageOption {

@@ -2,22 +2,20 @@
 
 import type { ReactNode } from "react";
 
+import { VoiceContour, type VoiceState } from "./voice-contour";
+
 export function VoiceOrb({
   state = "idle",
   label = "Saathi",
+  amplitude = 0.4,
 }: {
-  state?: "idle" | "listening" | "speaking" | undefined;
+  state?: VoiceState | undefined;
   label?: string | undefined;
+  amplitude?: number | undefined;
 }) {
   return (
-    <div
-      aria-label={`${label}, ${state}`}
-      className="mb-orb"
-      data-state={state}
-      role="img"
-    >
-      <span className="mb-orb-ring" aria-hidden="true" />
-      <span className="mb-orb-core" aria-hidden="true" />
+    <div className="mb-voice-wrap">
+      <VoiceContour amplitude={amplitude} state={state === "idle" ? "listening" : state} />
       <span className="mb-sr">{label}, {state}</span>
     </div>
   );
@@ -28,13 +26,20 @@ export function CaptionStream({
   lines,
 }: {
   language: string;
-  lines: readonly string[];
+  lines: readonly { speaker: "you" | "saathi"; text: string }[] | readonly string[];
 }) {
+  const normalised = lines.map((line) =>
+    typeof line === "string"
+      ? { speaker: line.startsWith("You") ? "you" : "saathi", text: line }
+      : line,
+  );
   return (
     <div className="mb-captions" aria-live="polite">
       <span className="mb-chip">{language}</span>
-      {lines.map((line) => (
-        <p key={line}>{line}</p>
+      {normalised.map((line) => (
+        <p className="mb-caption-line" data-speaker={line.speaker} key={line.text}>
+          {line.text}
+        </p>
       ))}
     </div>
   );
