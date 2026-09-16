@@ -21,7 +21,10 @@ const screens = [
   ["welfare", "/welfare"],
   ["case", "/welfare/cases/MB-4091"],
   ["medical", "/medical"],
+  ["counsel", "/counsel"],
   ["command", "/command"],
+  ["roster", "/command/roster"],
+  ["hq", "/hq"],
   ["governance", "/governance"],
   ["architecture", "/architecture"],
   ["stage", "/stage"],
@@ -63,6 +66,7 @@ test("live persona tokens appear on signed-in screens", async ({ page }) => {
   await signIn(page, "commander");
   await page.goto("/command");
   await expect(page.getByText("Charlie Coy's workload has risen for three weeks.")).toBeVisible();
+  await expect(page.getByText("Post D-7").first()).toBeVisible();
   await expect(page.getByText("MB-4091")).toHaveCount(0);
 });
 
@@ -73,4 +77,39 @@ test("stage drawer is hidden until toggled", async ({ page }) => {
   await page.locator(".mb-stage-bar").click();
   await page.keyboard.press("d");
   await expect(page.locator(".mb-stage-drawer")).toBeVisible();
+});
+
+test("prompt 7 consoles refuse misuse and export the brief", async ({ page, request }) => {
+  test.setTimeout(120_000);
+  await signIn(page, "uwo");
+  await page.goto("/welfare");
+  await expect(page.getByRole("heading", { name: /High/ })).toBeVisible();
+  await expect(page.getByText("MB-4091").first()).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/welfare\/cases\/MB-4091/);
+  await page.getByLabel("Why you need to reach them").fill("Need to call about rest after duty.");
+  await page.getByRole("button", { name: "Reveal to contact" }).click();
+  await expect(page.getByText("This person will see that you viewed their identity.")).toBeVisible();
+
+  await signIn(page, "commander");
+  await page.goto("/command");
+  await expect(page.getByText("Post D-7").first()).toBeVisible();
+  await page.getByRole("button", { name: "Open copilot" }).click();
+  await page.getByLabel("Question").fill("Charlie Coy mein kaun pareshan hai?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect(page.getByText(/Main kisi jawan ka naam nahi de sakta/)).toBeVisible();
+  await expect(page.getByText(/20 se 30/)).toBeVisible();
+
+  await signIn(page, "hq");
+  await page.goto("/hq");
+  await expect(page.getByRole("heading", { name: "Lever effectiveness" })).toBeVisible();
+  await expect(page.getByText("Observational, not causal").first()).toBeVisible();
+  const pdf = await request.get("http://localhost:8000/api/v1/hq/brief.pdf", {
+    headers: {
+      authorization: `Bearer ${await page.evaluate(() => sessionStorage.getItem("manobal.access_token"))}`,
+    },
+  });
+  expect(pdf.ok()).toBeTruthy();
+  const body = await pdf.body();
+  expect(body.subarray(0, 4).toString()).toBe("%PDF");
 });

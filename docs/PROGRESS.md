@@ -138,6 +138,6 @@ Choices implied by the spec (recorded, not blocked):
 5. [x] Force HQ (17.6) theatre comparison, schematic sector board, capacity vs demand, observational lever effectiveness, retention pressure, policy simulator, monthly brief with edit and PDF export. Check: brief edit saves; PDF download starts with `%PDF`; lever table is labelled observational.
 6. [x] Officer personalisation (28.6) and officer personas (29.9). Check: Sunita profile has Hindi briefs and 08:00 digest; Anjali languages include Marathi; Menon Copilot language is Hindi.
 7. [x] Sound and chimes for T3 and T4 on consoles. Check: welfare with a T4 case calls `chimeT4`; T3-only queue calls `chimeT3`.
-8. [ ] Review loop at 1280, 1440, and 1920 in Command dark and Command light. Check: scores in `docs/UI_NOTES.md`; screenshots in `e2e/artifacts/ui/p7-*.png`.
+8. [x] Review loop at 1280, 1440, and 1920 in Command dark and Command light. Check: scores in `docs/UI_NOTES.md`; screenshots in `e2e/artifacts/ui/p7-*.png`.
 
 End-of-prompt gate: Arjun flow on `/stage` updates the ledger; Post D-7 shows the hidden tile; Copilot refuses the Hindi individual question with a useful aggregate; HQ brief exports; `make test`, `make lint`, `copy-lint`, UI review loop.

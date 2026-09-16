@@ -31,10 +31,16 @@ export function roleForRoute(route: string): { role: string; persona?: string } 
   if (route.startsWith("/welfare")) {
     return { role: "uwo" };
   }
+  if (route.startsWith("/counsel")) {
+    return { role: "counsellor" };
+  }
   if (route.startsWith("/medical")) {
     return { role: "mo" };
   }
-  if (route.startsWith("/command") || route.startsWith("/hq")) {
+  if (route.startsWith("/hq")) {
+    return { role: "hq" };
+  }
+  if (route.startsWith("/command")) {
     return { role: "commander" };
   }
   if (route.startsWith("/governance")) {

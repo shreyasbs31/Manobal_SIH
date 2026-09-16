@@ -100,7 +100,7 @@ export default function WelfarePage() {
           <span>My load {String(meta.load ?? queue.length)} of {String(meta.capacity ?? 25)}</span>
           {profile.data ? (
             <span>
-              Briefs in {String(profile.data.brief_language)}. Digest {String(profile.data.digest_time)}.
+              Briefs in Hindi. Digest {String(profile.data.digest_time)}.
             </span>
           ) : null}
         </p>

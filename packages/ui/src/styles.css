@@ -934,6 +934,10 @@ textarea:focus-visible,
   color: var(--mb-t3);
 }
 
+:is(html, .mb-theme)[data-skin="command"][data-theme="dark"] .mb-sla[data-tone="marigold"] {
+  color: #e08a4c;
+}
+
 .mb-sla[data-tone="acute"],
 .mb-sla[data-urgent="true"] {
   color: var(--mb-t4);
@@ -2370,6 +2374,12 @@ textarea {
 .mb-hq-theatres {
   display: grid;
   gap: 16px;
+}
+
+.mb-roster .mb-card label {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
 }
 
 .mb-roster {

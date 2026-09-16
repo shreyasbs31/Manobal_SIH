@@ -199,3 +199,30 @@ Remaining for human review:
 - Toolkit list is long; ranking puts music and sleep first for Arjun.
 - Lighthouse 12.8 on the landing page in `next dev`: accessibility 100, performance 41. PWA is no longer a scored category in this Lighthouse version. Production TWA numbers were not taken.
 
+## Prompt 7 officer consoles
+
+Touched screens: Welfare queue, case workspace, Counsellor desk, Medical acute, Command posture, Roster balancer, Force HQ. Shots in `e2e/artifacts/ui/p7-*.png` at 1280, 1440, and 1920 in Command dark (Night panel) and Command light (Survey paper). Axe clean on those routes after a marigold SLA contrast fix on Command dark. Playwright covers reveal, Post D-7, Hindi Copilot refusal, and HQ PDF (`%PDF`).
+
+| Screen | Focal | MANOBAL | Hierarchy | Copy | Data-viz | Motion | A11y | Video | Round |
+|---|---|---|---|---|---|---|---|---|---|
+| Welfare queue | 5 | 4 | 4 | 5 | 4 | 4 | 4 | 5 | 2 |
+| Case workspace | 4 | 4 | 5 | 5 | 4 | 4 | 4 | 5 | 1 |
+| Counsellor desk | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 2 |
+| Medical acute | 5 | 4 | 5 | 5 | 4 | 4 | 4 | 5 | 1 |
+| Command posture | 5 | 5 | 4 | 5 | 5 | 4 | 4 | 5 | 1 |
+| Roster balancer | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 2 |
+| Force HQ | 4 | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 2 |
+
+Round 1: HQ used four identical theatre cards (banned). Welfare said "Briefs in hi". Roster sliders wrapped "Night share" onto the value. Command-dark T3 SLA sat at 4.23:1.
+
+Round 2: theatres are a comparison table; briefs say Hindi; sliders stack; marigold SLA on Command dark is `#e08a4c`. Counsellor copy names Anjali instead of actor ids. Rail labels collapse at 1280.
+
+Section 9.5: HQ lost the four-up card grid. The fairness bar stays as the one aggregate comparison.
+
+Remaining for human review:
+- Command top bar still carries Night panel, language, bell, and search. Spec 4.7 names SimClock, Mode, and unit scope.
+- Complementary suppression also hides some Bravo and Delta cells beside Post D-7. That is k-anonymity, not a missing tile.
+- ACS, Speech, and Foundry remain on 31.1 fallbacks. Counsellor join is a labelled demo join. HQ PDF is a small on-device text PDF.
+- `/stage?phone=/app/me&console=/welfare/cases/MB-4091` updates the phone ledger by poll plus BroadcastChannel after reveal. Cross-origin iframe cookies are not used; both frames share the origin.
+
+

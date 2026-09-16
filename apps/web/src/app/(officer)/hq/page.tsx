@@ -56,20 +56,32 @@ export default function HqPage() {
         <div className="mb-home-stack">
           <p>
             Theatre comparison stays grouped. Cells under the minimum size stay hidden.
-            {profile.data ? ` Lens ${String(profile.data.policy_lens)}.` : ""}
+            {profile.data ? " Policy lens: rotation length." : ""}
           </p>
-          <div className="mb-hq-theatres">
-            {payload.theatres.map((theatre) => (
-              <article className="mb-card" key={theatre.id}>
-                <h2>{theatre.label}</h2>
-                <p>{theatre.posture}</p>
-                <p>Workload {theatre.workload}</p>
-                <p>Leave {theatre.leave}</p>
-                <p>Incidents {theatre.incidents}</p>
-                <p>Grievances {theatre.grievances}</p>
-              </article>
-            ))}
-          </div>
+          <table className="mb-formation" aria-label="Theatre comparison">
+            <thead>
+              <tr>
+                <th scope="col">Theatre</th>
+                <th scope="col">Posture</th>
+                <th scope="col">Workload</th>
+                <th scope="col">Leave</th>
+                <th scope="col">Incidents</th>
+                <th scope="col">Grievances</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payload.theatres.map((theatre) => (
+                <tr key={theatre.id}>
+                  <th scope="row">{theatre.label}</th>
+                  <td>{theatre.posture}</td>
+                  <td>{theatre.workload}</td>
+                  <td>{theatre.leave}</td>
+                  <td>{theatre.incidents}</td>
+                  <td>{theatre.grievances}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           <div className="mb-hq-board" aria-label="Schematic sector board">
             {payload.sectors.map((sector) => (
               <span

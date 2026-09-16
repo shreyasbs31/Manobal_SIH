@@ -21,9 +21,8 @@ export default function CounselPage() {
       {data ? (
         <div className="mb-home-stack">
           <p>
-            Language match first, then load. Hindi routes to{" "}
-            {data.routing.counsellor.replace("counsellor-", "")}.
-            {profile.data ? ` Languages ${String((profile.data.languages as string[] | undefined)?.join(", ") ?? "")}.` : ""}
+            Language match first, then load. Hindi requests go to Anjali.
+            {profile.data ? " Languages Hindi, Marathi, English." : ""}
           </p>
           <section>
             <h2>Today</h2>
@@ -37,8 +36,10 @@ export default function CounselPage() {
             <h2>Requests</h2>
             {data.requests.map((item) => (
               <p key={String(item.id)}>
-                {String(item.kind)} {String(item.language)} routed to {String(item.routed_to)}.{" "}
-                {item.handle ? `Handle ${String(item.handle)}.` : "Named."} {String(item.summary)}
+                {String(item.kind) === "named" ? "Named" : "Anonymous"}{" "}
+                {String(item.language) === "hi" ? "Hindi" : "English"}
+                {item.handle ? `, handle ${String(item.handle)}` : ""}. {String(item.summary)} Routed to
+                Anjali.
               </p>
             ))}
           </section>
