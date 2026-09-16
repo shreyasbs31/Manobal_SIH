@@ -210,3 +210,114 @@ def test_raw_tier_bounds() -> None:
     assert raw_tier(0.4) == "T1"
     assert raw_tier(0.6) == "T2"
     assert raw_tier(0.8) == "T3"
+
+
+def test_pelt_fallback_and_empty_wsi() -> None:
+    import numpy as np
+    from app.scoring.changepoint import _pelt_fallback
+
+    series = np.concatenate([np.zeros(12), np.ones(12)])
+    breaks = _pelt_fallback(series, min_size=5)
+    assert isinstance(breaks, list)
+    assert pelt_rbf([0.1, 0.2]) == []
+    assert onset_from_change_points([], 0) is None
+
+
+def test_indicator_builders_cover_empty_and_filled() -> None:
+    from datetime import UTC, datetime
+
+    import polars as pl
+    from app.scoring.indicators import (
+        bio_indicators,
+        ema_indicators,
+        engagement_indicators,
+        instrument_latest,
+        leave_indicators,
+        rotation_effects,
+        weekday_effects,
+    )
+
+    start = date(2026, 8, 1)
+    duty = pl.DataFrame(
+        {
+            "token": ["st_eeeeeeeeeeeeeeee"] * 10,
+            "date": [start + timedelta(days=i) for i in range(10)],
+            "hours": [8.0] * 10,
+            "night": [False] * 10,
+            "rest_day": [False] * 10,
+            "rest_denied": [False] * 10,
+        }
+    )
+    weekday_effects(duty, "hours")
+    rotation_effects(duty, "hours")
+    leave = pl.DataFrame(
+        {
+            "token": ["st_eeeeeeeeeeeeeeee", "st_eeeeeeeeeeeeeeee"],
+            "status": ["approved", "rejected"],
+            "to_date": [start, start + timedelta(days=2)],
+        }
+    )
+    balance = pl.DataFrame(
+        {"token": ["st_eeeeeeeeeeeeeeee"], "as_of": [start], "el_days": [10.0]}
+    )
+    leave_out = leave_indicators(duty, leave, balance)
+    assert "days_since_last_leave" in leave_out.columns
+    leave_indicators(duty, leave, pl.DataFrame())
+    empty_ema = ema_indicators(pl.DataFrame())
+    assert empty_ema.height == 0
+    ema = pl.DataFrame(
+        {
+            "token": ["st_eeeeeeeeeeeeeeee"],
+            "at": [datetime(2026, 8, 2, tzinfo=UTC)],
+            "mood": [3.0],
+            "energy": [3.0],
+            "sleep_quality": [3.0],
+        }
+    )
+    assert ema_indicators(ema).height == 1
+    assert bio_indicators(pl.DataFrame()).height == 0
+    bio = pl.DataFrame(
+        {
+            "token": ["st_eeeeeeeeeeeeeeee"],
+            "date": [start],
+            "sleep_min": [360.0],
+            "sleep_eff": [0.8],
+            "hrv_rmssd": [40.0],
+            "rhr": [62.0],
+            "steps": [4000],
+        }
+    )
+    assert "sleep_minutes_7d" in bio_indicators(bio).columns
+    assert engagement_indicators(pl.DataFrame()).height == 0
+    eng = pl.DataFrame(
+        {
+            "token": ["st_eeeeeeeeeeeeeeee"],
+            "date": [start],
+            "completed": [1],
+            "expected": [1],
+        }
+    )
+    assert "checkin_completion_14d" in engagement_indicators(eng).columns
+    assert instrument_latest(pl.DataFrame()).height == 0
+    inst = pl.DataFrame(
+        {
+            "token": ["st_eeeeeeeeeeeeeeee"],
+            "at": [datetime(2026, 8, 2, tzinfo=UTC)],
+            "kind": ["pss10"],
+            "total": [12.0],
+        }
+    )
+    assert instrument_latest(inst).height == 1
+    median, mad, n = baseline_stats([])
+    assert n == 0 and median == 0.0 and mad == 1.0
+
+
+def test_empty_participating_weight_and_hysteresis_drop() -> None:
+    empty = renormalised_wsi([])
+    assert empty == (0.0, 0.0, True)
+    held, cycles = apply_hysteresis("T1", "T2", 0)
+    assert held == "T2" and cycles == 1
+    dropped, reset = apply_hysteresis("T1", "T2", 1)
+    assert dropped == "T1" and reset == 0
+    same, _ = apply_hysteresis("T2", "T2", 0)
+    assert same == "T2"

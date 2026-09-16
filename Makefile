@@ -37,7 +37,8 @@ copy-lint:
 	python3 scripts/copy-lint
 
 test: copy-lint
-	PYTHONPATH=services/engine uv run pytest services/engine/tests
+	PYTHONPATH=services/engine uv run pytest services/engine/tests \
+		--cov=app.scoring --cov=app.privacy --cov-fail-under=90
 	PYTHONPATH=services/vault uv run pytest services/vault/tests
 	PYTHONPATH=services/synth uv run pytest services/synth/tests
 	corepack pnpm --recursive typecheck

@@ -408,3 +408,65 @@ def test_grant_requires_contact_note() -> None:
 def test_simulator_tool_enforced() -> None:
     assert simulator_allows(9) is False
     assert simulator_allows(10) is True
+
+
+def test_forecast_interval_and_tier_authority() -> None:
+    rng = np.random.default_rng(2)
+    x = rng.normal(size=(40, 3))
+    y = (x[:, 0] > 0).astype(int)
+    names = ["workload_z", "body_vitals_z", "cusum_max"]
+    model = train_forecast(x, y, names)
+    from app.scoring.forecast import apply_forecast_to_tier, predict_interval
+
+    p, lo, hi = predict_interval(model, x[0])
+    assert 0.0 <= lo <= p <= hi <= 1.0
+    tier, trajectory = apply_forecast_to_tier("T0", 0.8, 2, 0.02)
+    assert trajectory == "rising"
+    assert tier in {"T0", "T1"}
+    falling, traj = apply_forecast_to_tier("T1", 0.1, 2, -0.05)
+    assert traj == "falling"
+    assert falling == "T1"
+
+
+def test_rights_killswitch_trend_and_break_glass_errors() -> None:
+    from app.privacy.rights import decide_trend_share, request_trend_share, set_killswitch
+
+    set_killswitch("voice", True, "wdec")
+    try:
+        set_killswitch("not-a-switch", True, "wdec")
+        raise AssertionError("unknown switch")
+    except KeyError:
+        pass
+    row = request_trend_share("MB-4091", "st_364aifljnxnxpqzk", "body_vitals")
+    assert row["status"] == "pending"
+    decide_trend_share("MB-4091", "body_vitals", "accepted")
+    try:
+        break_glass(
+            actor="uwo",
+            approver="uwo",
+            target_token="st_364aifljnxnxpqzk",
+            justification="Need to reach them",
+        )
+        raise AssertionError("same actor")
+    except ValueError:
+        pass
+    try:
+        break_glass(
+            actor="uwo",
+            approver="commander",
+            target_token="st_364aifljnxnxpqzk",
+            justification="short",
+        )
+        raise AssertionError("short note")
+    except ValueError:
+        pass
+
+
+def test_commander_card_numeric_when_enough_asked() -> None:
+    from app.privacy.kanon import commander_incident_card
+
+    card = commander_incident_card(
+        enrolled=20, asked=4, open_until="soon", followup="later"
+    )
+    assert card["asked"] == 4
+    assert card["asked_label"] == "4"
