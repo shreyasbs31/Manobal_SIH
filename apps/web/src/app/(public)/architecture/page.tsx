@@ -74,6 +74,17 @@ export default function ArchitecturePage() {
         <section>
           <h2>Self-test</h2>
           <ScreenState error={selftest.error} loading={selftest.loading} offline={selftest.offline}>
+            <p>
+              Stack:{" "}
+              {selftest.data
+                ? selftest.data.healthy
+                  ? "healthy"
+                  : "not healthy"
+                : "checking"}
+              {selftest.data
+                ? `. Core database ${selftest.data.core_database_reachable ? "reachable" : "down"}.`
+                : ""}
+            </p>
             <ul>
               <li>
                 Engine has no vault database access

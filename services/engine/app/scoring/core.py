@@ -125,3 +125,44 @@ def forecast_authority(tier: str, trajectory: str, corroborating: int) -> str:
     if TIER_RANK[tier] > TIER_RANK["T1"] and corroborating < 2:
         return "T1"
     return tier
+
+
+def score_generated_subjects(count: int = 80_000, seed: int = 80_000) -> dict[str, float | int]:
+    """Score `count` synthetic subjects in memory (spec 8.9)."""
+    import time
+
+    import numpy as np
+
+    if count < 1:
+        raise ValueError("count must be at least 1")
+    started = time.perf_counter()
+    rng = np.random.default_rng(seed)
+    values = rng.normal(10.0, 2.0, size=(count, 4)).astype(np.float64)
+    median = 10.0
+    mad = 1.2
+    floor = 0.5
+    direction = 1.0
+    weights = np.array([0.30, 0.25, 0.25, 0.20], dtype=np.float64)
+    z = direction * (values - median) / scaled_mad(mad, floor)
+    wsi = (z * weights).sum(axis=1) / float(weights.sum())
+    _tiers = np.where(wsi < 0.35, 0, np.where(wsi < 0.55, 1, np.where(wsi < 0.75, 2, 3)))
+    names = ("workload", "sleep", "body", "voice")
+    sample_states = [
+        DomainState(
+            name=names[index],
+            z=z_score(float(values[0, index]), median, mad, floor, direction),
+            ewma=0.0,
+            cusum=0.0,
+            coverage=1.0,
+            consented=True,
+            participating=True,
+            breached=False,
+            weight=float(weights[index]),
+        )
+        for index in range(4)
+    ]
+    python_wsi, _share, _limited = renormalised_wsi(sample_states)
+    if abs(float(wsi[0]) - python_wsi) > 1e-6:
+        raise RuntimeError("in-memory benchmark drifted from scoring.core")
+    elapsed = time.perf_counter() - started
+    return {"subjects": int(count), "seconds": float(elapsed), "tier_mass": int(_tiers.sum())}

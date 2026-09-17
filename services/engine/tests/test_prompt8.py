@@ -101,7 +101,8 @@ def test_lab_worlds_zero_penalty_and_benchmark() -> None:
     assert primary["zero_penalty"]["present_in_model"] is False
     assert EXCLUDED_ATTRIBUTES.issubset(set(primary["zero_penalty"]["excluded"]))
     bench = client.post("/api/v1/lab/benchmark", headers=headers).json()
-    assert bench["subjects"] == 8000
+    assert bench["subjects"] == 80_000
+    assert float(bench["seconds"]) >= 0
 
 
 def test_architecture_edge_and_mode() -> None:

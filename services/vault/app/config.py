@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -7,10 +8,14 @@ from typing import Literal
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_ENV_FILES = ["infra/.env", ".env"]
+if os.environ.get("MANOBAL_SKIP_SECRETS") != "1":
+    _ENV_FILES.append("infra/secrets.env")
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=tuple(_ENV_FILES),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

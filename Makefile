@@ -1,12 +1,22 @@
 SHELL := /bin/sh
 COMPOSE := docker compose --env-file infra/.env -f infra/docker-compose.yml
 
-.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify dev lint twa
+.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify dev lint twa infra-ready providers-check
 
 up:
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
 
-dev: up
+infra-ready:
+	$(COMPOSE) up --detach --wait --wait-timeout 180 core-db vault-db redis
+	$(COMPOSE) exec -T core-db pg_isready -U core_owner -d manobal_core
+	$(COMPOSE) exec -T vault-db pg_isready -U vault_owner -d manobal_vault
+	$(COMPOSE) exec -T redis redis-cli ping
+
+dev: infra-ready
+	$(COMPOSE) up --build --detach --wait --wait-timeout 600
+
+providers-check:
+	PYTHONPATH=services/engine:services/vault uv run python scripts/providers-check.py
 
 lint:
 	corepack pnpm --recursive lint

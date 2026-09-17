@@ -8,6 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH="/workspace/services/engine"
 
 WORKDIR /workspace
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml uv.lock ./
 COPY services/engine/pyproject.toml services/engine/pyproject.toml
 COPY services/vault/pyproject.toml services/vault/pyproject.toml

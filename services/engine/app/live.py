@@ -1062,14 +1062,10 @@ async def lab_benchmark(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    import time as time_mod
+    from .scoring.core import score_generated_subjects
 
-    from .scoring.core import z_score
-
-    started = time_mod.perf_counter()
-    for _ in range(8000):
-        z_score(12.0, 8.0, 1.0, 0.5, 1.0)
-    return {"subjects": 8000, "seconds": time_mod.perf_counter() - started}
+    result = score_generated_subjects(80_000)
+    return {"subjects": result["subjects"], "seconds": result["seconds"]}
 
 
 class DpoDecision(BaseModel):

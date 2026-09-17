@@ -63,7 +63,7 @@ export default function LabPage() {
               }}
               type="button"
             >
-              Run 8k benchmark
+              Run 80,000 in-memory benchmark
             </button>
           </div>
           {bench ? <p role="status">{bench}</p> : null}

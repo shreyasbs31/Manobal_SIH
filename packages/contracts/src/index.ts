@@ -811,6 +811,7 @@ export class ManobalClient {
 
   systemSelftest(signal?: AbortSignal): Promise<{
     healthy: boolean;
+    core_database_reachable: boolean;
     vault_database_isolated: boolean;
     vault_identity_keys_isolated: boolean;
     zone_x_unreachable: boolean;

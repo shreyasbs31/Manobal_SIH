@@ -186,3 +186,18 @@ Choices implied by the spec (recorded, not blocked):
 - [x] Architecture self-test reports vault isolation and Zone X.
 
 End-of-prompt gate: spec 23.6 ticked for what this environment can prove; every `SHOT_LIST.md` shot has a reset path; local E2E spine passed twice. Azure URL and real-phone TWA remain 31.1.
+
+## Prompt 9: Verification audit
+
+Honest status before go-live. Do not add features. Env file is `infra/.env` (template `infra/.env.example`). Do not open `infra/.env`, `infra/secrets.env`, or `infra/keys/`.
+
+1. [x] Search TODO, FIXME, mock, stub, fake, placeholder, hardcoded, fallback, lorem, and fixtures outside tests or the gallery. For demo-spine and shot paths: file, line, what it does, acceptable or not. Check: findings in `docs/AUDIT.md`.
+2. [x] Provider report (Foundry main, fast, open, embeddings; Deepgram; Azure Speech; Translator; Content Safety; ACS; Web PubSub; Key Vault): real client, env vars, fallback, UI label. Add `make providers-check`. Check: command prints a pass or fail table without printing secrets.
+3. [x] Spec 27.2 offline in Playwright with the network disabled. Check: pass or fail per numbered capability in `docs/AUDIT.md`.
+4. [x] Every `SHOT_LIST.md` shot from a reset, 1920 by 1080 screenshot, UI rubric score. Check: files in `e2e/artifacts/audit/`.
+5. [x] Every number on Lab, Governance, and Landing is from the database or a cited source. Report the benchmark size; change it to 80,000 in memory if it is not. Check: `POST /lab/benchmark` returns `subjects` 80000.
+6. [x] `make dev` starts and health-checks core Postgres, vault Postgres, and Redis before the engine. Architecture shows healthy when the stack is up. Check: `make dev` waits on those three; Architecture copy includes healthy.
+7. [x] Walk spec 32 item by item: where prevented, whether a recorded screen could still show it. Check: table in `docs/AUDIT.md`.
+8. [x] Write `docs/AUDIT.md` with status table, fixes made, ranked video risks. Every partial or fail has a named owner step. Check: file exists.
+
+End-of-prompt gate: `docs/AUDIT.md` exists; every partial or fail has a named owner; `make providers-check` exists (1 pass, 10 fail on this machine); live `POST /lab/benchmark` returns `subjects` 80000; `make test`, `make lint`, and `copy-lint` passed.
