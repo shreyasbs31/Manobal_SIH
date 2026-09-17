@@ -4,13 +4,13 @@ from typing import Any
 
 import httpx
 
-from ..config import get_settings
+from ..config import get_settings, live_providers_enabled
 
 
 async def content_safety_self_harm(text: str) -> bool | None:
     """Return True/False, or None when the gate abstains (spec 3.2)."""
     settings = get_settings()
-    if not settings.content_safety_endpoint:
+    if not live_providers_enabled() or not settings.content_safety_endpoint:
         return None
     url = f"{settings.content_safety_endpoint.rstrip('/')}/contentsafety/text:analyze"
     headers = {"content-type": "application/json"}
@@ -37,7 +37,7 @@ async def content_safety_self_harm(text: str) -> bool | None:
 
 async def prompt_shields_attack(text: str) -> bool | None:
     settings = get_settings()
-    if not settings.content_safety_endpoint:
+    if not live_providers_enabled() or not settings.content_safety_endpoint:
         return None
     url = f"{settings.content_safety_endpoint.rstrip('/')}/contentsafety/text:shieldPrompt"
     headers = {"content-type": "application/json"}

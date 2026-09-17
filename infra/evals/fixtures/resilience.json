@@ -1,0 +1,22 @@
+{
+  "en": {
+    "text": "Night duty ke baad kam neend hona sach mein thakane wala hota hai. Aaj energy kaisi lag rahi hai, bas thakan, ya mann bhi bhaari hai? Agar aap chahein, main kisi insaan se baat ka option bhi de sakta hoon.",
+    "provider": "open",
+    "beat_id": "s05-en"
+  },
+  "hi": {
+    "text": "रात की ड्यूटी के बाद नींद अधूरी रहना काफी थकाने वाला होता है। अभी ऊर्जा कैसी लग रही है, बहुत कम, ठीक-ठाक, या सामान्य? अगर मुश्किल बढ़ रही हो, तो किसी भरोसेमंद साथी या वरिष्ठ से बात करने का विकल्प भी है।",
+    "provider": "main",
+    "beat_id": "s05-hi"
+  },
+  "hi-Latn": {
+    "text": "Raat ki duty ke baad kam neend hui, abhi energy kaisi lag rahi hai? Agar sambhalna mushkil ho raha ho, aap kisi bharosemand saathi ya wellness staff se baat kar sakte hain.",
+    "provider": "main",
+    "beat_id": "s05-hi-Latn"
+  },
+  "ta": {
+    "text": "இரவு டியூட்டிக்குப் பிறகு தூக்கம் சரியில்லாமல் இருப்பது கஷ்டமாக இருக்கலாம். இது எத்தனை நாட்களாக இருக்கிறது, பொதுவாக எத்தனை மணி நேரம் தூங்க முடிகிறது? விரும்பினால் நம்பிக்கையான ஒருவருடனோ மருத்துவ உதவி வழங்குபவருடனோ பேசலாம்.",
+    "provider": "main",
+    "beat_id": "s05-ta"
+  }
+}

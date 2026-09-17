@@ -176,6 +176,8 @@ services:
     build:
       context: ..
       dockerfile: services/engine/Dockerfile
+    env_file:
+      - .env
     environment:
       MANOBAL_MODE: demo
       WEB_ORIGIN: http://localhost:3000
@@ -193,8 +195,10 @@ services:
       BLOB_ACCOUNT_KEY: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
       BLOB_CONTAINER: audit-anchors
       ENTRA_ROLE_MAP: '{"MANOBAL.Personnel":"personnel","MANOBAL.Welfare":"uwo","MANOBAL.Counsellor":"counsellor","MANOBAL.Medical":"mo","MANOBAL.Command":"commander","MANOBAL.HQ":"hq","MANOBAL.WDEC":"wdec","MANOBAL.DPO":"dpo","MANOBAL.Integrations":"hrms_integrator","MANOBAL.Admin":"admin","MANOBAL.Director":"director"}'
+      FOUNDRY_AD_TOKEN_FILE: /run/manobal/foundry.token
     volumes:
       - ./keys/grant-private.pem:/run/manobal/grant-private.pem:ro
+      - ./.cache/foundry.token:/run/manobal/foundry.token:ro
     ports:
       - "8000:8000"
     depends_on:
@@ -228,6 +232,8 @@ services:
       context: ..
       dockerfile: services/engine/Dockerfile
     command: ["python", "-m", "app.acute_worker"]
+    env_file:
+      - .env
     environment:
       MANOBAL_MODE: demo
       CORE_DATABASE_URL: postgresql+asyncpg://core_app:core_app_dev_only@core-db:5432/manobal_core
@@ -243,8 +249,10 @@ services:
       BLOB_ACCOUNT_NAME: devstoreaccount1
       BLOB_ACCOUNT_KEY: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
       BLOB_CONTAINER: audit-anchors
+      FOUNDRY_AD_TOKEN_FILE: /run/manobal/foundry.token
     volumes:
       - ./keys/grant-private.pem:/run/manobal/grant-private.pem:ro
+      - ./.cache/foundry.token:/run/manobal/foundry.token:ro
     depends_on:
       engine:
         condition: service_healthy

@@ -55,12 +55,11 @@ TASK_SPEC: dict[str, dict[str, Any]] = {
     "conversation_coach": {"capability": "command_copilot", "temp": 0.4, "max_tokens": 280},
 }
 
-DASHES = str.maketrans({"\u2014": ",", "\u2013": ","})
 MARKDOWN_RE = re.compile(r"[*_`#>]")
 
 
 def strip_dashes(text: str) -> str:
-    return text.translate(DASHES)
+    return text.replace("\u2014", ", ").replace("\u2013", ", ")
 
 
 def strip_markdown(text: str) -> str:
@@ -190,23 +189,59 @@ async def run(
     }[task]
     payload_text = str(inputs.get("text") or inputs.get("brief") or json.dumps(inputs, default=str))
     messages = bind_user(prompt.text, tag, payload_text)
-    router = get_router()
-    response = await router.complete(
-        capability,
-        {
-            "messages": messages,
-            "text": payload_text,
-            "temperature": spec["temp"],
-            "max_tokens": spec["max_tokens"],
-        },
-        beat_id=beat_id,
-        language=lang,
-    )
-    from ..config import get_settings
+    from ..config import get_settings, live_providers_enabled
 
-    text = response.text
-    if (not get_settings().foundry_endpoint) or response.provider == "fail_safe":
+    use_local = (
+        task == "command_copilot"
+        or (not live_providers_enabled())
+        or (not get_settings().foundry_endpoint)
+    )
+    extra: dict[str, Any] = {}
+    provider = "local"
+    latency_ms = 0.0
+    if use_local:
         text = local_task_text(task, inputs, lang)
+        if task == "crisis_classify":
+            try:
+                extra = json.loads(text)
+            except json.JSONDecodeError:
+                extra = {"crisis": False}
+    else:
+        router = get_router()
+        model_class = ""
+        if task == "companion_turn":
+            from .routing_gate import load_recorded_routing
+
+            decision = load_recorded_routing()
+            if lang.startswith("hi-Latn"):
+                model_class = str(decision.get("hi-Latn") or decision.get("hi") or "main")
+            elif lang.startswith("hi"):
+                model_class = str(decision.get("hi") or "main")
+            elif lang.startswith("ta"):
+                model_class = str(decision.get("ta") or "main")
+            elif lang.startswith("en"):
+                model_class = str(decision.get("en") or "open")
+            else:
+                model_class = "main"
+        response = await router.complete(
+            capability,
+            {
+                "messages": messages,
+                "text": payload_text,
+                "temperature": spec["temp"],
+                "max_tokens": spec["max_tokens"],
+                "model_class": model_class,
+            },
+            beat_id=beat_id,
+            language=lang,
+        )
+        text = response.text
+        provider = response.provider
+        latency_ms = response.latency_ms
+        extra = dict(response.extra)
+        if response.provider == "fail_safe":
+            text = local_task_text(task, inputs, lang)
+            provider = "fail_safe"
     text = strip_dashes(text)
     if voice:
         text = strip_markdown(text)
@@ -220,8 +255,8 @@ async def run(
     return GatewayResult(
         task=task,
         text=text,
-        provider=response.provider,
-        latency_ms=response.latency_ms,
+        provider=provider,
+        latency_ms=latency_ms,
         verified=verified,
-        extra=dict(response.extra),
+        extra=extra,
     )

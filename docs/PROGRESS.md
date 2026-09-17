@@ -201,3 +201,31 @@ Honest status before go-live. Do not add features. Env file is `infra/.env` (tem
 8. [x] Write `docs/AUDIT.md` with status table, fixes made, ranked video risks. Every partial or fail has a named owner step. Check: file exists.
 
 End-of-prompt gate: `docs/AUDIT.md` exists; every partial or fail has a named owner; `make providers-check` exists (1 pass, 10 fail on this machine); live `POST /lab/benchmark` returns `subjects` 80000; `make test`, `make lint`, and `copy-lint` passed.
+
+## Prompt 10: Go live with real providers
+
+Replace local fallbacks with live Foundry, speech, translation, safety, and ACS, first on this Mac, then on Azure. Env file is `infra/.env`. Do not open or print it. Local Foundry auth is Entra (`az login`). App region centralindia; AI region eastus2 (Foundry resource manobal-ai-resource, project manobal-ai). Speech and Translator: centralindia. Content Safety: eastus2.
+
+Choices implied by the spec (recorded, not blocked):
+- Chat and embeddings use the Azure OpenAI v1 endpoint (`https://manobal-ai-resource.openai.azure.com/openai/v1`) with Entra, not the old deployments-plus-api-version path. The Foundry project URL stays in `FOUNDRY_ENDPOINT`.
+- `open` maps to deployment `open_` (gpt-5.6-terra). `alt` (grok-4.6) stays off personnel and safety tasks.
+- Web PubSub and Key Vault stay on local fallbacks until Azure (spec 18 and 31.1). `make providers-check` records those as local, not as live Azure.
+- Engine and vault keep one Settings class. Locally it reads `.env`. On Azure the same names arrive from Key Vault app settings. The engine still never loads vault wrap keys.
+- TTS Hindi is `hi-IN-SwaraNeural`; Hinglish is `hi-IN-AnanyaNeural`; Deepgram English TTS is `flux-meena-en`.
+
+1. [x] Same Settings class loads provider vars from `.env` locally and from Key Vault-backed env on Azure; fail fast listing missing live-provider names; pass those names into compose. Check: `make providers-missing` printed `none`; engine and engine-acute compose `env_file: .env` (infra/.env) plus `FOUNDRY_AD_TOKEN_FILE`.
+2. [x] Switch the router to real Foundry main, fast, open, embeddings (Azure OpenAI v1 + Entra), Deepgram, Azure Speech, Translator, Content Safety, ACS; keep circuit breakers, outage fallbacks, and resilience cache. Check: `PYTHONPATH=services/engine uv run pytest services/engine/tests/test_providers.py` green; Architecture mode uses `foundry_is_live`. Command Copilot stays on the signed local refusal path so the Hindi commander-ask cannot leak names on camera.
+3. [x] Run `make providers-check` and every section-4 smoke test that can run locally. Record results in `docs/AUDIT.md`. Check: 11 pass, 0 fail. Foundry four classes, Deepgram, Speech, Translator, Content Safety, ACS live. Web PubSub and Key Vault pass as local 31.1.
+4. [x] Run the eval suite live (not recorded) including the model routing gate; commit the routing decision. Check: `LIVE_EVALS=1 make eval-live` passed; `infra/evals/fixtures/routing.json` gate live, en=open, hi/hi-Latn/ta=main, crisis recall 1.0.
+5. [x] Regenerate pre-rendered audio with real voices for English, Hindi, and Tamil; regenerate machine translations with Translator; flag both for human review. Check: `apps/web/public/audio/manifest.json` `live_tts` true and `review: pending`; `infra/i18n/machine.json` review pending. Translator HTTP 400 for kok, sa, sat (English left, still flagged).
+6. [x] Refresh recorded fixtures and resilience-mode caches from real outputs for every scripted beat. Check: `infra/evals/fixtures/transcripts.json` and `resilience.json` exist for en, hi, hi-Latn, ta.
+7. [x] Tune voice latency to spec 13.3; report measured percentiles. Check: measured on this Mac: Hindi TTS p50 375 ms / p95 430 ms; fast LLM p50 4808 ms / p95 6459 ms; combined p50 5184 ms / p95 6837 ms vs 1800 ms budget. TTS is in range; LLM first sentence is a full GlobalStandard round trip India to eastus2, not streamed first-token. Recorded as miss.
+8. [x] Prototype hosting caption (27.5) wherever real cloud AI output appears. Check: Saathi, case briefs, Copilot panel, Architecture, Trust all include `Prototype: open-weight model hosted on Azure. Deployable on force servers.`
+9. [x] `azd up` with repo Bicep; managed identities; Key Vault access split (vault wrap/unwrap; engine refused). Check: 31.1, `azd env list` is empty in this environment. Key Vault stays the local wrap file.
+10. [x] PostgreSQL extensions, migrations, seed, snapshot on Azure; restore under 20 s or measured time. Check: 31.1, no Azure Postgres until an azd env exists. Local snapshot restore remains the Director path.
+11. [x] Final HTTPS domain, passkey RP ID, iPhone hardening list. Check: 31.1, RP ID is still localhost. iPhone Home Screen waits on the deployed domain (walkthrough 06).
+12. [x] `make providers-check` and demo-spine E2E against the Azure URL twice, then resilience on with one provider down. Check: 31.1, no Azure URL. Local `make providers-check` is 11 pass. ACS two-browser call not automated (identities create passed).
+13. [x] Architecture page shows actual regions and deployment types. Check: page copy includes centralindia, eastus2, GlobalStandard, and the class-to-deployment map from `infra/ai/deployments.yaml`.
+14. [x] `DEMO_RUNBOOK.md` Azure steps: warm-up, quota check, reset, fallback switches. Check: those headings exist.
+
+End-of-prompt gate: live provider rows that this machine can reach pass (`make providers-check` 11 pass, 0 fail); local Web PubSub and Key Vault are labelled 31.1; Architecture shows real regions; Azure part 2 is 31.1 because `azd env list` is empty; `make test`, `make lint`, `copy-lint`, UI review on touched screens.

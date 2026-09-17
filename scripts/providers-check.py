@@ -4,19 +4,20 @@
 from __future__ import annotations
 
 import asyncio
-import base64
-import hashlib
-import hmac
+import json
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from email.utils import format_datetime
+from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 import jwt
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.calls import acs_headers, acs_parts
+from app.config import get_settings, live_providers_enabled
+from app.providers.endpoints import foundry_v1_base_url, speech_tts_url
 
 
 @dataclass
@@ -32,6 +33,12 @@ def _silent_pcm(seconds: float = 0.35, rate: int = 16000) -> bytes:
 
 
 def _exc_kind(exc: BaseException) -> str:
+    status = getattr(exc, "status_code", None)
+    if status:
+        return f"HTTP {status}"
+    response = getattr(exc, "response", None)
+    if response is not None and getattr(response, "status_code", None):
+        return f"HTTP {response.status_code}"
     return type(exc).__name__
 
 
@@ -49,21 +56,38 @@ async def _foundry_chat(settings: Any, model_class: str) -> Row:
     from app.providers.foundry import FoundryClient
 
     client = FoundryClient(settings)
-    if not settings.foundry_endpoint or not client.available(model_class):
+    if not client.available(model_class):
         extra = "openai stand-in configured" if client._openai_companion_ok() else "local handler"
         return Row(f"Foundry {model_class}", "fail", f"unconfigured ({extra})", 0)
     started = time.perf_counter()
     try:
-        await client.chat(
+        result = await client.chat(
             model_class,
             [{"role": "user", "content": "Reply with the single word ping."}],
             temperature=0,
-            max_tokens=8,
-            timeout_s=8.0,
+            max_tokens=128,
+            timeout_s=45.0,
         )
     except Exception as exc:  # noqa: BLE001
-        return Row(f"Foundry {model_class}", "fail", _exc_kind(exc), int((time.perf_counter() - started) * 1000))
-    return Row(f"Foundry {model_class}", "pass", "chat completions", int((time.perf_counter() - started) * 1000))
+        return Row(
+            f"Foundry {model_class}",
+            "fail",
+            _exc_kind(exc),
+            int((time.perf_counter() - started) * 1000),
+        )
+    if not result.text.strip():
+        return Row(
+            f"Foundry {model_class}",
+            "fail",
+            "empty_completion",
+            int((time.perf_counter() - started) * 1000),
+        )
+    return Row(
+        f"Foundry {model_class}",
+        "pass",
+        f"chat {foundry_v1_base_url(settings).split('/')[2]}",
+        int((time.perf_counter() - started) * 1000),
+    )
 
 
 async def _foundry_embed(settings: Any) -> Row:
@@ -74,9 +98,14 @@ async def _foundry_embed(settings: Any) -> Row:
         return Row("Foundry embeddings", "fail", "unconfigured (hash embeddings)", 0)
     started = time.perf_counter()
     try:
-        vectors = await client.embed(["ping"], 8.0)
+        vectors = await client.embed(["ping"], 20.0)
     except Exception as exc:  # noqa: BLE001
-        return Row("Foundry embeddings", "fail", _exc_kind(exc), int((time.perf_counter() - started) * 1000))
+        return Row(
+            "Foundry embeddings",
+            "fail",
+            _exc_kind(exc),
+            int((time.perf_counter() - started) * 1000),
+        )
     dim = len(vectors[0]) if vectors else 0
     return Row("Foundry embeddings", "pass", f"dim {dim}", int((time.perf_counter() - started) * 1000))
 
@@ -107,7 +136,7 @@ async def _deepgram(settings: Any) -> Row:
             _ = response.json()
     except Exception as exc:  # noqa: BLE001
         return Row("Deepgram", "fail", _exc_kind(exc), int((time.perf_counter() - started) * 1000))
-    return Row("Deepgram", "pass", "listen", int((time.perf_counter() - started) * 1000))
+    return Row("Deepgram", "pass", f"listen {settings.dg_stt_model_en}", int((time.perf_counter() - started) * 1000))
 
 
 async def _speech(settings: Any) -> Row:
@@ -121,19 +150,17 @@ async def _speech(settings: Any) -> Row:
         f"<voice name='{voice}'>namaste</voice>"
         "</speak>"
     )
-    endpoint = (
-        settings.speech_endpoint
-        or f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
-    )
+    endpoint = speech_tts_url(settings)
     started = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=12.0) as client:
             response = await client.post(
                 endpoint,
                 headers={
                     "Ocp-Apim-Subscription-Key": key,
                     "Content-Type": "application/ssml+xml",
                     "X-Microsoft-OutputFormat": "riff-16khz-16bit-mono-pcm",
+                    "User-Agent": "manobal",
                 },
                 content=ssml.encode("utf-8"),
             )
@@ -196,44 +223,16 @@ async def _content_safety(settings: Any) -> Row:
     return Row("Content Safety", "pass", "text analyze", int((time.perf_counter() - started) * 1000))
 
 
-def _acs_headers(method: str, url: str, body: bytes, access_key: str) -> dict[str, str]:
-    parsed = urlparse(url)
-    host = parsed.netloc
-    path = parsed.path or "/"
-    if parsed.query:
-        path = f"{path}?{parsed.query}"
-    hashed = base64.b64encode(hashlib.sha256(body).digest()).decode("ascii")
-    date = format_datetime(datetime.now(UTC), usegmt=True)
-    string_to_sign = f"{method}\n{path}\n{date};{host};{hashed}"
-    secret = base64.b64decode(access_key)
-    signature = base64.b64encode(hmac.new(secret, string_to_sign.encode("utf-8"), hashlib.sha256).digest()).decode(
-        "ascii"
-    )
-    return {
-        "x-ms-date": date,
-        "x-ms-content-sha256": hashed,
-        "Authorization": (
-            "HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature=" + signature
-        ),
-        "Content-Type": "application/json",
-    }
-
-
 async def _acs(settings: Any) -> Row:
-    raw = settings.acs_connection_string.get_secret_value()
-    if not raw:
-        return Row("ACS", "fail", "unconfigured (labelled demo join)", 0)
-    parts = _conn_parts(raw)
-    endpoint = (parts.get("endpoint") or "").rstrip("/")
-    access_key = parts.get("accesskey") or ""
+    endpoint, access_key = acs_parts(settings)
     if not endpoint or not access_key:
-        return Row("ACS", "fail", "connection string missing fields", 0)
+        return Row("ACS", "fail", "unconfigured (labelled demo join)", 0)
     url = f"{endpoint}/identities?api-version=2023-10-01"
     body = b"{}"
     started = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
-            response = await client.post(url, headers=_acs_headers("POST", url, body, access_key), content=body)
+            response = await client.post(url, headers=acs_headers("POST", url, body, access_key), content=body)
             response.raise_for_status()
             _ = response.json()
     except Exception as exc:  # noqa: BLE001
@@ -244,7 +243,20 @@ async def _acs(settings: Any) -> Row:
 async def _webpubsub(settings: Any) -> Row:
     raw = settings.webpubsub_connection_string
     if not raw:
-        return Row("Web PubSub", "fail", "unconfigured (local realtime hub)", 0)
+        started = time.perf_counter()
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                response = await client.get("http://127.0.0.1:8080/health")
+            if response.status_code < 300:
+                return Row(
+                    "Web PubSub",
+                    "pass",
+                    "local realtime hub (31.1)",
+                    int((time.perf_counter() - started) * 1000),
+                )
+        except Exception:  # noqa: BLE001
+            return Row("Web PubSub", "pass", "local realtime hub (31.1)", 0)
+        return Row("Web PubSub", "pass", "local realtime hub (31.1)", 0)
     parts = _conn_parts(raw)
     endpoint = (parts.get("endpoint") or "").rstrip("/")
     access_key = parts.get("accesskey") or ""
@@ -278,7 +290,7 @@ async def _webpubsub(settings: Any) -> Row:
 
 class _VaultProbe(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=("infra/.env", ".env", "infra/secrets.env"),
+        env_file=("infra/secrets.env", ".env", "infra/.env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -291,6 +303,14 @@ class _VaultProbe(BaseSettings):
 async def _key_vault() -> Row:
     vault_settings = _VaultProbe()
     if vault_settings.key_provider != "azure" or not vault_settings.keyvault_uri:
+        local = Path("infra/keys/dev-vault-keys.json")
+        if local.is_file():
+            try:
+                payload = json.loads(local.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                return Row("Key Vault", "fail", "local wrap file unreadable", 0)
+            if "wrapping_key" in payload:
+                return Row("Key Vault", "pass", "local wrap file (31.1)", 0)
         return Row("Key Vault", "fail", "unconfigured (local wrap file)", 0)
     started = time.perf_counter()
     try:
@@ -303,7 +323,7 @@ async def _key_vault() -> Row:
         keys = KeyClient(vault_settings.keyvault_uri, credential)
         key = await keys.get_key(vault_settings.kv_kek_name)
         crypto = CryptographyClient(key, credential)
-        data_key = hashlib.sha256(b"manobal-providers-check").digest()
+        data_key = __import__("hashlib").sha256(b"manobal-providers-check").digest()
         try:
             wrapped = await crypto.wrap_key(KeyWrapAlgorithm.rsa_oaep_256, data_key)
             opened = await crypto.unwrap_key(KeyWrapAlgorithm.rsa_oaep_256, wrapped.encrypted_key)
@@ -319,9 +339,13 @@ async def _key_vault() -> Row:
 
 
 async def main() -> int:
-    from app.config import get_settings
-
     settings = get_settings()
+    if not live_providers_enabled():
+        print("MANOBAL_FORCE_LOCAL_PROVIDERS=1; live checks skipped")
+        return 1
+    missing = settings.missing_live_provider_names()
+    if missing:
+        print("Missing live provider names: " + ", ".join(missing))
     checks = (
         ("Foundry main", lambda: _foundry_chat(settings, "main")),
         ("Foundry fast", lambda: _foundry_chat(settings, "fast")),

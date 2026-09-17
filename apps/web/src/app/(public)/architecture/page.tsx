@@ -31,6 +31,23 @@ export default function ArchitecturePage() {
         <p className="mb-hosting-caption">
           Prototype: open-weight model hosted on Azure. Deployable on force servers.
         </p>
+        <section>
+          <h2>Regions and models</h2>
+          <p>
+            App, Speech, and Translator run in {live.data?.regions?.app ?? "centralindia"}. Foundry
+            and Content Safety run in {live.data?.regions?.ai ?? "eastus2"} because those models are
+            not offered in the app region. Resource {live.data?.foundry_resource ?? "manobal-ai-resource"},
+            project {live.data?.foundry_project ?? "manobal-ai"}.
+          </p>
+          <ul>
+            {(live.data?.classes ?? []).map((row) => (
+              <li key={row.class_name}>
+                {row.class_name}: deployment {row.deployment}, {row.model}, {row.type}
+                {row.notes ? `. ${row.notes}` : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
         <div className="mb-layers" data-link={live.data?.edge_up ? "up" : "down"}>
           {LAYERS.map((layer) => (
             <section className="mb-layer" key={layer.title}>
@@ -107,6 +124,10 @@ export default function ArchitecturePage() {
           <p>Foundry: {mode.data?.foundry ? "configured" : "unset, local fallback"}.</p>
           <p>Speech: {mode.data?.speech ? "configured" : "unset, silent WAV"}.</p>
           <p>ACS: {mode.data?.acs ? "configured" : "unset, labelled demo join"}.</p>
+          <p>
+            Deployment type is GlobalStandard. Alt (Grok) is officer-side text only and never serves
+            personnel or safety tasks.
+          </p>
         </section>
       </main>
     </div>

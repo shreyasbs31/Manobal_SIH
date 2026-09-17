@@ -294,6 +294,16 @@ export class ManobalClient {
     return this.request("/api/v1/me/talk", { method: "POST", body });
   }
 
+  callsToken(): Promise<{
+    configured: boolean;
+    demo_join: boolean;
+    token: string | null;
+    user_id: string | null;
+    label?: string;
+  }> {
+    return this.request("/api/v1/calls/token", { method: "POST" });
+  }
+
   meBuddy(signal?: AbortSignal): Promise<{
     paired: boolean;
     code?: string;
@@ -702,6 +712,23 @@ export class ManobalClient {
     translator: boolean;
     content_safety: boolean;
     cost_guard: boolean;
+    regions?: {
+      app: string;
+      ai: string;
+      speech: string;
+      translator: string;
+      content_safety: string;
+    };
+    foundry_resource?: string;
+    foundry_project?: string;
+    classes?: {
+      class_name: string;
+      deployment: string;
+      model: string;
+      type: string;
+      notes: string;
+    }[];
+    hosting_caption?: string;
   }> {
     return this.request("/api/v1/public/architecture", { signal });
   }

@@ -162,7 +162,11 @@ class ProviderRouter:
                 return hit
 
         last_error: Exception | None = None
-        for provider in self.ordered(capability):
+        prefer = str(payload.get("model_class") or "")
+        ordered = self.ordered(capability)
+        if prefer in ordered:
+            ordered = [prefer] + [name for name in ordered if name != prefer]
+        for provider in ordered:
             self.assert_alt_allowed(capability, provider)
             breaker = self._breaker(provider)
             if not breaker.allow():

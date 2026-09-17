@@ -46,6 +46,17 @@ export default function CounselPage() {
           {active ? (
             <CallPanel
               joinLabel={data.acs.label}
+              onJoin={() => {
+                void engineClient()
+                  .callsToken()
+                  .then((result) => {
+                    setStatus(
+                      result.configured
+                        ? "Call token issued. Join from two browsers on different networks."
+                        : data.acs.label,
+                    );
+                  });
+              }}
               peer={active.handle ? String(active.handle) : "Named session"}
               status="Notes stay on this desk. They are not sent to welfare."
             />

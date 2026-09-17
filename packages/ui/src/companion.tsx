@@ -58,17 +58,19 @@ export function CallPanel({
   peer,
   status,
   joinLabel = "Join call",
+  onJoin,
 }: {
   peer: string;
   status: string;
   joinLabel?: string | undefined;
+  onJoin?: (() => void) | undefined;
 }) {
   return (
     <section className="mb-card mb-call">
       <VoiceOrb state="speaking" label={peer} />
       <p>{status}</p>
       <div className="mb-action-row">
-        <button className="mb-primary" type="button">
+        <button className="mb-primary" onClick={onJoin} type="button">
           {joinLabel}
         </button>
         <button className="mb-secondary" type="button">

@@ -1,12 +1,17 @@
 SHELL := /bin/sh
 COMPOSE := docker compose --env-file infra/.env -f infra/docker-compose.yml
 
-.PHONY: up down logs migrate seed reset contracts copy-lint test eval e2e deploy verify dev lint twa infra-ready providers-check
+.PHONY: up down logs migrate seed reset contracts copy-lint test eval eval-live e2e deploy verify dev lint twa infra-ready providers-check providers-missing foundry-token translate-catalog audio-generate voice-latency
 
 up:
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
 
-infra-ready:
+foundry-token:
+	mkdir -p infra/.cache
+	touch infra/.cache/foundry.token
+	az account get-access-token --resource https://cognitiveservices.azure.com --query accessToken -o tsv > infra/.cache/foundry.token 2>/dev/null || true
+
+infra-ready: foundry-token
 	$(COMPOSE) up --detach --wait --wait-timeout 180 core-db vault-db redis
 	$(COMPOSE) exec -T core-db pg_isready -U core_owner -d manobal_core
 	$(COMPOSE) exec -T vault-db pg_isready -U vault_owner -d manobal_vault
@@ -14,6 +19,9 @@ infra-ready:
 
 dev: infra-ready
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
+
+providers-missing:
+	PYTHONPATH=services/engine uv run python -c "from app.config import get_settings; print(', '.join(get_settings().missing_live_provider_names()) or 'none')"
 
 providers-check:
 	PYTHONPATH=services/engine:services/vault uv run python scripts/providers-check.py
@@ -59,6 +67,18 @@ test: copy-lint
 
 eval:
 	PYTHONPATH=services/engine uv run pytest infra/evals
+
+eval-live:
+	LIVE_EVALS=1 PYTHONPATH=services/engine uv run pytest infra/evals/test_live_routing.py -q
+
+translate-catalog:
+	PYTHONPATH=services/engine uv run python scripts/translate-catalog.py
+
+audio-generate:
+	PYTHONPATH=services/engine uv run python -c "from app.audio import generate_audio; print(generate_audio())"
+
+voice-latency:
+	PYTHONPATH=services/engine uv run python scripts/voice-latency.py
 
 e2e:
 	corepack pnpm --filter @manobal/e2e test

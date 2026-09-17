@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
+from .scoring.ruleset import REPO_ROOT
+
 REVIEWED = frozenset({"en", "hi"})
+MACHINE_PATH = REPO_ROOT / "infra" / "i18n" / "machine.json"
 
 EN: dict[str, str] = {
     "home.checkin.title": "How are you after duty?",
@@ -105,14 +109,34 @@ def t(key: str, lang: str, **kwargs: object) -> str:
         return template
 
 
+def _machine_table(lang: str) -> dict[str, str]:
+    if not MACHINE_PATH.exists():
+        return {}
+    try:
+        payload = json.loads(MACHINE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    body = payload.get(lang) or {}
+    strings = body.get("strings") if isinstance(body, dict) else None
+    if isinstance(strings, dict):
+        cleaned: dict[str, str] = {}
+        for key, value in strings.items():
+            text = str(value).replace("\u2014", ", ").replace("\u2013", ", ")
+            cleaned[str(key)] = text
+        return cleaned
+    return {}
+
+
 def catalog_for(lang: str) -> dict[str, Any]:
     machine = lang not in REVIEWED and lang != "ta"
     table = dict(EN)
+    table.update(_machine_table(lang))
     if lang in CATALOG:
         table.update(CATALOG[lang])
     return {
         "lang": lang,
         "reviewed": reviewed(lang),
         "machine_translated": machine,
+        "review": "pending" if machine else "reviewed",
         "strings": table,
     }

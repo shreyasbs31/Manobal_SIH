@@ -1,0 +1,405 @@
+{
+  "as": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "কৰ্তব্যৰ পিছত আপুনি কেনে আছে?",
+      "home.lay.within": "আপুনি আপোনাৰ সচৰাচৰ ছন্দৰ ভিতৰত আছে।",
+      "home.lay.sleepLow": "{n} টা নিশাৰ বাবে আপোনাৰ টোপনি আপোনাৰ স্বাভাৱিক ছন্দতকৈ কম হৈ আছে।",
+      "safety.title": "আপুনি অকলশৰীয়া নহয়।",
+      "safety.reaching": "কাৰোবাক আপোনাৰ সৈতে যোগাযোগ কৰিবলৈ কোৱা হৈছে।",
+      "privacy.commander": "আপোনাৰ কমাণ্ডাৰে আপোনাক কেতিয়াও দেখা নাপায়।",
+      "checkin.saved": "সংৰক্ষণ কৰা হৈছে। চেক ইন কৰাৰ বাবে ধন্যবাদ।",
+      "offline.bar": "অফলাইন। এই ফোনত {n} চেক-ইন সংৰক্ষণ কৰা হৈছে।",
+      "onboarding.support": "সমৰ্থন, নিৰীক্ষণ নহয়",
+      "onboarding.commander": "আপোনাৰ সেনাপতিয়ে আপোনাক কেতিয়াও দেখা নাপায়",
+      "onboarding.control": "আপুনি আপোনাৰ ডাটা নিয়ন্ত্ৰণ কৰে",
+      "exception.body": "যদি আপুনি তাৎক্ষণিক বিপদত পৰে, এজন কল্যাণ বিষয়া আৰু এজন চিকিৎসা বিষয়াক আপোনাৰ সৈতে যোগাযোগ কৰিবলৈ কোৱা হয়। সেয়া হৈছে এক ব্যতিক্ৰম। আপোনাৰ কমাণ্ডাৰে এতিয়াও আপোনাৰ চেক-ইন দেখা নাই বা সাথীৰ সৈতে কথা পতা নাই।",
+      "home.greeting.arjun": "সুপ্ৰভাত, অৰ্জুন",
+      "home.greeting.meena": "নমস্কাৰ, মীনা",
+      "home.greeting.karthik": "ভানাক্কম, কাৰ্তিক"
+    }
+  },
+  "bn": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ডিউটির পর কেমন আছেন?",
+      "home.lay.within": "আপনি আপনার স্বাভাবিক ছন্দের মধ্যে আছেন।",
+      "home.lay.sleepLow": "আপনার ঘুম {n} রাতের জন্য আপনার স্বাভাবিক ছন্দের নীচে রয়েছে।",
+      "safety.title": "আপনি একা নন।",
+      "safety.reaching": "কাউকে আপনার কাছে পৌঁছাতে বলা হচ্ছে।",
+      "privacy.commander": "আপনার কমান্ডার আপনাকে কখনও দেখেন না।",
+      "checkin.saved": "সংরক্ষণ করা হয়েছে। চেক ইন করার জন্য আপনাকে ধন্যবাদ।",
+      "offline.bar": "অফলাইন। এই ফোনে {n} চেক-ইন সংরক্ষণ করা হয়েছে।",
+      "onboarding.support": "সমর্থন, নজরদারি নয়",
+      "onboarding.commander": "আপনার কমান্ডার আপনাকে কখনও দেখেন না",
+      "onboarding.control": "আপনি আপনার ডেটা নিয়ন্ত্রণ করেন",
+      "exception.body": "আপনি যদি তাত্ক্ষণিক বিপদে পড়েন তবে একজন কল্যাণ কর্মকর্তা এবং একজন মেডিকেল অফিসারকে আপনার কাছে পৌঁছাতে বলা হয়। এটি একটি ব্যতিক্রম। আপনার কমান্ডার এখনও আপনার চেক-ইনগুলি দেখতে পান না বা সাথির সাথে কথা বলেন না।",
+      "home.greeting.arjun": "সুপ্রভাত, অর্জুন",
+      "home.greeting.meena": "নমস্কার, মীনা",
+      "home.greeting.karthik": "ভানাক্কম, কার্তিক"
+    }
+  },
+  "brx": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "नोंथाङा खामानि मावनायनि उनाव माबोरै दं?",
+      "home.lay.within": "नोंथाङा नोंथांनि सरासनस्रा खबामनि सिङाव दं।",
+      "home.lay.sleepLow": "नोंथांनि उन्दुनाया {n} मोनानि थाखाय नोंथांनि सरासनस्रा खबामनिफ्राय गाहायाव दं।",
+      "safety.title": "नोंथाङा हारसिं नङा।",
+      "safety.reaching": "सोरखौबा नोंथांसिम सहैनो थिनदों।",
+      "privacy.commander": "नोंथांनि कामान्डारआ नोंथांखौ माब्लाबाबो नुफेराखैमोन।",
+      "checkin.saved": "दोनथुमबाय। चेक इन खालामनायनि थाखाय गोजोन्बाय।",
+      "offline.bar": "अफलाइन। {n} बे फनाव चेक-इनफोरखौ सेभ खालामनाय जादों।",
+      "onboarding.support": "हेफाजाब होनाय, नोजोर लाखिनाय नङा",
+      "onboarding.commander": "नोंनि कमाण्डारा नोंखौ माब्लाबाबो नुफेराखै",
+      "onboarding.control": "नों नोंनि डाटाखौ कन्ट्रल खालामो",
+      "exception.body": "जुदि नोंथाङा हरखाब खैफोदाव दङब्ला, सासे सुबुं अनसाइ मावख'गिरि आरो सासे देहा फाहामगिरि मावख'गिरिखौ नोंथांसिम सौहैनो थिननाय जायो। बेनो मोनसे अपवाद। नोंथांनि कामान्डारआ दासिमबो नोंथांनि चेक-इन एबा साथिजों रायज्लायनायखौ नुनो मोनाखै।",
+      "home.greeting.arjun": "सुप्रभात, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "वणक्कम, कार्तिक"
+    }
+  },
+  "doi": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "तुस ड्यूटी दे बाद कनेहा रौंह् दे ओ?",
+      "home.lay.within": "तुस अपनी सामान्य लय च ओ।",
+      "home.lay.sleepLow": "तेरी नींदर रातीं दी सधारण ताल थमां घट्ट रेही ऐ।",
+      "safety.title": "तुस कल्ले नेईं ओ।",
+      "safety.reaching": "कुसै गी तुसेंगी पुज्जने लेई आखेआ जा'रदा ऐ।",
+      "privacy.commander": "तुंऱदा सेनापति तुसेंगी कदें नेईं दिक्खदा ।",
+      "checkin.saved": "बचाई लैता गेआ। जांच करने लेई धन्नवाद।",
+      "offline.bar": "ऑफलाइन। {n} इस फोन पर सेव कीते गेदे चेक-इन।",
+      "onboarding.support": "समर्थन, निगरानी नेईं",
+      "onboarding.commander": "तुंऱदा सेनापति तुसेंगी कदें नेईं दिक्खदा",
+      "onboarding.control": "तुस अपने डेटा गी नियंत्रत करदे ओ",
+      "exception.body": "जेकर तुस फौरी खतरे च ओ, तां इक कल्याण अधिकारी ते इक चकित्सा अधिकारी गी तुंʼदे कोल पुज्जने आस्तै आखेआ जंदा ऐ। एह् इक अपवाद ऐ। तुंʼदा कमांडर अजें बी तुंʼदे चेक-इन जां साथी कन्नै गल्ल-बात नेईं करदा ऐ।",
+      "home.greeting.arjun": "सुप्रभात, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "वणक्कम, कार्तिक"
+    }
+  },
+  "gu": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ડ્યુટી પછી તમે કેમ છો?",
+      "home.lay.within": "તમે તમારી સામાન્ય લયમાં છો.",
+      "home.lay.sleepLow": "તમારી ઊંઘ {n} રાતથી તમારી સામાન્ય લયથી ઓછી રહી છે.",
+      "safety.title": "તમે એકલા નથી.",
+      "safety.reaching": "કોઈને તમારા સુધી પહોંચવાનું કહેવામાં આવી રહ્યું છે.",
+      "privacy.commander": "તમારો કમાન્ડર તમને ક્યારેય જોતો નથી.",
+      "checkin.saved": "સાચવ્યું. ચેક ઇન કરવા બદલ આભાર.",
+      "offline.bar": "ઑફલાઇન. આ ફોન પર {n} ચેક-ઇન સાચવવામાં આવ્યા છે.",
+      "onboarding.support": "સમર્થન, સર્વેલન્સ નહીં",
+      "onboarding.commander": "તમારા કમાન્ડર તમને ક્યારેય જોતા નથી",
+      "onboarding.control": "તમે તમારા ડેટાને નિયંત્રિત કરો છો",
+      "exception.body": "જો તમે તાત્કાલિક જોખમમાં છો, તો કલ્યાણ અધિકારી અને તબીબી અધિકારીને તમારો સંપર્ક કરવાનું કહેવામાં આવે છે. તે એક અપવાદ છે. તમારા કમાન્ડર હજી પણ તમારા ચેક-ઇન જોતા નથી અથવા સાથી સાથે વાતચીત કરતા નથી.",
+      "home.greeting.arjun": "સુપ્રભાત, અર્જુન",
+      "home.greeting.meena": "નમસ્તે, મીના",
+      "home.greeting.karthik": "વણક્કમ, કાર્તિક"
+    }
+  },
+  "kn": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ಕರ್ತವ್ಯದ ನಂತರ ನೀವು ಹೇಗಿದ್ದೀರಿ?",
+      "home.lay.within": "ನೀವು ನಿಮ್ಮ ಸಾಮಾನ್ಯ ಲಯದೊಳಗೆ ಇದ್ದೀರಿ.",
+      "home.lay.sleepLow": "{n} ರಾತ್ರಿಗಳಿಂದ ನಿಮ್ಮ ನಿದ್ರೆ ನಿಮ್ಮ ಸಾಮಾನ್ಯ ಲಯಕ್ಕಿಂತ ಕಡಿಮೆ ಇದೆ.",
+      "safety.title": "ನೀವು ಒಬ್ಬಂಟಿಯಾಗಿಲ್ಲ.",
+      "safety.reaching": "ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಲು ಯಾರನ್ನಾದರೂ ಕೇಳಲಾಗುತ್ತಿದೆ.",
+      "privacy.commander": "ನಿಮ್ಮ ಕಮಾಂಡರ್ ನಿಮ್ಮನ್ನು ಎಂದಿಗೂ ನೋಡುವುದಿಲ್ಲ.",
+      "checkin.saved": "ಉಳಿಸಲಾಗಿದೆ. ಚೆಕ್ ಇನ್ ಮಾಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು.",
+      "offline.bar": "ಆಫ್ ಲೈನ್. ಈ ಫೋನ್ ನಲ್ಲಿ {n} ಚೆಕ್-ಇನ್ ಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.",
+      "onboarding.support": "ಬೆಂಬಲ, ಕಣ್ಗಾವಲು ಅಲ್ಲ",
+      "onboarding.commander": "ನಿಮ್ಮ ಕಮಾಂಡರ್ ನಿಮ್ಮನ್ನು ಎಂದಿಗೂ ನೋಡುವುದಿಲ್ಲ",
+      "onboarding.control": "ನಿಮ್ಮ ಡೇಟಾವನ್ನು ನೀವು ನಿಯಂತ್ರಿಸುತ್ತೀರಿ",
+      "exception.body": "ನೀವು ತಕ್ಷಣದ ಅಪಾಯದಲ್ಲಿದ್ದರೆ, ಕಲ್ಯಾಣ ಅಧಿಕಾರಿ ಮತ್ತು ವೈದ್ಯಕೀಯ ಅಧಿಕಾರಿಯನ್ನು ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಲು ಕೇಳಲಾಗುತ್ತದೆ. ಅದು ಒಂದು ಅಪವಾದವಾಗಿದೆ. ನಿಮ್ಮ ಕಮಾಂಡರ್ ಇನ್ನೂ ನಿಮ್ಮ ಚೆಕ್-ಇನ್ ಗಳನ್ನು ನೋಡುವುದಿಲ್ಲ ಅಥವಾ ಸಾಥಿಯೊಂದಿಗೆ ಮಾತನಾಡುವುದಿಲ್ಲ.",
+      "home.greeting.arjun": "ಸುಪ್ರಭಾತ್, ಅರ್ಜುನ್",
+      "home.greeting.meena": "ನಮಸ್ತೆ, ಮೀನಾ",
+      "home.greeting.karthik": "ವಣಕ್ಕಂ, ಕಾರ್ತಿಕ್"
+    }
+  },
+  "ks": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ڈیوٹی پتہٕ کیُتھ چھِو تُہۍ ؟",
+      "home.lay.within": "تُہۍ چھِو پننِس معموٗل تالہِ منٛز۔",
+      "home.lay.sleepLow": "تہنز نندر چھیہ {n} رٲژ پیٹھے تُہنزِ معمولچ تالہِ کھوتہ کم۔",
+      "safety.title": "تُہۍ چھِو نہٕ کُنی کُنی۔",
+      "safety.reaching": "کٲنٛسہِ چھُ تۄہہِ تام واتنہٕ خٲطرٕ وننہٕ یِوان۔",
+      "privacy.commander": "تہند کمانڈر چھہ نہ ژیہ زانہہ وچھان۔",
+      "checkin.saved": "محفوظ کرنہٕ آمُت۔ چیک اِن کرنہٕ خٲطرٕ شکریہ۔",
+      "offline.bar": "آف لایِن۔ {n} چیک اِن چھُ یَتھ فونَس پیٹھ محفوظ کَرنہٕ آمُت۔",
+      "onboarding.support": "حمایت، نگرٲنی نہٕ",
+      "onboarding.commander": "تُہند کمانڈر چُھ نہٕ ژےٚ زانٛہہ وُچھان",
+      "onboarding.control": "تُہۍ چھِو پنُن ڈیٹا کنٹرول کران",
+      "exception.body": "اگر توہہِ فوری خطرس منز چھِو، اکھ ویلفیئر آفیسر تہٕ میڈیکل آفیسر چھِو تۅہہِ تام واتنہٕ خٲطرٕ وننہٕ یوان۔ یہِ چھُ اکھ استثنیٰ۔ تُہند کمانڈر چھُنہٕ وُنہِ تہِ تُہند چیک اِن وُچھان یا ساٹھی سٕتہِ کتھ باتھ کران۔",
+      "home.greeting.arjun": "سُپرابھٹ، ارجُن",
+      "home.greeting.meena": "نمستے، مینا",
+      "home.greeting.karthik": "وَنَکَم، کارتِک"
+    }
+  },
+  "kok": {
+    "review": "pending",
+    "error": "HTTP 400",
+    "strings": {
+      "home.checkin.title": "How are you after duty?",
+      "home.lay.within": "You are within your usual rhythm.",
+      "home.lay.sleepLow": "Your sleep has been below your usual rhythm for {n} nights.",
+      "safety.title": "You are not alone.",
+      "safety.reaching": "Someone is being asked to reach you.",
+      "privacy.commander": "Your commander never sees you.",
+      "checkin.saved": "Saved. Thank you for checking in.",
+      "offline.bar": "Offline. {n} check-ins saved on this phone.",
+      "onboarding.support": "Support, not surveillance",
+      "onboarding.commander": "Your commander never sees you",
+      "onboarding.control": "You control your data",
+      "exception.body": "If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.",
+      "home.greeting.arjun": "Suprabhat, Arjun",
+      "home.greeting.meena": "Namaste, Meena",
+      "home.greeting.karthik": "Vanakkam, Karthik"
+    }
+  },
+  "mai": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "अहाँ कर्तव्यक पाछाँ केहन छी?",
+      "home.lay.within": "अहाँ अपन सामान्य लयमे छी।",
+      "home.lay.sleepLow": "अहाँक निन्न {n} रातिक लेल अहाँक सामान्य लयसँ नीचा रहल अछि।",
+      "safety.title": "अहाँ असगर नहि छी।",
+      "safety.reaching": "ककरो अहां तक पहुंचय लेल कहल जा रहल अछि.",
+      "privacy.commander": "अहाँक सेनापति अहाँकेँ कहियो नहि देखैत अछि।",
+      "checkin.saved": "सहेजल गेल। चेक इन करबाक लेल धन्यवाद।",
+      "offline.bar": "ऑफलाइन अछि। {n} चेक-इन एहि फोन मे सहेजल गेल अछि।",
+      "onboarding.support": "समर्थन, निगरानी नहि",
+      "onboarding.commander": "अहांक सेनापति अहां के कहियो नहि देखैत छथि",
+      "onboarding.control": "अहाँ अपन आँकड़ा नियंत्रित करैत छी",
+      "exception.body": "यदि अहाँ तत्काल खतरामे छी तँ एकटा कल्याण अधिकारी आ एकटा चिकित्सा अधिकारी अहाँधरि पहुँचबाक लेल कहल जाइत अछि। ओ एकटा अपवाद अछि। अहाँक सेनापति एखनो अहाँक चेक-इन वा साथीसँ वार्ता नहि देखैत छथि।",
+      "home.greeting.arjun": "सुप्रभात, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "वनक्कम, कार्तिक"
+    }
+  },
+  "ml": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ഡ്യൂട്ടി കഴിഞ്ഞ് എങ്ങനെയുണ്ട്?",
+      "home.lay.within": "നിങ്ങൾ നിങ്ങളുടെ പതിവ് താളത്തിനകത്താണ്.",
+      "home.lay.sleepLow": "{n} രാത്രികളിൽ നിങ്ങളുടെ ഉറക്കം നിങ്ങളുടെ പതിവ് താളത്തിന് താഴെയാണ്.",
+      "safety.title": "നീ ഒറ്റക്കല്ല.",
+      "safety.reaching": "നിങ്ങളെ ബന്ധപ്പെടാൻ ആരോടെങ്കിലും ആവശ്യപ്പെടുന്നു.",
+      "privacy.commander": "നിങ്ങളുടെ കമാൻഡർ ഒരിക്കലും നിങ്ങളെ കാണുന്നില്ല.",
+      "checkin.saved": "സംരക്ഷിച്ചു. ചെക്ക് ഇൻ ചെയ്തതിന് നന്ദി.",
+      "offline.bar": "ഓഫ് ലൈൻ. {n} ചെക്ക്-ഇന്നുകൾ ഈ ഫോണിൽ സംരക്ഷിച്ചു.",
+      "onboarding.support": "നിരീക്ഷണമല്ല, പിന്തുണ",
+      "onboarding.commander": "നിങ്ങളുടെ കമാൻഡർ ഒരിക്കലും നിങ്ങളെ കാണുന്നില്ല",
+      "onboarding.control": "നിങ്ങൾ നിങ്ങളുടെ ഡാറ്റ നിയന്ത്രിക്കുന്നു",
+      "exception.body": "നിങ്ങൾ അടിയന്തിര അപകടത്തിലാണെങ്കിൽ, ഒരു വെൽഫെയർ ഓഫീസറോടും മെഡിക്കൽ ഓഫീസറോടും നിങ്ങളെ ബന്ധപ്പെടാൻ ആവശ്യപ്പെടുന്നു. അതാണ് ഒരു അപവാദം. നിങ്ങളുടെ കമാൻഡർ ഇപ്പോഴും നിങ്ങളുടെ ചെക്ക്-ഇന്നുകൾ കാണുകയോ സാത്തിയുമായി സംസാരിക്കുകയോ ചെയ്യുന്നില്ല.",
+      "home.greeting.arjun": "സുപ്രഭാത്, അർജുൻ",
+      "home.greeting.meena": "നമസ്തേ, മീന",
+      "home.greeting.karthik": "വണക്കം, കാർത്തിക്"
+    }
+  },
+  "mni": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ꯗ꯭ꯌꯨꯇꯤ ꯃꯇꯨꯡꯗ ꯅꯍꯥꯛ ꯀꯔꯝꯅ ꯂꯩꯔꯤꯕꯅꯣ?",
+      "home.lay.within": "ꯅꯍꯥꯛ ꯅꯈꯣꯏꯒꯤ ꯃꯍꯧꯁꯥꯒꯤ ꯇꯥꯟꯊꯥꯒꯤ ꯃꯅꯨꯡꯗ ꯂꯩꯔꯦ꯫",
+      "home.lay.sleepLow": "ꯅꯍꯥꯛꯀꯤ ꯇꯨꯝꯕ ꯑꯗꯨ ꯑꯍꯤꯡ {n} ꯒꯤ ꯑꯣꯏꯅ ꯅꯍꯥꯛꯀꯤ ꯃꯍꯧꯁꯥꯒꯤ ꯇꯥꯟꯊꯥꯒꯤ ꯃꯈꯥꯗ ꯂꯩꯔꯦ꯫",
+      "safety.title": "ꯅꯍꯥꯛ ꯃꯁꯥ ꯃꯊꯟꯇ ꯅꯠꯇꯦ꯫",
+      "safety.reaching": "ꯀꯅꯥꯒꯨꯝꯕ ꯑꯃꯅ ꯅꯉꯣꯟꯗ ꯄꯥꯎ ꯐꯥꯎꯅꯕ ꯍꯥꯏꯔꯤ꯫",
+      "privacy.commander": "ꯅꯍꯥꯛꯀꯤ ꯀꯃꯥꯟꯗꯔꯅ ꯅꯪꯕꯨ ꯀꯩꯗꯧꯅꯨꯡꯗ ꯎꯗꯦ꯫",
+      "checkin.saved": "ꯊꯝꯖꯤꯟꯈꯤꯕꯅꯤ ꯫ ꯆꯦꯛ ꯏꯟ ꯇꯧꯈꯤꯕꯒꯤꯗꯃꯛ ꯊꯥꯒꯠꯂꯤ ꯫",
+      "offline.bar": "ꯑꯣꯐꯂꯥꯏꯟ꯫ {n} ꯆꯦꯛ-ꯏꯟꯁꯤꯡ ꯑꯁꯤ ꯐꯣꯟ ꯑꯁꯤꯗ ꯁꯦꯕ ꯇꯧꯔꯦ꯫",
+      "onboarding.support": "ꯁꯧꯒꯠꯄ, ꯌꯦꯡꯁꯤꯟꯕ ꯅꯠꯇꯦ",
+      "onboarding.commander": "ꯅꯈꯣꯏꯒꯤ ꯀꯃꯥꯟꯗꯔꯅ ꯅꯪꯕꯨ ꯀꯩꯗꯧꯅꯨꯡꯗ ꯎꯗꯦ",
+      "onboarding.control": "ꯅꯍꯥꯛꯅ ꯅꯍꯥꯛꯀꯤ ꯗꯦꯇꯥ ꯂꯥꯛꯁꯜꯂꯤ",
+      "exception.body": "ꯀꯔꯤꯒꯨꯝꯕ ꯅꯍꯥꯛꯅ ꯈꯨꯗꯛꯇ ꯈꯨꯗꯣꯡꯊꯤꯕ ꯂꯩꯔꯕꯗꯤ, ꯋꯦꯜꯐꯦꯌꯔ ꯑꯣꯐꯤꯁꯔ ꯑꯃ ꯑꯃꯁꯨꯡ ꯃꯦꯗꯤꯀꯦꯜ ꯑꯣꯐꯤꯁꯔ ꯑꯃꯗ ꯅꯉꯣꯟꯗ ꯄꯥꯎ ꯐꯥꯎꯅꯕ ꯍꯥꯏꯔꯛꯏ꯫ ꯃꯗꯨ ꯃꯌꯥꯝꯒ ꯃꯥꯟꯅꯗꯕ ꯑꯃꯅꯤ꯫ ꯅꯍꯥꯛꯀꯤ ꯀꯃꯥꯟꯗꯔꯅ ꯍꯧꯖꯤꯛꯁꯨ ꯅꯍꯥꯛꯀꯤ ꯆꯦꯛ-ꯏꯟꯁꯤꯡ ꯎꯗ꯭ꯔꯤ ꯅꯠꯇ꯭ꯔꯒ ꯁꯥꯊꯤꯒ ꯋꯥꯔꯤ ꯁꯥꯅꯗ꯭ꯔꯤ꯫",
+      "home.greeting.arjun": "ꯁꯨꯄ꯭ꯔꯚꯥꯠ, ꯑꯔꯖꯨꯟ",
+      "home.greeting.meena": "ꯅꯃꯁꯇꯦ, ꯃꯤꯅꯥ",
+      "home.greeting.karthik": "ꯋꯥꯅꯛꯀꯝ, ꯀꯥꯔꯊꯤꯛ"
+    }
+  },
+  "mr": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "तुम्ही ड्युटीच्या मागे कसे आहात?",
+      "home.lay.within": "तुम्ही तुमच्या नेहमीच्या लयीत आहात.",
+      "home.lay.sleepLow": "आपली झोप {n} रात्रींसाठी आपल्या नेहमीच्या लयपेक्षा कमी आहे.",
+      "safety.title": "तुम्ही एकटे नाही.",
+      "safety.reaching": "कोणीतरी आपल्यापर्यंत पोहोचण्यास सांगितले जात आहे.",
+      "privacy.commander": "तुझा सेनापती तुला कधीच पाहत नाही.",
+      "checkin.saved": "जतन केले. चेक इन केल्याबद्दल धन्यवाद.",
+      "offline.bar": "ऑफलाइन. {n} या फोनवर चेक-इन सेव्ह केले.",
+      "onboarding.support": "समर्थन, पाळत नाही",
+      "onboarding.commander": "तुझा सेनापती तुला कधीच पाहत नाही.",
+      "onboarding.control": "आपण आपला डेटा नियंत्रित करता",
+      "exception.body": "आपण त्वरित धोक्यात असल्यास, एक कल्याण अधिकारी आणि वैद्यकीय अधिकारी आपल्यापर्यंत पोहोचण्यास सांगितले जाते. हा एक अपवाद आहे. आपल्या कमांडरला अद्याप आपले चेक-इन किंवा साथीशी बोलणे दिसत नाही.",
+      "home.greeting.arjun": "सुप्रभात, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "वणक्कम, कार्तिक"
+    }
+  },
+  "ne": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ड्युटीको पछि कसरी लाग्नुभएको छ ?",
+      "home.lay.within": "तपाईं आफ्नो सामान्य लयमा हुनुहुन्छ।",
+      "home.lay.sleepLow": "तपाईंको निद्रा {n} रातहरूको लागि तपाईंको सामान्य लय भन्दा कम भएको छ।",
+      "safety.title": "तपाईं एक्लो हुनुहुन्न।",
+      "safety.reaching": "कसैलाई तपाइँसम्म पुग्न भनिएको छ।",
+      "privacy.commander": "तिम्रो सेनापतिले तिमीलाई कहिल्यै देख्दैन।",
+      "checkin.saved": "बचत गरियो। जाँच गर्नुभएकोमा धन्यवाद।",
+      "offline.bar": "अफलाइन छ । {n} चेक-इनहरू यो फोनमा बचत गरिएको छ ।",
+      "onboarding.support": "समर्थन गर्नुहोस्, निगरानी होइन",
+      "onboarding.commander": "तिम्रो सेनापतिले तिमीलाई कहिल्यै देख्दैन",
+      "onboarding.control": "तपाईं आफ्नो डाटा नियन्त्रण गर्नुहुन्छ",
+      "exception.body": "यदि तपाईं तत्काल खतरामा हुनुहुन्छ भने, एक कल्याण अधिकारी र एक मेडिकल अफिसरलाई तपाईंसम्म पुग्न भनिएको छ। यो एक अपवाद हो। तपाईंको कमान्डरले अझै पनि तपाईंको चेक-इन वा साथीसँग कुराकानी देख्दैन।",
+      "home.greeting.arjun": "सुप्रभात, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "वानक्कम, कार्तिक"
+    }
+  },
+  "or": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ଡ୍ୟୁଟି ପରେ ଆପଣ କିପରି ଅଛନ୍ତି?",
+      "home.lay.within": "ଆପଣ ଆପଣଙ୍କ ସାଧାରଣ ରିଦିମ୍ ମଧ୍ୟରେ ଅଛନ୍ତି।",
+      "home.lay.sleepLow": "ଆପଣଙ୍କ ଶୟନ {n} ରାତ୍ରି ପାଇଁ ଆପଣଙ୍କ ସାଧାରଣ ରିଦିମ୍ ଠାରୁ କମ ହୋଇଛି।",
+      "safety.title": "ଆପଣ ଏକୁଟିଆ ନୁହଁନ୍ତି ।",
+      "safety.reaching": "କାହାକୁ ଆପଣଙ୍କ ପାଖରେ ପହଞ୍ଚିବାକୁ କୁହାଯାଉଛି।",
+      "privacy.commander": "ତୁମର କମାଣ୍ଡର ତୁମକୁ କେବେବି ଦେଖନ୍ତି ନାହିଁ ।",
+      "checkin.saved": "ସଞ୍ଚୟ ହୋଇଛି। ଚେକ୍ ଇନ୍ ପାଇଁ ଧନ୍ୟବାଦ।",
+      "offline.bar": "ଅଫଲାଇନ୍ । ଏହି ଫୋନରେ {n} ଚେକ୍-ଇନ୍ ସଞ୍ଚୟ ହୋଇଛି ।",
+      "onboarding.support": "ସମର୍ଥନ, ନିରୀକ୍ଷଣ ନୁହେଁ",
+      "onboarding.commander": "ତୁମର କମାଣ୍ଡର ତୁମକୁ କେବେବି ଦେଖନ୍ତି ନାହିଁ",
+      "onboarding.control": "ଆପଣ ଆପଣଙ୍କ ଡାଟା ନିୟନ୍ତ୍ରଣ କରନ୍ତି",
+      "exception.body": "ଯଦି ଆପଣ ତୁରନ୍ତ ବିପଦରେ ଅଛନ୍ତି, ତେବେ ଜଣେ କଲ୍ୟାଣ ଅଧିକାରୀ ଏବଂ ଜଣେ ଡାକ୍ତରୀ ଅଧିକାରୀଙ୍କୁ ଆପଣଙ୍କ ପାଖରେ ପହଞ୍ଚିବାକୁ କୁହାଯାଏ । ତାହା ହେଉଛି ଗୋଟିଏ ବ୍ୟତିକ୍ରମ । ଆପଣଙ୍କ କମାଣ୍ଡର ତଥାପି ଆପଣଙ୍କର ଚେକ୍-ଇନ୍ ଦେଖନ୍ତି ନାହିଁ କିମ୍ବା ସାଥୀଙ୍କ ସହ କଥାବାର୍ତ୍ତା କରନ୍ତି ନାହିଁ ।",
+      "home.greeting.arjun": "ସୁପ୍ରଭାତ, ଅର୍ଜୁନ",
+      "home.greeting.meena": "ନମସ୍ତେ, ମୀନା",
+      "home.greeting.karthik": "କାର୍ତ୍ତିକ, ୱଣକ୍କମ"
+    }
+  },
+  "pa": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ਡਿਊਟੀ ਤੋਂ ਬਾਅਦ ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",
+      "home.lay.within": "ਤੁਸੀਂ ਆਪਣੀ ਸਾਧਾਰਨ ਲੈਅ ਦੇ ਅੰਦਰ ਹੋ।",
+      "home.lay.sleepLow": "ਤੁਹਾਡੀ ਨੀਂਦ {n} ਰਾਤਾਂ ਤੋਂ ਤੁਹਾਡੀ ਸਾਧਾਰਨ ਲੈਅ ਤੋਂ ਘੱਟ ਰਹੀ ਹੈ।",
+      "safety.title": "ਤੁਸੀਂ ਇਕੱਲੇ ਨਹੀਂ ਹੋ।",
+      "safety.reaching": "ਕਿਸੇ ਨੂੰ ਤੁਹਾਡੇ ਨਾਲ ਸੰਪਰਕ ਕਰਨ ਲਈ ਕਿਹਾ ਜਾ ਰਿਹਾ ਹੈ।",
+      "privacy.commander": "ਤੁਹਾਡਾ ਕਮਾਂਡਰ ਤੁਹਾਨੂੰ ਕਦੇ ਨਹੀਂ ਵੇਖਦਾ.",
+      "checkin.saved": "ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ. ਚੈੱਕ ਇਨ ਕਰਨ ਲਈ ਤੁਹਾਡਾ ਧੰਨਵਾਦ.",
+      "offline.bar": "offlineਫਲਾਈਨ. {n} ਚੈੱਕ-ਇਨ ਇਸ ਫੋਨ 'ਤੇ ਸੁਰੱਖਿਅਤ ਕੀਤੇ ਗਏ ਹਨ.",
+      "onboarding.support": "ਸਹਾਇਤਾ, ਨਿਗਰਾਨੀ ਨਹੀਂ",
+      "onboarding.commander": "ਤੁਹਾਡਾ ਕਮਾਂਡਰ ਤੁਹਾਨੂੰ ਕਦੇ ਨਹੀਂ ਵੇਖਦਾ",
+      "onboarding.control": "ਤੁਸੀਂ ਆਪਣੇ ਡੇਟਾ ਨੂੰ ਨਿਯੰਤਰਿਤ ਕਰਦੇ ਹੋ",
+      "exception.body": "ਜੇ ਤੁਸੀਂ ਤੁਰੰਤ ਖ਼ਤਰੇ ਵਿੱਚ ਹੋ, ਤਾਂ ਇੱਕ ਭਲਾਈ ਅਧਿਕਾਰੀ ਅਤੇ ਇੱਕ ਮੈਡੀਕਲ ਅਧਿਕਾਰੀ ਨੂੰ ਤੁਹਾਡੇ ਤੱਕ ਪਹੁੰਚਣ ਲਈ ਕਿਹਾ ਜਾਂਦਾ ਹੈ. ਇਹ ਇੱਕ ਅਪਵਾਦ ਹੈ. ਤੁਹਾਡਾ ਕਮਾਂਡਰ ਅਜੇ ਵੀ ਤੁਹਾਡੇ ਚੈੱਕ-ਇਨ ਨੂੰ ਨਹੀਂ ਵੇਖਦਾ ਜਾਂ ਸਾਥੀ ਨਾਲ ਗੱਲਬਾਤ ਨਹੀਂ ਕਰਦਾ.",
+      "home.greeting.arjun": "ਸੁਪ੍ਰਭਾਤ, ਅਰਜੁਨ",
+      "home.greeting.meena": "ਨਮਸਤੇ, ਮੀਨਾ",
+      "home.greeting.karthik": "ਵਣਕਮ, ਕਾਰਤਿਕ"
+    }
+  },
+  "sa": {
+    "review": "pending",
+    "error": "HTTP 400",
+    "strings": {
+      "home.checkin.title": "How are you after duty?",
+      "home.lay.within": "You are within your usual rhythm.",
+      "home.lay.sleepLow": "Your sleep has been below your usual rhythm for {n} nights.",
+      "safety.title": "You are not alone.",
+      "safety.reaching": "Someone is being asked to reach you.",
+      "privacy.commander": "Your commander never sees you.",
+      "checkin.saved": "Saved. Thank you for checking in.",
+      "offline.bar": "Offline. {n} check-ins saved on this phone.",
+      "onboarding.support": "Support, not surveillance",
+      "onboarding.commander": "Your commander never sees you",
+      "onboarding.control": "You control your data",
+      "exception.body": "If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.",
+      "home.greeting.arjun": "Suprabhat, Arjun",
+      "home.greeting.meena": "Namaste, Meena",
+      "home.greeting.karthik": "Vanakkam, Karthik"
+    }
+  },
+  "sat": {
+    "review": "pending",
+    "error": "HTTP 400",
+    "strings": {
+      "home.checkin.title": "How are you after duty?",
+      "home.lay.within": "You are within your usual rhythm.",
+      "home.lay.sleepLow": "Your sleep has been below your usual rhythm for {n} nights.",
+      "safety.title": "You are not alone.",
+      "safety.reaching": "Someone is being asked to reach you.",
+      "privacy.commander": "Your commander never sees you.",
+      "checkin.saved": "Saved. Thank you for checking in.",
+      "offline.bar": "Offline. {n} check-ins saved on this phone.",
+      "onboarding.support": "Support, not surveillance",
+      "onboarding.commander": "Your commander never sees you",
+      "onboarding.control": "You control your data",
+      "exception.body": "If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.",
+      "home.greeting.arjun": "Suprabhat, Arjun",
+      "home.greeting.meena": "Namaste, Meena",
+      "home.greeting.karthik": "Vanakkam, Karthik"
+    }
+  },
+  "sd": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "توهان ڊيوٽي کان پوءِ ڪيئن آهيو؟",
+      "home.lay.within": "توهان پنهنجي عام تال جي اندر آهيو.",
+      "home.lay.sleepLow": "توهان جي ننڊ توهان جي عام تال کان هيٺ رهي آهي {n} راتين لاءِ.",
+      "safety.title": "تون اڪيلو نه آهين.",
+      "safety.reaching": "ڪنهن کي توهان تائين پهچڻ لاءِ چيو پيو وڃي.",
+      "privacy.commander": "توهان جو ڪمانڊر توهان کي ڪڏهن به نه ڏسندو آهي.",
+      "checkin.saved": "بچايو ويو. چيڪ ڪرڻ لاءِ مهرباني.",
+      "offline.bar": "آف لائن. {n} چيڪ ان هن فون تي محفوظ ڪيا ويا آهن.",
+      "onboarding.support": "حمايت ، نگراني نه",
+      "onboarding.commander": "توهان جو ڪمانڊر توهان کي ڪڏهن به نه ڏسندو آهي",
+      "onboarding.control": "توهان پنهنجي ڊيٽا کي ڪنٽرول ڪيو",
+      "exception.body": "جيڪڏهن توهان فوري خطري ۾ آهيو ، هڪ ويلفيئر آفيسر ۽ هڪ ميڊيڪل آفيسر کي توهان تائين پهچڻ لاءِ چيو وڃي ٿو. اهو هڪ استثنا آهي. توهان جو ڪمانڊر اڃا تائين توهان جي چيڪ ان کي نه ڏسي ٿو يا ساٿي سان ڳالهائي ٿو.",
+      "home.greeting.arjun": "سپرڀات ، ارجن",
+      "home.greeting.meena": "نمستي، مينا",
+      "home.greeting.karthik": "وانڪم، ڪارٿڪ"
+    }
+  },
+  "te": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "డ్యూటీ తరువాత మీరు ఎలా ఉన్నారు?",
+      "home.lay.within": "మీరు మీ సాధారణ లయలో ఉన్నారు.",
+      "home.lay.sleepLow": "{n} రాత్రులు మీ నిద్ర మీ సాధారణ లయ కంటే తక్కువగా ఉంది.",
+      "safety.title": "మీరు ఒంటరిగా లేరు.",
+      "safety.reaching": "మిమ్మల్ని సంప్రదించమని ఎవరో ఒకరిని అడుగుతున్నారు.",
+      "privacy.commander": "మీ కమాండర్ మిమ్మల్ని ఎప్పుడూ చూడడు.",
+      "checkin.saved": "సేవ్ చేయబడింది. తనిఖీ చేసినందుకు ధన్యవాదాలు.",
+      "offline.bar": "ఆఫ్ లైన్. ఈ ఫోన్ లో {n} చెక్-ఇన్ లు సేవ్ చేయబడ్డాయి.",
+      "onboarding.support": "మద్దతు, నిఘా కాదు",
+      "onboarding.commander": "మీ కమాండర్ నిన్ను ఎప్పుడూ చూడడు",
+      "onboarding.control": "మీరు మీ డేటాను నియంత్రిస్తారు",
+      "exception.body": "మీరు తక్షణ ప్రమాదంలో ఉంటే, ఒక సంక్షేమ అధికారి మరియు వైద్య అధికారిని మిమ్మల్ని చేరుకోమని అడుగుతారు. అది ఒక మినహాయింపు. మీ కమాండర్ ఇప్పటికీ మీ చెక్-ఇన్ లను చూడలేదు లేదా సాథీతో మాట్లాడలేదు.",
+      "home.greeting.arjun": "సుప్రభాత్, అర్జున్",
+      "home.greeting.meena": "నమస్తే, మీనా",
+      "home.greeting.karthik": "వణక్కం, కార్తీక్"
+    }
+  },
+  "ur": {
+    "review": "pending",
+    "strings": {
+      "home.checkin.title": "ڈیوٹی کے بعد آپ کیسے ہیں؟",
+      "home.lay.within": "آپ اپنی معمول کی رفتار میں ہیں۔",
+      "home.lay.sleepLow": "آپ کی نیند {n} راتوں سے آپ کی معمول کی رفتار سے کم رہی ہے۔",
+      "safety.title": "آپ اکیلے نہیں ہیں۔",
+      "safety.reaching": "کسی سے کہا جا رہا ہے کہ وہ آپ سے رابطہ کرے۔",
+      "privacy.commander": "تمہارا کمانڈر تمہیں کبھی نہیں دیکھتا۔",
+      "checkin.saved": "محفوظ کر لیا گیا۔ رابطہ کرنے کا شکریہ۔",
+      "offline.bar": "آف لائن۔ {n} چیک ان اس فون پر محفوظ ہیں۔",
+      "onboarding.support": "سپورٹ، نگرانی نہیں",
+      "onboarding.commander": "تمہارا کمانڈر تمہیں کبھی نہیں دیکھتا",
+      "onboarding.control": "آپ اپنے ڈیٹا کو کنٹرول کرتے ہیں",
+      "exception.body": "اگر آپ فوری خطرے میں ہیں تو ایک ویلفیئر آفیسر اور ایک میڈیکل آفیسر سے کہا جاتا ہے کہ وہ آپ سے رابطہ کریں۔ یہ ایک استثناء ہے۔ آپ کا کمانڈر ابھی تک آپ کی چیک ان نہیں دیکھ پاتا یا ساتھی سے بات نہیں کرتا۔",
+      "home.greeting.arjun": "سپربھٹ، ارجن",
+      "home.greeting.meena": "نمستے، مینا",
+      "home.greeting.karthik": "وانکم، کارتک"
+    }
+  }
+}

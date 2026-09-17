@@ -13,6 +13,7 @@ export default function TalkPage() {
     client.meTalk(signal),
   );
   const [status, setStatus] = useState("");
+  const [callStatus, setCallStatus] = useState("Ready");
 
   async function send(body: Record<string, unknown>) {
     const result = await engineClient().saveTalk(body);
@@ -67,15 +68,34 @@ export default function TalkPage() {
           {data.demo_join ? (
             <p>{data.demo_label}</p>
           ) : (
-            <CallPanel peer={data.anonymous_handle} status="Ready" />
+            <CallPanel
+              joinLabel="Join call"
+              onJoin={() => {
+                void engineClient()
+                  .callsToken()
+                  .then((result) => {
+                    setCallStatus(
+                      result.configured
+                        ? "Call token issued. Join from two browsers on different networks."
+                        : "Azure Communication Services is unset.",
+                    );
+                  });
+              }}
+              peer={data.anonymous_handle}
+              status={callStatus}
+            />
           )}
-          <button
-            className="mb-primary"
-            onClick={() => void send({ kind: "counsellor", anonymous: true, mode: "call_now", video: true })}
-            type="button"
-          >
-            Demo join
-          </button>
+          {data.demo_join ? (
+            <button
+              className="mb-primary"
+              onClick={() =>
+                void send({ kind: "counsellor", anonymous: true, mode: "call_now", video: true })
+              }
+              type="button"
+            >
+              Demo join
+            </button>
+          ) : null}
           <p>{status}</p>
           <h2 className="mb-section-label">Requests</h2>
           {data.requests.length === 0 ? (

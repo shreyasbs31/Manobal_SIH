@@ -677,8 +677,9 @@ def rest_plan(token: str | None) -> dict[str, Any]:
 
 
 def talk_state(token: str | None) -> dict[str, Any]:
-    settings = get_settings()
-    acs = bool(settings.acs_connection_string.get_secret_value())
+    from .calls import acs_configured
+
+    acs = acs_configured()
     return {
         "requests": TALK_REQUESTS.get(token or "", []),
         "bookings": BOOKINGS.get(token or "", []),
@@ -686,6 +687,8 @@ def talk_state(token: str | None) -> dict[str, Any]:
         "demo_join": not acs,
         "demo_label": (
             "Demo join. Calls use Azure Communication Services when a connection string is set."
+            if not acs
+            else "Join call"
         ),
         "anonymous_handle": "River-17",
     }

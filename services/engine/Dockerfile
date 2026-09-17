@@ -26,6 +26,8 @@ COPY infra/ai /workspace/infra/ai
 COPY infra/prompts /workspace/infra/prompts
 COPY infra/lexicon /workspace/infra/lexicon
 COPY infra/corpus /workspace/infra/corpus
+COPY infra/evals /workspace/infra/evals
+COPY infra/i18n /workspace/infra/i18n
 COPY services/engine services/engine
 
 RUN useradd --create-home --uid 10001 manobal

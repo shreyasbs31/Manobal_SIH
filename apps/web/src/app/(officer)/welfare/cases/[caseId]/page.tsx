@@ -133,6 +133,9 @@ export default function CaseWorkspacePage() {
               </label>
               <BriefPanel>
                 <p lang={briefLang}>{nodes}</p>
+                <p className="mb-hosting-caption">
+                  Prototype: open-weight model hosted on Azure. Deployable on force servers.
+                </p>
                 <p>Openers</p>
                 <ol>
                   {(data.openers ?? []).map((line) => (

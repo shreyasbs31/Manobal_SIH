@@ -8,9 +8,10 @@ from typing import Literal
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_ENV_FILES = ["infra/.env", ".env"]
+_ENV_FILES: list[str] = []
 if os.environ.get("MANOBAL_SKIP_SECRETS") != "1":
     _ENV_FILES.append("infra/secrets.env")
+_ENV_FILES.extend([".env", "infra/.env"])
 
 
 class Settings(BaseSettings):

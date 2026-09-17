@@ -66,6 +66,27 @@ async def test_alt_blocked_on_personnel_tasks() -> None:
         await router.complete("companion_text", {"text": "hi"})
 
 
+async def test_payload_model_class_is_tried_first() -> None:
+    order: list[str] = []
+
+    async def open_h(capability: str, payload: dict, timeout_s: float) -> ProviderResponse:
+        del capability, payload, timeout_s
+        order.append("open")
+        return ProviderResponse(text="open", provider="open", latency_ms=1)
+
+    async def main_h(capability: str, payload: dict, timeout_s: float) -> ProviderResponse:
+        del capability, payload, timeout_s
+        order.append("main")
+        return ProviderResponse(text="main", provider="main", latency_ms=1)
+
+    router = _router({"open": open_h, "main": main_h})
+    result = await router.complete(
+        "companion_text", {"text": "x", "model_class": "main"}
+    )
+    assert result.provider == "main"
+    assert order[0] == "main"
+
+
 async def test_resilience_cache_keyed_by_beat_and_language() -> None:
     n = {"calls": 0}
 

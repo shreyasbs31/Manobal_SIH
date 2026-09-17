@@ -295,12 +295,12 @@ def test_enrolment_absent_from_command_payload() -> None:
     assert "enrolment" not in blob
 
 
-def test_audio_manifest_and_sw_cache() -> None:
+def test_audio_manifest_and_sw_cache(tmp_path) -> None:
     from app.audio import generate_audio, sw_cache_list
 
-    result = generate_audio()
+    result = generate_audio(out_dir=tmp_path)
     assert result["files"]
-    assert result["provider"] in {"silent-wav", "azure-speech"}
+    assert result["provider"] in {"silent-wav", "azure-speech", "live-tts"}
     cache = sw_cache_list()
     assert cache[0].startswith("/audio/")
     assert "safety.hi.wav" in result["files"]

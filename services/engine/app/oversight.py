@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import copy
+import json
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import yaml
+
 from .audit import chain_hash, verify_chain_entries
-from .config import get_settings
+from .config import get_settings, live_providers_enabled
 from .errors import ApiError
 from .observability import (
     cost_guard_active,
@@ -856,6 +859,9 @@ def lab_payload(world: str = "primary") -> dict[str, Any]:
 
 def architecture_payload() -> dict[str, Any]:
     from . import personnel
+    from .calls import acs_configured
+    from .providers.endpoints import foundry_is_live
+    from .scoring.ruleset import REPO_ROOT
 
     settings = get_settings()
     queue = list(personnel.EDGE_QUEUE)
@@ -868,17 +874,53 @@ def architecture_payload() -> dict[str, Any]:
             {"id": "pkt-score", "kind": "score.window", "held": not personnel.EDGE_LINK_UP},
             {"id": "pkt-key", "kind": "vault.envelope", "held": False},
         ]
+    deployments_path = REPO_ROOT / "infra" / "ai" / "deployments.yaml"
+    layout = yaml.safe_load(deployments_path.read_text(encoding="utf-8")) if deployments_path.exists() else {}
+    class_map = {
+        "main": settings.ai_deployment_main,
+        "fast": settings.ai_deployment_fast,
+        "open": settings.ai_deployment_open,
+        "embeddings": settings.ai_deployment_embed,
+        "embed_ml": settings.ai_deployment_embed_ml,
+        "rerank": settings.ai_deployment_rerank,
+        "judge": settings.ai_deployment_judge,
+        "image": settings.ai_deployment_image,
+        "stt_fallback": settings.ai_deployment_stt_fallback,
+        "alt": settings.ai_deployment_alt or "alt",
+    }
+    classes = []
+    for name, meta in (layout.get("classes") or {}).items():
+        classes.append(
+            {
+                "class_name": name,
+                "deployment": class_map.get(name, name),
+                "model": meta.get("model"),
+                "type": meta.get("type") or layout.get("deployment_type_default"),
+                "notes": meta.get("notes") or "",
+            }
+        )
     return {
         "edge_up": personnel.EDGE_LINK_UP,
         "queued": len(personnel.EDGE_QUEUE),
         "packets": packets,
         "mode": settings.manobal_mode,
-        "foundry": bool(settings.foundry_endpoint),
-        "acs": bool(settings.acs_connection_string.get_secret_value()),
-        "speech": bool(settings.speech_key.get_secret_value()),
-        "translator": bool(settings.translator_key.get_secret_value()),
-        "content_safety": bool(settings.content_safety_key.get_secret_value()),
+        "foundry": foundry_is_live(settings),
+        "acs": acs_configured(settings),
+        "speech": bool(settings.speech_key.get_secret_value()) and live_providers_enabled(),
+        "translator": bool(settings.translator_key.get_secret_value()) and live_providers_enabled(),
+        "content_safety": bool(settings.content_safety_endpoint) and live_providers_enabled(),
         "cost_guard": cost_guard_active(),
+        "regions": {
+            "app": layout.get("app_region", "centralindia"),
+            "ai": layout.get("ai_region", "eastus2"),
+            "speech": layout.get("speech_region", "centralindia"),
+            "translator": layout.get("translator_region", "centralindia"),
+            "content_safety": layout.get("content_safety_region", "eastus2"),
+        },
+        "foundry_resource": layout.get("foundry_resource", "manobal-ai-resource"),
+        "foundry_project": layout.get("foundry_project", "manobal-ai"),
+        "classes": classes,
+        "hosting_caption": "Prototype: open-weight model hosted on Azure. Deployable on force servers.",
     }
 
 
@@ -948,8 +990,26 @@ def set_outage(provider: str, opened: bool) -> dict[str, Any]:
 
 
 def set_resilience(enabled: bool) -> dict[str, Any]:
+    from .providers.router import RESILIENCE_CACHE, ProviderResponse
+    from .scoring.ruleset import REPO_ROOT
+
     router = get_router()
     router.resilience_mode = enabled
+    if enabled:
+        path = REPO_ROOT / "infra" / "evals" / "fixtures" / "resilience.json"
+        if path.exists():
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            for lang, row in payload.items():
+                if not isinstance(row, dict):
+                    continue
+                response = ProviderResponse(
+                    text=str(row.get("text") or ""),
+                    provider=str(row.get("provider") or "open"),
+                    latency_ms=0.0,
+                )
+                beat = str(row.get("beat_id") or f"s05-{lang}")
+                RESILIENCE_CACHE[(beat, lang)] = response
+                RESILIENCE_CACHE[(f"s05-{lang}", lang)] = response
     return {"resilience": enabled}
 
 

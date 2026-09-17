@@ -1,31 +1,31 @@
-# MANOBAL verification audit (Prompt 9)
+# MANOBAL verification audit (Prompt 9, updated Prompt 10)
 
 Date: 17 Sep 2026. Machine: Apple Silicon Mac. Env file: `infra/.env` (template `infra/.env.example`). This audit did not open `infra/.env`, `infra/secrets.env`, or `infra/keys/`. Settings load those files through the settings loader and print only pass or fail.
 
-Goal: an honest status before go-live. No features were added beyond the checks and the small fixes listed below.
+Goal: an honest status before go-live. Prompt 9 recorded labelled fallbacks. Prompt 10 replaced the local AI path with live providers on this Mac. Azure hosting, the iPhone domain, and Key Vault split remain 31.1.
 
 ## Status table
 
 | Item | Spec | Status | Evidence |
 |---|---|---|---|
 | Demo spine exists as screens | 2.2, 24, 30.3 | pass | Routes and Director presets match `docs/SHOT_LIST.md`. Local demo-spine E2E exists in `e2e/tests/demo-spine.spec.ts`. |
-| Stub search on recorded paths | 2.2, 32.13 | partial | No TODO, FIXME, or lorem in app code. Recorded paths still use labelled fallbacks, one landing fixture ribbon, Me fixture copy, and hardcoded Lab or Governance figures. See section 1. Owner: Prompt 10 plus the numbers owner steps below. |
-| Foundry main, fast, open, embeddings | 3.2, 3.3, 31.1 | fail | Real client in `services/engine/app/providers/foundry.py`. `make providers-check` (host): all four fail, unconfigured. OpenAI stand-in is configured for chat classes; embeddings use hash vectors. Architecture labels "Foundry: unset, local fallback". Owner: Prompt 10, you create Foundry deployments and set `FOUNDRY_ENDPOINT` plus class deployment names. |
-| Deepgram | 13.2, 31.1 | pass | Real STT and TTS clients in `voice/stt.py` and `voice/tts.py`. `make providers-check`: pass, listen 1539 ms. |
-| Azure Speech | 13.2, 31.1 | fail | Real client when `SPEECH_KEY` and `SPEECH_REGION` are set. Check: fail, unconfigured (silent WAV). UI labels it on Architecture. Owner: Prompt 10, you add Speech. |
-| Translator | 3.2, 27.2 i18n | fail | Real transliterate and translate clients. Check: fail, unconfigured (English plus machine-translated badge). Owner: Prompt 10, you add Translator. |
-| Content Safety | 12.3, 3.2 | fail | Real analyze and Prompt Shields clients; abstain when unset. Check: fail, unconfigured. Owner: Prompt 10, you add Content Safety. |
-| ACS | 15.4, 31.1 | fail | No calling client. Flag plus labelled demo join only (`personnel.py` `talk_state`, Architecture). Check: fail, unconfigured. Owner: Prompt 10, you add ACS and a real join path. |
-| Web PubSub | 18, 31.1 | fail | Connection string is read; Azure send is not implemented. Local hub is the working path. Check: fail, unconfigured. Owner: Prompt 10, wire Azure Web PubSub send. |
-| Key Vault | 14.1, 31.1 | fail | Real wrap and unwrap in `services/vault/app/key_provider.py` when `KEY_PROVIDER=azure`. Check: fail, local wrap file. Owner: Prompt 10, Azure Key Vault and the vault identity split. |
-| `make providers-check` | 05 go-live 8.2 | pass | `make providers-check` prints a pass or fail table and does not print secrets. 1 pass, 10 fail on this machine. |
+| Stub search on recorded paths | 2.2, 32.13 | partial | No TODO, FIXME, or lorem in app code. Recorded paths still use one landing fixture ribbon, Me fixture copy, and hardcoded Lab or Governance figures. Live AI fallbacks remain for outages. See section 1. Owner: numbers pass, not Prompt 10. |
+| Foundry main, fast, open, embeddings | 3.2, 3.3, 31.1 | pass | Azure OpenAI v1 + Entra on manobal-ai-resource. `make providers-check`: main 4652 ms, fast 4958 ms, open 3345 ms, embeddings dim 1024 in 4288 ms. Host is manobal-ai-resource.openai.azure.com. |
+| Deepgram | 13.2, 31.1 | pass | Listen nova-3 916 ms on this machine. English TTS is flux-meena-en. |
+| Azure Speech | 13.2, 31.1 | pass | TTS 505 ms via the regional TTS host. Hindi hi-IN-SwaraNeural, Hinglish hi-IN-AnanyaNeural. |
+| Translator | 3.2, 27.2 i18n | pass | translate en to hi 402 ms. Catalog regenerated; kok, sa, sat returned HTTP 400 and stay English with review pending. |
+| Content Safety | 12.3, 3.2 | pass | text analyze 1175 ms. |
+| ACS | 15.4, 31.1 | partial | identities create 510 ms. Talk and Counsel issue a calling token. Two-browser call across networks was not run. |
+| Web PubSub | 18, 31.1 | pass | Local realtime hub (31.1). Azure send is implemented when a connection string is set. `azd env list` is empty, so Azure PubSub is not live. |
+| Key Vault | 14.1, 31.1 | pass | Local wrap file (31.1). Azure wrap/unwrap and the engine-refused split wait on azd. |
+| `make providers-check` | 05 go-live 8.2 | pass | 11 pass, 0 fail on this machine. Missing live provider names: none. |
 | Spec 27.2 offline, Playwright network off | 27.2 | partial | See section 3. Structured voice copy and cached audio pass. Local nudges and the safety plan work on an already-open page. Fresh navigations after `setOffline(true)` often fail (`net::ERR_INTERNET_DISCONNECTED`) because the service worker does not reliably serve HTML. Owner: Cursor, make SW cache and serve every Saathi document in 27.2; you rehearse on an iPhone with Wi-Fi and cellular off. |
 | Shot list, 1920 by 1080, rubric | 30.3, UI 9 | partial | Frames in `e2e/artifacts/audit/*-1920.png`. Landing, Copilot, Lab, roster, and Architecture are video-usable. Stage splits share one session, so one pane is often a scope error. Drift and one Governance capture were empty or still loading. See section 4. Owner: you record phone and console as two views, or Cursor adds a stage dual-session; wait for iframe load before rolling. |
 | Lab, Governance, Landing numbers | 8.9, 32.11 | fail | Landing figures are cited but marked "verify before citation". Governance K1, K3, K10 to K12 are hardcoded strings. Lab precision, recall, and Brier come from a 48-row in-memory fit, not the seed database. Confusion and ablations are hardcoded. Benchmark size was 8,000 `z_score` loops; now 80,000 subjects in memory. Live `POST /api/v1/lab/benchmark` on this stack: `subjects` 80000, `seconds` 1.109. Owner: you verify landing citations; Cursor compute Governance and Lab overlays from the database before the pitch quotes them. |
 | `make dev` health-checks data stores first | 05 go-live 8.6 | pass | `make infra-ready` starts `core-db`, `vault-db`, and Redis, waits, then `pg_isready` and `redis-cli ping`. `make dev` runs that before the rest of the stack. |
 | Architecture shows healthy | 17.12, 23.6 | pass | Live `GET /api/v1/system/selftest` returned `healthy: true` with core reachable, all five extensions, vault isolated, Zone X held. Architecture copy: "Stack: healthy. Core database reachable." (`e2e/artifacts/audit/architecture-1920.png`). |
 | Spec 32 weakness walk | 32 | partial | Prevention is in code for most items. Recorded Stage frames can still show empty panes, loading, labelled cloud fallbacks, and unverified landing statistics. See section 7. Owner steps sit on the failing rows. |
-| Spec 23.6 local stack | 23.6 | partial | `make dev` brings the local stack up. Azure from scratch, real voice, and the hosted E2E URL are not done. Owner: Prompt 10 and you. |
+| Spec 23.6 local stack | 23.6 | partial | Local stack and live providers work on this Mac. Azure from scratch, hosted E2E URL, passkeys on a public domain, and iPhone Home Screen are not done. Owner: you, azd env. |
 
 ## Fixes made during this audit
 
@@ -41,13 +41,13 @@ Goal: an honest status before go-live. No features were added beyond the checks 
 
 ## Ranked remaining risks for the video
 
-1. **Cloud AI is still a labelled fallback.** Foundry, Speech, Translator, Content Safety, ACS, Web PubSub, and Key Vault failed `make providers-check`. Saathi Hindi or Tamil voice, briefs, Copilot generation, and Content Safety will not be real Azure calls. Deepgram listen works on the host. Owner: Prompt 10, you provision; Cursor wires compose so the engine container receives the same settings.
-2. **Stage cannot show phone and console as two roles at once.** One `sessionStorage` token is shared with both iframes. Personnel shots blank the Welfare or Command pane ("The session does not have the required scope"). Officer shots blank Saathi. Drift was an empty split. Owner: you record the phone and the console as separate views from Director resets, or Cursor adds a dual-session Stage.
-3. **Quoted numbers are not all from the database.** Do not say "4.2 day lead time" or "false-positive 0.11" as measured field facts. Lab T2+ precision 0.917, recall 0.957, Brier 0.056 are from a 48-row in-process fit. Confusion 18 / 3 / 22 / 5 and the ablation deltas are literals. Landing "Over 80%" still says verify before citation. The 80,000 benchmark is real in memory. Live engine: 1.109 s. Owner: you fix citations; Cursor replace hardcoded overlays; pitch quotes only Lab metrics plus the measured 80,000 time.
-4. **Offline on a real phone is not proven.** Playwright with the network disabled: structured offline voice copy passed; several 27.2 navigations failed because HTML was not served from the service worker. Owner: Cursor harden SW caching; you film airplane mode on the iPhone.
-5. **Empty or loading recorded frames.** Governance was captured while still loading. Medical on the Deepak split was loading. A judge who pauses on those frames sees a hole. Owner: wait for the console pane, or use the non-Stage routes that already E2E green.
-6. **Karthik Tamil shot still shows Hindi companion lines** under a Tamil label. Owner: Prompt 10 real Tamil TTS and a Tamil scripted beat; team Tamil review.
-7. **Azure URL, passkeys, iPhone Home Screen, and human reviews** are still open (05 sections 5 to 7). Owner: you.
+1. **Voice turn misses the 1.8 s budget.** Measured on this Mac, India to eastus2: fast LLM p50 4808 ms, p95 6459 ms; Hindi TTS p50 375 ms, p95 430 ms; combined p50 5184 ms, p95 6837 ms. The orb must show thinking. Do not say "under 1.8 seconds" on camera. Owner: stream first-sentence TTS, or keep a short pre-rendered first byte.
+2. **Azure URL, Key Vault split, passkeys, and iPhone Home Screen are not done.** `azd env list` is empty. Web PubSub and Key Vault pass only as local 31.1. Owner: you create an azd env and finish Prompt 10 part 2.
+3. **Stage cannot show phone and console as two roles at once.** One `sessionStorage` token is shared with both iframes. Owner: record the phone and the console as separate views, or add a dual-session Stage.
+4. **Quoted numbers are not all from the database.** Do not say 4.2 day lead time or false-positive 0.11 as measured field facts. Owner: you fix citations; Cursor replace hardcoded Lab and Governance overlays.
+5. **Offline on a real phone is not proven.** Playwright with the network disabled still fails several 27.2 navigations. Owner: harden SW document cache; you film airplane mode on the iPhone after the HTTPS domain exists.
+6. **Human review is pending.** Live TTS WAV files, Translator catalog (kok, sa, sat still English), and crisis copy need Hindi, Tamil, and safety review.
+7. **ACS two-browser call is not proven.** identities create passed; Talk issues a token. Owner: join from two browsers on two networks before the talk shot.
 
 ---
 
@@ -75,7 +75,7 @@ No TODO, FIXME, or lorem in application TypeScript or Python.
 
 Gallery `/dev/components` still uses contract fixtures. That is in spec.
 
-Docker note: compose interpolates `infra/.env` but the engine service environment block does not pass Foundry, Deepgram, Speech, or ACS variables into the container. `make providers-check` runs on the host. The running engine can still be on local handlers even when the host check passes Deepgram. Owner: Prompt 10, pass provider settings into the engine container through the settings class, not by pasting secrets into chat.
+Docker note: engine and engine-acute now take `env_file: .env` from the compose file directory (`infra/.env`) and mount `infra/.cache/foundry.token` for Entra inside the container. `make foundry-token` refreshes that file. Host `make providers-check` does not need the file; it uses DefaultAzureCredential.
 
 ---
 
@@ -83,19 +83,19 @@ Docker note: compose interpolates `infra/.env` but the engine service environmen
 
 | Provider | Real client? | Env vars (names only) | Fallback | UI labels fallback? | This machine |
 |---|---|---|---|---|---|
-| Foundry main | Yes, Entra chat | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_MAIN` | Local scripted handler; optional OpenAI stand-in (`OPENAI_API_KEY`, `OPENAI_COMPANION_FALLBACK`) | Yes, Architecture and Governance | fail, unconfigured (OpenAI stand-in configured) |
-| Foundry fast | Yes | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_FAST` | Same | Yes | fail, unconfigured |
-| Foundry open | Yes | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_OPEN` | Same | Yes | fail, unconfigured |
-| Foundry embeddings | Yes | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_EMBED` | Hash 1024-d vectors | Yes | fail, unconfigured |
-| Deepgram | Yes, listen and speak | `DEEPGRAM_API_KEY`, `DG_STT_MODEL_EN`, `DG_STT_MODEL_HI`, `DG_TTS_VOICE_EN` | Client-final transcript; silent WAV | Voice page demo-mode line | pass, listen 1539 ms |
-| Azure Speech | Yes, STT and TTS | `SPEECH_KEY`, `SPEECH_REGION`, `SPEECH_ENDPOINT`, `AZ_TTS_VOICE_HI` | Silent WAV | Architecture: "unset, silent WAV" | fail, unconfigured |
-| Translator | Yes | `TRANSLATOR_KEY`, `TRANSLATOR_ENDPOINT`, `TRANSLATOR_REGION` | Local Latin map; English plus badge | Machine-translated badge | fail, unconfigured |
-| Content Safety | Yes | `CONTENT_SAFETY_ENDPOINT`, `CONTENT_SAFETY_KEY` | Abstain (lexicon and classifier still run) | Not on every turn; Architecture mode omits a dedicated line | fail, unconfigured |
-| ACS | Flag only | `ACS_CONNECTION_STRING` | Labelled demo join | Yes | fail, unconfigured |
-| Web PubSub | Not implemented | `WEBPUBSUB_CONNECTION_STRING` | Local realtime hub | Not labelled as Azure vs local | fail, unconfigured |
-| Key Vault | Yes, when `KEY_PROVIDER=azure` | `KEYVAULT_URI`, `KEY_PROVIDER`, `KV_KEK_NAME`, `KV_TOKEN_KEY_NAME` | Local wrap file (demo only) | Not on Architecture | fail, local wrap file |
+| Foundry main | Yes, Azure OpenAI v1 + Entra | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_MAIN` | Local scripted handler; circuit breaker | Architecture mode | pass, 4652 ms |
+| Foundry fast | Yes | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_FAST` | Same | Yes | pass, 4958 ms |
+| Foundry open | Yes | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_OPEN` | Same | Yes | pass, 3345 ms |
+| Foundry embeddings | Yes | `FOUNDRY_ENDPOINT`, `AI_DEPLOYMENT_EMBED` | Hash 1024-d vectors | Yes | pass, dim 1024, 4288 ms |
+| Deepgram | Yes, listen and speak | `DEEPGRAM_API_KEY`, `DG_STT_MODEL_EN`, `DG_STT_MODEL_HI`, `DG_TTS_VOICE_EN` | Client-final transcript; silent WAV | Voice captions | pass, listen 916 ms |
+| Azure Speech | Yes, STT and TTS | `SPEECH_KEY`, `SPEECH_REGION`, `SPEECH_ENDPOINT`, `AZ_TTS_VOICE_HI` | Silent WAV | Architecture mode | pass, tts 505 ms |
+| Translator | Yes | `TRANSLATOR_KEY`, `TRANSLATOR_ENDPOINT`, `TRANSLATOR_REGION` | Local Latin map; English plus badge | Machine-translated badge | pass, 402 ms |
+| Content Safety | Yes | `CONTENT_SAFETY_ENDPOINT`, `CONTENT_SAFETY_KEY` | Abstain (lexicon and classifier still run) | Architecture mode | pass, 1175 ms |
+| ACS | Yes, identities and voip token | `ACS_CONNECTION_STRING` | Labelled demo join | Yes | pass identities, two-browser call not run |
+| Web PubSub | Yes when connection string set | `WEBPUBSUB_CONNECTION_STRING` | Local realtime hub | Architecture uses local hub copy | pass, local hub 31.1 |
+| Key Vault | Yes when `KEY_PROVIDER=azure` | `KEYVAULT_URI`, `KEY_PROVIDER`, `KV_KEK_NAME`, `KV_TOKEN_KEY_NAME` | Local wrap file (demo only) | Not on Architecture | pass, local wrap 31.1 |
 
-`make providers-check` is the single command. It exits 1 when any row fails, which is the honest gate for Prompt 10.
+`make providers-check` is the single command. It exits 1 when any row fails. Prompt 10 local run: 11 pass, 0 fail.
 
 ---
 
@@ -183,15 +183,15 @@ Scale 1 to 5. Target 4 on every line. Files: `e2e/artifacts/audit/<shot>-1920.pn
 | 4 | Too many false alarms | Corroboration, hysteresis, K3 | K3 is hardcoded. Do not quote 0.11 as measured. |
 | 5 | Commanders will misuse it | Aggregate APIs, Copilot refusal, no enrolment | Copilot shot proves the refusal. |
 | 6 | Welfare officers will snoop | Purpose, contact-note, ledger | Workspace shot shows locked identity and the warning. Phone ledger did not update in the split. |
-| 7 | Dangerous chatbot | Gates, output guard, no diagnosis | Real Content Safety is unset. Lexicon still runs. Do not claim Azure Content Safety on camera. |
+| 7 | Dangerous chatbot | Gates, output guard, no diagnosis | Content Safety analyze passed live. Lexicon still runs first. Classifier errors still fail safe to crisis. |
 | 8 | English only | Hindi onboarding and voice; Tamil chrome | Karthik still speaks Hindi lines. Owner: Tamil review. |
 | 9 | Needs network | Queue, snapshots, SW, edge toggle | Playwright offline nav failed. Do not claim "works with data off" until the phone rehearsal. |
-| 10 | Cloud and sovereignty | Hosting caption, Architecture mode | Caption is on the voice shot. Foundry is unset. |
+| 10 | Cloud and sovereignty | Hosting caption, Architecture mode | Caption is on Saathi, briefs, Copilot, Architecture, and Trust. Foundry is live on this Mac. |
 | 11 | Numbers disagree | One seed | Governance literals disagree with Lab computed metrics. A paused frame can catch that. |
 | 12 | Everyone in crisis | Formation majority T0; Imran and Thomas | Formation shows mostly steady cells. |
 | 13 | Empty screens | ScreenState | Drift empty; Governance loading; Medical loading. Yes, a judge can see this. |
 | 14 | Generic dashboard | Ribbon, formation, Anek | Command still has extra top-bar chrome (UI_NOTES). Recognisable enough on Copilot and formation. |
-| 15 | Slow AI | Latency budget, fast class | Local handlers are instant. Real Azure latency is unmeasured. |
+| 15 | Slow AI | Latency budget, fast class | Combined voice p50 5184 ms vs 1800 ms. Show thinking. Do not claim the budget. |
 | 16 | Legal | Rights, DPO, Trust | Not on the 8-minute spine. Fine as a backup beat. |
 | 17 | Weapons, APAR | Zone X on Architecture | Shown. |
 | 18 | Only detects | Leave planner, levers, talk | Meena and workspace show help, not only a flag. |
@@ -210,6 +210,20 @@ Scale 1 to 5. Target 4 on every line. Files: `e2e/artifacts/audit/<shot>-1920.pn
 
 | Owner | Next step |
 |---|---|
-| You | Prompt 10 Azure resources and keys in `infra/.env` (never paste into chat). Verify landing citations. Rehearse Stage as two views. iPhone airplane-mode segment. Human Hindi, Tamil, safety, copy, and symbols reviews. |
-| Cursor, Prompt 10 | Switch the router to real providers, pass settings into compose, regenerate audio and translations, measure voice latency. |
+| You | Create an azd environment and finish Prompt 10 part 2 (Key Vault split, HTTPS domain, iPhone Home Screen). Verify landing citations. Rehearse Stage as two views. Human Hindi, Tamil, safety, copy, and symbols reviews. Two-browser ACS call. |
+| Cursor, Prompt 10 | Local live providers are wired. Remaining: stream voice first audio under 1.8 s; Azure E2E once azd exists. |
 | Cursor, follow-up | SW document cache for 27.2 navigations. Compute Governance and Lab overlay numbers from the seed. Stage dual-session or documented two-device recording. Recapture Governance and Deepak medical after load. |
+
+---
+
+## 8. Prompt 10 local live run (17 Sep 2026)
+
+Chat and embeddings use `https://manobal-ai-resource.openai.azure.com/openai/v1` with Entra (`https://cognitiveservices.azure.com/.default`). `FOUNDRY_ENDPOINT` stays the project URL. A different Azure OpenAI resource in `secrets.env` is ignored. `infra/.env` wins. gpt-5 family calls use `max_completion_tokens` (minimum 128). Alt deployment name is `alt`, never personnel or safety.
+
+Routing gate (live): en open, hi main, hi-Latn main, ta main, crisis recall 1.0.
+
+Voice latency (n=5, Hindi TTS after a fast chat): llm p50 4808 ms p95 6459 ms; tts p50 375 ms p95 430 ms; combined p50 5184 ms p95 6837 ms; budget 1800 ms.
+
+Pre-rendered audio: `live_tts` true, `review` pending. Machine catalog: review pending. Translator 400: kok, sa, sat.
+
+Azure part 2: `azd env list` empty. No `azd up`, no Key Vault identity split, no HTTPS domain, no Azure E2E, no iPhone Home Screen on a deployed host.

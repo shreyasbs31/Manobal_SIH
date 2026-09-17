@@ -10,7 +10,35 @@ Eight minutes. One operator. Reset from Director before every take. All data is 
 4. Click Warm-up. If Foundry is unset, the status still returns; captions stay honest.
 5. Hide the Director drawer on `/stage` (press D only if you need it). Top bar stays 44 px.
 
-Fallbacks (spec 31.1): Speech unset uses silent reviewed WAV plus captions. ACS unset uses a labelled demo join. Foundry unset uses local scripts. Azure URL unset means this local stack is the recording environment.
+Fallbacks (spec 31.1): if a live provider is down, circuit breakers open after three failures and the signed local scripts plus resilience cache take over. ACS identities can still fail; the labelled demo join remains. Azure URL unset means this local stack is the recording environment. Web PubSub and Key Vault are local until azd creates those resources.
+
+## Azure warm-up
+
+1. `az login` so Entra can reach Foundry. On this Mac the engine container reads a short-lived token from `infra/.cache/foundry.token` (`make foundry-token`, also run by `make dev`). Refresh it if chat starts failing after about an hour.
+2. `make providers-check` must print 11 pass before a take. Names only, no secrets.
+3. Director Warm-up. Wait until main, fast, and open report ok, or until fallback is labelled.
+4. Play one Hindi TTS clip and one English Deepgram turn so the first on-camera turn is not a cold start.
+
+## Azure quota check
+
+1. In Foundry (eastus2, resource manobal-ai-resource, project manobal-ai) confirm TPM on main (gpt-5.6-sol, priority), fast (gpt-5-mini), open (gpt-5.6-terra), and embed (text-embedding-3-large).
+2. If a class starts returning 429, turn Director resilience on. Scripted beats then use `infra/evals/fixtures/resilience.json`.
+3. Alt (grok-4.6) is officer-side text only. Never warm it on Saathi, crisis, or safety.
+
+## Azure reset
+
+Director Reset snapshot is still the 20-second path. Do not `make reset` during a recording day unless the database is dirty. After azd exists, run seed and snapshot on Azure once, then use the same Director reset. Restore time is unmeasured on Azure (31.1, no azd env in this environment).
+
+## Azure fallback switches
+
+| Switch | When | What the audience should hear |
+|---|---|---|
+| Resilience mode on | Quota, timeout, or a forced-down provider | Cached companion lines for scripted beats. Caption still says Azure-hosted prototype. |
+| Circuit open | Three live failures in 60 s | Local signed scripts. Architecture mode still shows the provider as configured if the env is set. |
+| ACS down | Calling 401 or timeout | Labelled demo join. Booking still works. |
+| Speech or Deepgram down | Empty audio | Silent reviewed WAV plus captions. |
+| Web PubSub unset | Local demo | Local realtime hub (31.1). T4 alerts still move on the local hub. |
+| Key Vault unset | Local demo | Local wrap file (31.1). Vault identity split waits on azd. |
 
 ## Timing and clicks
 

@@ -8,9 +8,14 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_ENV_FILES = ["infra/.env", ".env"]
+_ENV_FILES: list[str] = []
 if os.environ.get("MANOBAL_SKIP_SECRETS") != "1":
     _ENV_FILES.append("infra/secrets.env")
+_ENV_FILES.extend([".env", "infra/.env"])
+
+
+def live_providers_enabled() -> bool:
+    return os.environ.get("MANOBAL_FORCE_LOCAL_PROVIDERS") != "1"
 
 
 class Settings(BaseSettings):
@@ -71,9 +76,15 @@ class Settings(BaseSettings):
     ai_deployment_fast: str = "fast"
     ai_deployment_open: str = "open"
     ai_deployment_embed: str = "embed"
+    ai_deployment_embed_ml: str = ""
+    ai_deployment_rerank: str = ""
+    ai_deployment_judge: str = ""
+    ai_deployment_image: str = ""
+    ai_deployment_stt_fallback: str = ""
     ai_deployment_alt: str = ""
     xai_api_key: SecretStr = SecretStr("")
     sovereign_llm_base_url: str = ""
+    foundry_ad_token_file: Path | None = None
     content_safety_endpoint: str = ""
     content_safety_key: SecretStr = SecretStr("")
     translator_endpoint: str = ""
@@ -87,7 +98,13 @@ class Settings(BaseSettings):
     dg_stt_model_hi: str = "nova-3"
     dg_tts_voice_en: str = "flux-meena-en"
     az_tts_voice_hi: str = "hi-IN-SwaraNeural"
-    az_tts_voice_hinglish: str = "hi-IN-AaravNeural"
+    az_tts_voice_hinglish: str = "hi-IN-AnanyaNeural"
+    az_tts_voice_map: dict[str, str] = Field(
+        default_factory=lambda: {
+            "en-IN": "en-IN-NeerjaNeural",
+            "ta": "ta-IN-PallaviNeural",
+        }
+    )
     resilience_mode: bool = False
 
     openai_api_key: SecretStr = SecretStr("")
@@ -99,7 +116,29 @@ class Settings(BaseSettings):
     azure_openai_deployment: str = ""
     azure_openai_api_version: str = "2024-10-21"
     acs_connection_string: SecretStr = SecretStr("")
+    acs_endpoint: str = ""
     unit_sms_number: str = "+910000000000"
+    manobal_require_live_providers: bool = False
+
+    def missing_live_provider_names(self) -> list[str]:
+        names: list[str] = []
+        checks: list[tuple[str, str]] = [
+            ("FOUNDRY_ENDPOINT", self.foundry_endpoint),
+            ("AI_DEPLOYMENT_MAIN", self.ai_deployment_main),
+            ("AI_DEPLOYMENT_FAST", self.ai_deployment_fast),
+            ("AI_DEPLOYMENT_OPEN", self.ai_deployment_open),
+            ("AI_DEPLOYMENT_EMBED", self.ai_deployment_embed),
+            ("DEEPGRAM_API_KEY", self.deepgram_api_key.get_secret_value()),
+            ("SPEECH_REGION", self.speech_region),
+            ("SPEECH_KEY", self.speech_key.get_secret_value()),
+            ("TRANSLATOR_KEY", self.translator_key.get_secret_value()),
+            ("CONTENT_SAFETY_ENDPOINT", self.content_safety_endpoint),
+            ("ACS_CONNECTION_STRING", self.acs_connection_string.get_secret_value()),
+        ]
+        for name, value in checks:
+            if not str(value).strip():
+                names.append(name)
+        return names
 
 
 @lru_cache

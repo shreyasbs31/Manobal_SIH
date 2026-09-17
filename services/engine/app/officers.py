@@ -666,13 +666,16 @@ def counsel_desk(language: str = "hi") -> dict[str, Any]:
     for req in COUNSEL_REQUESTS:
         match = match_counsellor(str(req["language"]))
         requests.append({**req, "routed_to": match["counsellor"]})
+    from .calls import acs_configured
+
+    acs = acs_configured()
     return {
         "calendar": ["09:30 named Hindi", "11:00 anonymous English", "16:00 free"],
         "requests": requests,
         "routing": match_counsellor(language),
         "acs": {
-            "demo_join": True,
-            "label": "Demo join. Azure Communication Services is unset.",
+            "demo_join": not acs,
+            "label": "Join call" if acs else "Demo join. Azure Communication Services is unset.",
         },
         "notes_scope": "counsellor",
     }

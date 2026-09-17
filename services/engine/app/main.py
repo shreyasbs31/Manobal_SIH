@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -25,7 +26,9 @@ from .auth import (
     mint_access_token,
     principal_for_demo,
 )
-from .config import get_settings
+from .config import get_settings, live_providers_enabled
+from .calls import acs_configured
+from .providers.endpoints import foundry_is_live
 from .database import apply_rls_context, close_database, core_ping, get_session
 from .errors import ApiError, install_error_handlers
 from .grants import GrantRequest, GrantToken, mint_grant
@@ -53,6 +56,10 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    if os.environ.get("MANOBAL_REQUIRE_LIVE_PROVIDERS") == "1" or settings.manobal_require_live_providers:
+        missing = settings.missing_live_provider_names()
+        if missing:
+            raise RuntimeError("Missing live provider names: " + ", ".join(missing))
     report = await run_selftest()
     app.state.startup_selftest = report
     await logger.ainfo(
@@ -257,11 +264,11 @@ async def health() -> HealthResponse | JSONResponse:
 async def mode() -> ModeResponse:
     return ModeResponse(
         mode=settings.manobal_mode,
-        foundry=bool(settings.foundry_endpoint),
-        acs=bool(settings.acs_connection_string.get_secret_value()),
-        speech=bool(settings.speech_key.get_secret_value()),
-        translator=bool(settings.translator_key.get_secret_value()),
-        content_safety=bool(settings.content_safety_key.get_secret_value()),
+        foundry=foundry_is_live(settings),
+        acs=acs_configured(settings),
+        speech=bool(settings.speech_key.get_secret_value()) and live_providers_enabled(),
+        translator=bool(settings.translator_key.get_secret_value()) and live_providers_enabled(),
+        content_safety=bool(settings.content_safety_endpoint) and live_providers_enabled(),
         web_pubsub=bool(settings.webpubsub_connection_string),
     )
 

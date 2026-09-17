@@ -62,7 +62,7 @@ tts:
     fallback: hi-IN-MadhurNeural
   hi-Latn:
     provider: azure
-    voice: hi-IN-AaravNeural
+    voice: hi-IN-AnanyaNeural
   ta:
     provider: azure
     voice: ta-IN-PallaviNeural

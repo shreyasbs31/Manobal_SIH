@@ -54,7 +54,9 @@ from .privacy.rights import (
     request_trend_share,
     set_killswitch,
 )
+from .calls import issue_call_token
 from .realtime import groups_for, negotiate_token
+from .providers.endpoints import foundry_is_live
 from .oversight import (
     admin_payload,
     advance_clock,
@@ -994,6 +996,14 @@ async def realtime_negotiate(
     return {"token": negotiate_token(principal), "groups": groups_for(principal)}
 
 
+@router.post("/calls/token")
+async def calls_token(
+    principal: Annotated[Principal, Depends(require("me:write", RowPredicate.OWN))],
+) -> dict[str, object]:
+    del principal
+    return await issue_call_token()
+
+
 @router.get("/admin/audio")
 async def admin_audio(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
@@ -1030,7 +1040,7 @@ async def gov_providers(
             }
             for item in PROVIDER_CALLS[-50:]
         ],
-        "foundry_configured": bool(get_settings().foundry_endpoint),
+        "foundry_configured": foundry_is_live(get_settings()),
     }
 
 

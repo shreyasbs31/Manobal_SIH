@@ -1,13 +1,35 @@
 from __future__ import annotations
 
-import asyncio
+import time
+from pathlib import Path
 from typing import Any
 
-import httpx
+from azure.core.credentials import AccessToken
 from azure.identity import DefaultAzureCredential
+from openai import AsyncOpenAI
 
-from ..config import Settings, get_settings
+from ..config import Settings, get_settings, live_providers_enabled
+from .endpoints import foundry_is_live, foundry_v1_base_url
 from .router import ProviderResponse, ProviderRouter
+
+_COGNITIVE_SCOPE = "https://cognitiveservices.azure.com/.default"
+
+
+class _FileTokenCredential:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
+        del scopes, kwargs
+        token = self.path.read_text(encoding="utf-8").strip()
+        if not token:
+            raise RuntimeError("foundry_token_file_empty")
+        return AccessToken(token, int(time.time()) + 3000)
+
+
+def _is_deployment_missing(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return "deploymentnotfound" in text or "does not exist" in text
 
 
 class FoundryClient:
@@ -15,12 +37,30 @@ class FoundryClient:
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
-        self._credential = DefaultAzureCredential() if self.settings.foundry_endpoint else None
+        self._openai: AsyncOpenAI | None = None
+        self._credential: _FileTokenCredential | DefaultAzureCredential | None = None
 
-    def _token(self) -> str:
-        if self._credential is None:
-            return ""
-        return self._credential.get_token("https://cognitiveservices.azure.com/.default").token
+    def _token_credential(self) -> _FileTokenCredential | DefaultAzureCredential:
+        if self._credential is not None:
+            return self._credential
+        token_file = self.settings.foundry_ad_token_file
+        if token_file and Path(token_file).is_file() and Path(token_file).stat().st_size > 0:
+            self._credential = _FileTokenCredential(Path(token_file))
+            return self._credential
+        self._credential = DefaultAzureCredential(exclude_interactive_browser_credential=True)
+        return self._credential
+
+    def _client(self) -> AsyncOpenAI:
+        if self._openai is not None:
+            return self._openai
+        base = foundry_v1_base_url(self.settings)
+        if not base:
+            raise RuntimeError("foundry_unconfigured")
+        async def _api_key() -> str:
+            return self._token_credential().get_token(_COGNITIVE_SCOPE).token
+
+        self._openai = AsyncOpenAI(base_url=base, api_key=_api_key)
+        return self._openai
 
     def _deployment(self, model_class: str) -> str:
         mapping = {
@@ -33,17 +73,19 @@ class FoundryClient:
         return mapping.get(model_class, model_class)
 
     def available(self, model_class: str) -> bool:
+        if not live_providers_enabled():
+            return False
         if model_class == "alt":
             has_alt = bool(self.settings.ai_deployment_alt)
             has_xai = bool(self.settings.xai_api_key.get_secret_value())
             return has_alt or has_xai
         if model_class == "embeddings":
-            return bool(self.settings.foundry_endpoint and self.settings.ai_deployment_embed)
+            return foundry_is_live(self.settings) and bool(self.settings.ai_deployment_embed)
         if model_class in {"main", "open"} and self._openai_companion_ok():
-            if self.settings.foundry_endpoint and self._deployment(model_class):
+            if foundry_is_live(self.settings) and self._deployment(model_class):
                 return True
             return True
-        return bool(self.settings.foundry_endpoint and self._deployment(model_class))
+        return foundry_is_live(self.settings) and bool(self._deployment(model_class))
 
     def _openai_companion_ok(self) -> bool:
         return bool(
@@ -61,97 +103,90 @@ class FoundryClient:
         timeout_s: float,
         sovereign: bool = False,
     ) -> ProviderResponse:
+        del temperature
         if sovereign and self.settings.sovereign_llm_base_url:
-            url = f"{self.settings.sovereign_llm_base_url.rstrip('/')}/chat/completions"
-            headers = {"content-type": "application/json"}
-            body: dict[str, Any] = {
-                "model": self._deployment(model_class),
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
+            client = AsyncOpenAI(base_url=self.settings.sovereign_llm_base_url.rstrip("/"), api_key="x")
+            completion = await client.chat.completions.create(
+                model=self._deployment(model_class),
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=max(16, max_tokens),
+                timeout=timeout_s,
+            )
         elif (
             model_class in {"main", "open"}
-            and not self.settings.foundry_endpoint
+            and not foundry_is_live(self.settings)
             and self._openai_companion_ok()
         ):
-            url = f"{self.settings.openai_base_url.rstrip('/')}/chat/completions"
-            headers = {
-                "content-type": "application/json",
-                "authorization": f"Bearer {self.settings.openai_api_key.get_secret_value()}",
-            }
-            body = {
-                "model": self.settings.openai_model,
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-        elif model_class == "alt" and self.settings.xai_api_key.get_secret_value():
-            url = "https://api.x.ai/v1/chat/completions"
-            headers = {
-                "content-type": "application/json",
-                "authorization": f"Bearer {self.settings.xai_api_key.get_secret_value()}",
-            }
-            body = {
-                "model": "grok-4",
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-        else:
-            if not self.settings.foundry_endpoint:
-                raise RuntimeError("foundry_unconfigured")
-            deployment = self._deployment(model_class)
-            url = (
-                f"{self.settings.foundry_endpoint.rstrip('/')}"
-                f"/openai/deployments/{deployment}/chat/completions?api-version=2024-10-21"
+            client = AsyncOpenAI(
+                base_url=self.settings.openai_base_url.rstrip("/"),
+                api_key=self.settings.openai_api_key.get_secret_value(),
             )
-            headers = {
-                "content-type": "application/json",
-                "authorization": f"Bearer {self._token()}",
-            }
-            body = {
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-        async with httpx.AsyncClient(timeout=timeout_s) as client:
-            response = await client.post(url, headers=headers, json=body)
-            response.raise_for_status()
-            data = response.json()
-        text = str(data["choices"][0]["message"]["content"])
-        usage = data.get("usage") or {}
+            completion = await client.chat.completions.create(
+                model=self.settings.openai_model,
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=max(16, max_tokens),
+                timeout=timeout_s,
+            )
+        elif model_class == "alt" and self.settings.xai_api_key.get_secret_value():
+            client = AsyncOpenAI(
+                base_url="https://api.x.ai/v1",
+                api_key=self.settings.xai_api_key.get_secret_value(),
+            )
+            completion = await client.chat.completions.create(
+                model="grok-4",
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=max(16, max_tokens),
+                timeout=timeout_s,
+            )
+        else:
+            if not foundry_is_live(self.settings):
+                raise RuntimeError("foundry_unconfigured")
+            client = self._client()
+            deployment = self._deployment(model_class)
+            token_budget = max(128, max_tokens)
+
+            async def _complete(model: str, budget: int) -> Any:
+                return await client.chat.completions.create(
+                    model=model,
+                    messages=messages,  # type: ignore[arg-type]
+                    max_completion_tokens=budget,
+                    timeout=timeout_s,
+                )
+
+            try:
+                completion = await _complete(deployment, token_budget)
+            except Exception as exc:
+                if _is_deployment_missing(exc) and deployment != model_class and model_class:
+                    deployment = model_class
+                    completion = await _complete(deployment, token_budget)
+                else:
+                    raise
+            if not str(completion.choices[0].message.content or "").strip():
+                completion = await _complete(deployment, max(256, token_budget))
+        message = completion.choices[0].message
+        text = str(message.content or "")
+        usage = completion.usage
         return ProviderResponse(
             text=text,
             provider=model_class,
             latency_ms=0.0,
             usage={
-                "prompt_tokens": int(usage.get("prompt_tokens", 0)),
-                "completion_tokens": int(usage.get("completion_tokens", 0)),
+                "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+                "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
             },
         )
 
     async def embed(self, texts: list[str], timeout_s: float) -> list[list[float]]:
-        if not self.settings.foundry_endpoint:
+        if not foundry_is_live(self.settings):
             raise RuntimeError("foundry_unconfigured")
-        url = (
-            f"{self.settings.foundry_endpoint.rstrip('/')}"
-            f"/openai/deployments/{self.settings.ai_deployment_embed}"
-            "/embeddings?api-version=2024-10-21"
+        client = self._client()
+        response = await client.embeddings.create(
+            model=self.settings.ai_deployment_embed,
+            input=texts,
+            dimensions=1024,
+            timeout=timeout_s,
         )
-        headers = {
-            "content-type": "application/json",
-            "authorization": f"Bearer {self._token()}",
-        }
-        async with httpx.AsyncClient(timeout=timeout_s) as client:
-            response = await client.post(
-                url,
-                headers=headers,
-                json={"input": texts, "dimensions": 1024},
-            )
-            response.raise_for_status()
-            data = response.json()
-        return [row["embedding"] for row in data["data"]]
+        return [list(row.embedding) for row in response.data]
 
 
 def local_handler(provider: str) -> Any:
@@ -181,6 +216,8 @@ def local_handler(provider: str) -> Any:
 
 
 def build_default_router() -> ProviderRouter:
+    import asyncio
+
     settings = get_settings()
     client = FoundryClient(settings)
     handlers: dict[str, Any] = {}
@@ -195,9 +232,9 @@ def build_default_router() -> ProviderRouter:
                 return await asyncio.wait_for(
                     client.chat(
                         model_class,
-                        [{"role": "user", "content": "ping"}],
+                        [{"role": "user", "content": "Reply with the single word ping."}],
                         temperature=0,
-                        max_tokens=4,
+                        max_tokens=128,
                         timeout_s=timeout_s,
                     ),
                     timeout=timeout_s,

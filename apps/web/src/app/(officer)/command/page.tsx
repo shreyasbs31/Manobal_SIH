@@ -138,7 +138,12 @@ export default function CommandPage() {
                   Ask
                 </button>
                 {answer ? (
-                  <p lang={refused && /kaun|pareshan|[ऀ-ॿ]/i.test(question) ? "hi" : "en"}>{answer}</p>
+                  <>
+                    <p lang={refused && /kaun|pareshan|[ऀ-ॿ]/i.test(question) ? "hi" : "en"}>{answer}</p>
+                    <p className="mb-hosting-caption">
+                      Prototype: open-weight model hosted on Azure. Deployable on force servers.
+                    </p>
+                  </>
                 ) : null}
                 <div className="mb-copilot-chart" aria-hidden="true">
                   <span style={{ width: chart.includes("30") ? "30%" : "50%" }} />

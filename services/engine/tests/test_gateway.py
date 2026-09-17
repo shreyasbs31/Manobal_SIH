@@ -17,7 +17,7 @@ def test_dashes_become_commas() -> None:
     raw = "Rest first\u2014then sleep\u2013then food."
     assert "\u2014" not in strip_dashes(raw)
     assert "\u2013" not in strip_dashes(raw)
-    assert strip_dashes(raw) == "Rest first,then sleep,then food."
+    assert strip_dashes(raw) == "Rest first, then sleep, then food."
 
 
 def test_brief_verify_rejects_unsupported_sentence() -> None:

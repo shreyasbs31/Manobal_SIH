@@ -7,8 +7,11 @@ from typing import Any
 
 import httpx
 
-from ..config import Settings, get_settings
+from ..config import Settings, get_settings, live_providers_enabled
+from ..providers.endpoints import speech_tts_url
 from .routing import tts_route
+
+TTS_TIMEOUT_S = 8.0
 
 
 def silent_wav_bytes(seconds: float = 0.35, rate: int = 16000) -> bytes:
@@ -38,15 +41,17 @@ async def _provider_audio(
     settings: Settings,
     voice_name: str,
 ) -> bytes | None:
+    if not live_providers_enabled():
+        return None
     try:
         if route.get("provider") == "deepgram":
             key = settings.deepgram_api_key.get_secret_value()
             if not key:
                 return None
-            async with httpx.AsyncClient(timeout=0.8) as client:
+            async with httpx.AsyncClient(timeout=TTS_TIMEOUT_S) as client:
                 response = await client.post(
                     "https://api.deepgram.com/v1/speak",
-                    params={"model": voice_name},
+                    params={"model": voice_name, "encoding": "linear16", "container": "wav"},
                     headers={
                         "Authorization": f"Token {key}",
                         "Content-Type": "application/json",
@@ -57,25 +62,25 @@ async def _provider_audio(
                     return bytes(response.content)
         if route.get("provider") == "azure":
             key = settings.speech_key.get_secret_value()
-            region = settings.speech_region
-            if not key or not region:
+            url = speech_tts_url(settings)
+            if not key or not url:
                 return None
+            locale = "hi-IN" if voice_name.startswith("hi-") else "en-IN"
+            if voice_name.startswith("ta-"):
+                locale = "ta-IN"
             ssml = (
-                "<speak version='1.0' xml:lang='en-IN'>"
+                f"<speak version='1.0' xml:lang='{locale}'>"
                 f"<voice name='{escape(voice_name)}'>{escape(text)}</voice>"
                 "</speak>"
             )
-            endpoint = (
-                settings.speech_endpoint
-                or f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
-            )
-            async with httpx.AsyncClient(timeout=0.8) as client:
+            async with httpx.AsyncClient(timeout=TTS_TIMEOUT_S) as client:
                 response = await client.post(
-                    endpoint,
+                    url,
                     headers={
                         "Ocp-Apim-Subscription-Key": key,
                         "Content-Type": "application/ssml+xml",
                         "X-Microsoft-OutputFormat": "riff-16khz-16bit-mono-pcm",
+                        "User-Agent": "manobal",
                     },
                     content=ssml.encode("utf-8"),
                 )

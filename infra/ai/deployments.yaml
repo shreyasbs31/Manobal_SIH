@@ -1,0 +1,42 @@
+# Class to model and deployment type. Deployment names stay in env (AI_DEPLOYMENT_*).
+app_region: centralindia
+ai_region: eastus2
+speech_region: centralindia
+translator_region: centralindia
+content_safety_region: eastus2
+foundry_resource: manobal-ai-resource
+foundry_project: manobal-ai
+deployment_type_default: GlobalStandard
+classes:
+  main:
+    model: gpt-5.6-sol
+    type: GlobalStandard
+    notes: priority processing
+  fast:
+    model: gpt-5-mini
+    type: GlobalStandard
+  open:
+    model: gpt-5.6-terra
+    type: GlobalStandard
+  embeddings:
+    model: text-embedding-3-large
+    type: GlobalStandard
+  embed_ml:
+    model: Cohere-embed-v3-multilingual
+    type: GlobalStandard
+  rerank:
+    model: cohere-rerank-v4.0-fast
+    type: GlobalStandard
+  judge:
+    model: mistral-large-3
+    type: GlobalStandard
+  image:
+    model: gpt-image-2.5-sunburst
+    type: GlobalStandard
+  stt_fallback:
+    model: gpt-4o-transcribe
+    type: GlobalStandard
+  alt:
+    model: grok-4.6
+    type: GlobalStandard
+    notes: officer-side text only, never personnel or safety

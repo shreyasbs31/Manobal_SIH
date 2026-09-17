@@ -3,8 +3,14 @@
   "hi": "main",
   "hi-Latn": "main",
   "ta": "main",
-  "gate": "recorded",
+  "gate": "live",
   "crisis_recall_open": 1.0,
   "crisis_recall_main": 1.0,
-  "reason": "Hindi and Hinglish stay on main unless open matches (31.1)."
+  "reason": "Live gate: crisis recall 100% on lexicon. Hindi and Tamil stay on main. English may use open.",
+  "language_match": {
+    "en": "open",
+    "hi": "main",
+    "hi-Latn": "main",
+    "ta": "main"
+  }
 }

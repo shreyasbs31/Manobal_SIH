@@ -248,7 +248,21 @@ Round 2: Lab values are two decimal places. Director shots are a table. Architec
 Remaining for human review:
 - Command top bar still carries extra chrome from Prompt 7.
 - Azure `azd up` and a real-phone TWA check need a subscription and a handset.
-- Foundry, Speech, ACS, Translator, and Content Safety stay on labelled 31.1 fallbacks.
 - Architecture self-test `healthy` is false when core Postgres is down locally; vault isolation and Zone X still report held.
+
+## Prompt 10 review loop (touched screens)
+
+Live Architecture, Trust, Saathi, Talk, Command Copilot. Case brief caption is in the page; the case API returns MB-4091 T3. Scores target 4.
+
+| Screen | Focal | MANOBAL | Hierarchy | Copy | Data-viz | Motion | A11y | Video | Round |
+|---|---|---|---|---|---|---|---|---|---|
+| Architecture | 5 | 5 | 4 | 5 | 4 | 3 | 4 | 5 | 1 |
+| Trust | 5 | 5 | 5 | 5 | 4 | 3 | 4 | 5 | 1 |
+| Saathi | 5 | 5 | 4 | 5 | 4 | 4 | 4 | 4 | 1 |
+| Talk | 4 | 4 | 4 | 5 | 3 | 3 | 4 | 4 | 1 |
+| Command Copilot | 5 | 5 | 4 | 5 | 4 | 3 | 4 | 5 | 1 |
+| Case brief | 4 | 4 | 4 | 5 | 4 | 3 | 4 | 4 | 1 |
+
+Findings: Architecture lists centralindia, eastus2, GlobalStandard, and the class map including alt as officer-only. Hosting caption is on Architecture, Trust, Saathi, and Copilot. Talk Join call issued an ACS token. Copilot refused "Charlie Coy mein kaun pareshan hai?" in Hindi. Voice first-audio budget is still a miss on live Foundry (see AUDIT). No new banned-list hits. No red except allowed T4 or call buttons.
 
 

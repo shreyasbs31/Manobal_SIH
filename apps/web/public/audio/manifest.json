@@ -13,6 +13,7 @@
     "breathing.ta.wav",
     "breathing.hi-Latn.wav"
   ],
-  "provider": "silent-wav",
-  "live_tts": false
+  "provider": "live-tts",
+  "live_tts": true,
+  "review": "pending"
 }

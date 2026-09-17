@@ -4,7 +4,7 @@ import re
 
 import httpx
 
-from ..config import get_settings
+from ..config import get_settings, live_providers_enabled
 
 # Local Latin-to-Devanagari for Hinglish gating when Translator is unset (31.1).
 LATIN_MAP = {
@@ -51,7 +51,11 @@ def looks_latin_hindi(text: str) -> bool:
 
 async def transliterate_hi(text: str) -> str:
     settings = get_settings()
-    if settings.translator_endpoint and settings.translator_key.get_secret_value():
+    if (
+        live_providers_enabled()
+        and settings.translator_endpoint
+        and settings.translator_key.get_secret_value()
+    ):
         url = f"{settings.translator_endpoint.rstrip('/')}/transliterate"
         headers = {
             "Ocp-Apim-Subscription-Key": settings.translator_key.get_secret_value(),
