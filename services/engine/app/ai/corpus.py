@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass
 
 import numpy as np
@@ -24,6 +25,8 @@ class Chunk:
 
 
 CHUNKS: list[Chunk] = []
+EMBED_CHOICE: dict[str, str] = {"en": "hash", "hi": "hash", "hi-Latn": "hash", "ta": "hash"}
+LIVE_EMBEDDED = False
 
 
 def hash_embedding(text: str, dims: int = EMBED_DIM) -> np.ndarray:
@@ -133,6 +136,147 @@ def retrieve(question: str, lang: str, k: int = 3) -> list[Chunk]:
         scored.append((len(tokens.intersection(words)), chunk))
     scored.sort(key=lambda item: item[0], reverse=True)
     return [chunk for overlap, chunk in scored[:k] if overlap >= 2]
+
+
+def embedding_class_for(lang: str) -> str:
+    if lang.startswith("en"):
+        return "embed"
+    return "embed_ml"
+
+
+def _cosine(left: np.ndarray, right: np.ndarray) -> float:
+    denom = float(np.linalg.norm(left) * np.linalg.norm(right))
+    if denom == 0:
+        return 0.0
+    return float(np.dot(left, right) / denom)
+
+
+async def embed_corpus_live() -> str:
+    from ..config import live_providers_enabled
+    from ..providers.foundry import FoundryClient
+
+    global LIVE_EMBEDDED
+    write_markdown()
+    if not live_providers_enabled():
+        embed_corpus()
+        return "hash"
+    client = FoundryClient()
+    if not client.available("embeddings"):
+        embed_corpus()
+        return "hash"
+    embed_corpus()
+    en_texts = [chunk.text for chunk in CHUNKS if chunk.lang == "en"]
+    hi_texts = [chunk.text for chunk in CHUNKS if chunk.lang == "hi"]
+    try:
+        en_vecs = await client.embed(en_texts or ["ping"], 30.0, model_class="embed")
+        ml_class = "embed_ml" if client.available("embed_ml") else "embed"
+        hi_vecs = await client.embed(hi_texts or ["ping"], 30.0, model_class=ml_class)
+    except Exception:  # noqa: BLE001
+        return "hash"
+    en_i = 0
+    hi_i = 0
+    for chunk in CHUNKS:
+        if chunk.lang == "en" and en_i < len(en_vecs):
+            chunk.embedding = np.array(en_vecs[en_i], dtype=np.float64)
+            en_i += 1
+        elif chunk.lang == "hi" and hi_i < len(hi_vecs):
+            chunk.embedding = np.array(hi_vecs[hi_i], dtype=np.float64)
+            hi_i += 1
+    EMBED_CHOICE["en"] = "embed"
+    EMBED_CHOICE["hi"] = ml_class
+    EMBED_CHOICE["hi-Latn"] = ml_class
+    EMBED_CHOICE["ta"] = ml_class
+    LIVE_EMBEDDED = True
+    try:
+        _ = await client.rerank("sleep after night duty", en_texts[:8], 20.0)
+        EMBED_CHOICE["rerank"] = "rerank"
+    except Exception:  # noqa: BLE001
+        EMBED_CHOICE["rerank"] = "none"
+    return "live"
+
+
+async def retrieve_live(question: str, lang: str, k: int = 3) -> list[Chunk]:
+    from ..config import live_providers_enabled
+    from ..providers.foundry import FoundryClient
+
+    if not LIVE_EMBEDDED:
+        await embed_corpus_live()
+    if lang.startswith("hi-Latn"):
+        from .transliterate import transliterate_hi
+
+        question = await transliterate_hi(question)
+        lang = "hi"
+    lexical = retrieve(question, lang, k=max(k, 6))
+    if not live_providers_enabled() or not LIVE_EMBEDDED:
+        return lexical[:k]
+    wanted = "hi" if lang.startswith("hi") else "en"
+    pool = [chunk for chunk in CHUNKS if chunk.lang == wanted] or CHUNKS
+    if lang.startswith("ta"):
+        pool = CHUNKS
+    client = FoundryClient()
+    model_class = embedding_class_for(lang)
+    try:
+        vectors = await client.embed([question], 20.0, model_class=model_class)
+        query_vec = np.array(vectors[0], dtype=np.float64)
+    except Exception:  # noqa: BLE001
+        return lexical[:k]
+    ranked = sorted(pool, key=lambda chunk: _cosine(query_vec, chunk.embedding), reverse=True)
+    top = ranked[:10]
+    try:
+        order = await client.rerank(question, [chunk.text for chunk in top], 12.0)
+        ordered = [top[i] for i in order if 0 <= i < len(top)]
+        if ordered:
+            top = ordered
+    except Exception:  # noqa: BLE001
+        pass
+    merged: list[Chunk] = []
+    seen: set[str] = set()
+    for chunk in top + lexical:
+        if chunk.id in seen:
+            continue
+        seen.add(chunk.id)
+        merged.append(chunk)
+        if len(merged) >= k:
+            break
+    return merged
+
+
+EVAL_QUESTIONS: dict[str, list[dict[str, str]]] = {
+    "en": [{"q": "How should I sleep after night duty on rotating shifts?", "doc": "sleep-rotating"}],
+    "hi": [{"q": "रात की ड्यूटी के बाद नींद कैसे पूरी करें?", "doc": "sleep-rotating"}],
+    "hi-Latn": [{"q": "raat ki duty ke baad neend kaise poori karein?", "doc": "sleep-rotating"}],
+    "ta": [{"q": "இரவு டியூட்டிக்கு பிறகு எப்படி தூங்குவது?", "doc": "sleep-rotating"}],
+}
+
+
+async def run_retrieval_eval() -> dict[str, object]:
+    from ..scoring.forecast import REGISTRY, register_world_metrics
+    from ..scoring.ruleset import REPO_ROOT
+
+    method = await embed_corpus_live()
+    scores: dict[str, float] = {}
+    for lang, rows in EVAL_QUESTIONS.items():
+        hits = 0
+        for row in rows:
+            found = await retrieve_live(row["q"], lang, k=3)
+            if any(chunk.doc_id == row["doc"] for chunk in found):
+                hits += 1
+        scores[lang] = hits / max(1, len(rows))
+    payload = {
+        "method": method,
+        "choice": dict(EMBED_CHOICE),
+        "recall_at_3": scores,
+    }
+    register_world_metrics("retrieval", scores, version=f"retrieval-{method}")
+    REGISTRY["retrieval"]["choice"] = dict(EMBED_CHOICE)
+    REGISTRY["retrieval"]["method"] = method
+    path = REPO_ROOT / "infra" / "evals" / "fixtures" / "retrieval.json"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+    return payload
 
 
 def grounded_reply(

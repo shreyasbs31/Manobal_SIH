@@ -184,6 +184,7 @@ export function CommandShell({
   mode = "demo",
   clock = "2026-09-16 10:00 IST",
   theme = "dark",
+  onNavigate,
 }: {
   children: ReactNode;
   pathname: string;
@@ -193,6 +194,7 @@ export function CommandShell({
   mode?: ManobalMode | undefined;
   clock?: string | undefined;
   theme?: Extract<ThemeName, "dark" | "light"> | undefined;
+  onNavigate?: ((href: string) => void) | undefined;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -261,6 +263,13 @@ export function CommandShell({
               aria-current={current ? "page" : undefined}
               href={item.href}
               key={item.href}
+              onClick={(event) => {
+                if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey) {
+                  return;
+                }
+                event.preventDefault();
+                onNavigate(item.href);
+              }}
             >
               <Icon size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
               <span className="mb-rail-label">{item.label}</span>
@@ -360,6 +369,11 @@ export function CommandShell({
                 <Command.Item
                   key={item.href}
                   onSelect={() => {
+                    setPaletteOpen(false);
+                    if (onNavigate) {
+                      onNavigate(item.href);
+                      return;
+                    }
                     window.location.assign(item.href);
                   }}
                   value={item.label}

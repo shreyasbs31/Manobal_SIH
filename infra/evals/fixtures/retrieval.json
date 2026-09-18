@@ -1,0 +1,16 @@
+{
+  "method": "live",
+  "choice": {
+    "en": "embed",
+    "hi": "embed_ml",
+    "hi-Latn": "embed_ml",
+    "ta": "embed_ml",
+    "rerank": "rerank"
+  },
+  "recall_at_3": {
+    "en": 1.0,
+    "hi": 1.0,
+    "hi-Latn": 1.0,
+    "ta": 1.0
+  }
+}

@@ -8,6 +8,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { engineBaseUrl, persistLogin } from "@/lib/engine";
 import { loginWithPasskey, registerPasskey } from "@/lib/passkeys";
 
 const roles: readonly { id: ManobalRole; label: string }[] = [
@@ -66,20 +67,13 @@ export function DemoLogin({
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState("Choose a role and continue.");
   const [pin, setPin] = useState("");
-  const client = useMemo(
-    () =>
-      new ManobalClient(
-        process.env.NEXT_PUBLIC_ENGINE_URL ?? "http://localhost:8000",
-      ),
-    [],
-  );
+  const client = useMemo(() => new ManobalClient(engineBaseUrl()), []);
 
   function finish(login: LoginResponse) {
-    sessionStorage.setItem("manobal.access_token", login.access_token);
-    sessionStorage.setItem(
-      "manobal.principal",
-      JSON.stringify(login.principal),
-    );
+    persistLogin(login, {
+      role,
+      persona_id: role === "personnel" ? personaId : null,
+    });
     router.push(roleRoutes[login.principal.role]);
   }
 

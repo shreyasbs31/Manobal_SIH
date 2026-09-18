@@ -116,7 +116,7 @@ OFFICER_PERSONAS: dict[Role, OfficerPersona] = {
         id="uwo-sunita",
         display_label="Insp. Sunita Rawat",
         role=Role.UWO,
-        unit_path="force.central.c02",
+        unit_path="force",
     ),
     Role.COUNSELLOR: OfficerPersona(
         id="counsellor-anjali",

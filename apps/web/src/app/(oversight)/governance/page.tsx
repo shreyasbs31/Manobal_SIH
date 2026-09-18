@@ -64,6 +64,7 @@ export default function GovernancePage() {
               <KpiTile hint={kpi.hint} key={kpi.label} label={kpi.label} value={kpi.value} />
             ))}
           </div>
+          <p>Source: {data.kpis.source ?? "core or demo cases"}.</p>
           <div className="mb-grid-12">
             {data.fairness.fairness.map((row) => (
               <div className="mb-span-6" key={row.label}>

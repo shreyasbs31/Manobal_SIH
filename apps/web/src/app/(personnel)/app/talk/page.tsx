@@ -30,6 +30,10 @@ export default function TalkPage() {
       {data ? (
         <div className="mb-home-stack">
           <h1 className="mb-type-title">Talk to a person</h1>
+          <p>
+            Welfare officers and counsellors see a request, not your chat with Saathi. You choose
+            whether your name is shared.
+          </p>
           <article className="mb-context-card">
             <SceneCounsellorCall />
             <div>
@@ -99,13 +103,17 @@ export default function TalkPage() {
           <p>{status}</p>
           <h2 className="mb-section-label">Requests</h2>
           {data.requests.length === 0 ? (
-            <p>No requests yet.</p>
+            <p>No requests yet. Pick welfare or a counsellor above.</p>
           ) : (
             data.requests.map((row) => (
-              <p key={String(row.id)}>
-                {String(row.kind)} · {String(row.status)}
-                {row.anonymous ? " · anonymous" : ""}
-              </p>
+              <article className="mb-card" key={String(row.id)}>
+                <h2>{String(row.kind) === "uwo" ? "Welfare officer" : "Counsellor"}</h2>
+                <p>
+                  {String(row.status)}
+                  {row.anonymous ? " · name hidden" : " · name shared"}
+                  {row.handle ? ` · ${String(row.handle)}` : ""}
+                </p>
+              </article>
             ))
           )}
         </div>

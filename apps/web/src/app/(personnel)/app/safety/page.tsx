@@ -1,21 +1,33 @@
 "use client";
 
 import { t } from "@manobal/i18n";
-import { ContourTexture, useBreath } from "@manobal/ui";
+import { ContourTexture } from "@manobal/ui";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 import { engineClient, subjectToken } from "@/lib/engine";
 import { drainQueue, enqueue, planStore } from "@/lib/offline";
+import { announceWorld } from "@/lib/world";
 
 export default function SafetyPage() {
-  const breath = useBreath(true);
   const [muted, setMuted] = useState(false);
   const [status, setStatus] = useState("Trying to reach your unit");
   const [lang, setLang] = useState("en");
-  const scale = 0.86 + breath * 0.22;
   const hasPlan = typeof window !== "undefined" ? Boolean(planStore()) : false;
   const sms = "sms:+910000000000?body=SOS%20from%20Saathi";
+
+  useLayoutEffect(() => {
+    const page = document.querySelector(".mb-safety") as HTMLElement | null;
+    const fit = () => {
+      if (!page) {
+        return;
+      }
+      page.style.minHeight = `${window.innerHeight}px`;
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("manobal.language") ?? "en";
@@ -36,6 +48,7 @@ export default function SafetyPage() {
         ]);
       }, ["acute"]).then((count) => {
         if (count > 0) {
+          announceWorld("acute");
           setStatus("A person is being asked to reach you.");
         }
       });
@@ -52,7 +65,7 @@ export default function SafetyPage() {
         <ContourTexture height={640} opacity={0.2} seed="MB-6604" width={390} />
         <h1>{t("safety.title", lang === "hi" || lang === "ta" ? lang : "en")}</h1>
         <p>{t("safety.reaching", lang === "hi" || lang === "ta" ? lang : "en")}</p>
-        <div className="mb-breath-ring" style={{ transform: `scale(${scale})` }} />
+        <div aria-hidden="true" className="mb-breath-ring" />
         <p>Breathe in with the ring</p>
         <a className="mb-btn mb-call-btn" href="tel:14416">
           Call Tele-MANAS 14416
@@ -85,6 +98,7 @@ export default function SafetyPage() {
                 channel: "app",
               })
               .then((result) => {
+                announceWorld("acute");
                 setStatus(`A person is being asked to reach you. Case ${result.case_id}.`);
               })
               .catch(() => {

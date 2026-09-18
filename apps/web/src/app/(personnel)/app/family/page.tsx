@@ -24,15 +24,20 @@ export default function FamilyPage() {
               <p>Reminders stay on this phone. The shareable page has no personal data.</p>
             </div>
           </article>
-          <button
-            className="mb-primary"
-            onClick={() => {
-              void engineClient().saveFamily("sunday").then(() => reload());
-            }}
-            type="button"
-          >
-            Sunday family call reminder
-          </button>
+          <div className="mb-action-row">
+            {(["sunday", "wednesday", "friday"] as const).map((day) => (
+              <button
+                className={data.reminder === day ? "mb-primary" : "mb-secondary"}
+                key={day}
+                onClick={() => {
+                  void engineClient().saveFamily(day).then(() => reload());
+                }}
+                type="button"
+              >
+                {day === "sunday" ? "Sunday call" : day === "wednesday" ? "Wednesday call" : "Friday call"}
+              </button>
+            ))}
+          </div>
           <p>{data.reminder ? `Reminder set: ${data.reminder}` : "No reminder yet."}</p>
           <button
             className="mb-secondary"

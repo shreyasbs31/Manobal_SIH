@@ -21,7 +21,11 @@ export async function signIn(
   await page.evaluate((payload) => {
     sessionStorage.setItem("manobal.access_token", payload.access_token);
     sessionStorage.setItem("manobal.principal", JSON.stringify(payload.principal));
-  }, login);
+    sessionStorage.setItem(
+      "manobal.demo_login",
+      JSON.stringify({ role: payload.role, persona_id: payload.personaId }),
+    );
+  }, { ...login, role, personaId: personaId ?? null });
 }
 
 export function roleForRoute(route: string): { role: string; persona?: string } | null {

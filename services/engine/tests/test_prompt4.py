@@ -130,6 +130,34 @@ def test_sla_compression_ack_and_escalation() -> None:
     assert case.case_id not in digest
 
 
+def test_sync_acute_opens_care_queue() -> None:
+    headers = _auth("personnel", "deepak")
+    response = client.post(
+        "/api/v1/me/sync",
+        headers=headers,
+        json=[
+            {
+                "kind": "acute",
+                "client_id": "acute-offline-1",
+                "payload": {
+                    "token": "st_ahe6nh4uupnem2wp",
+                    "trigger": "crisis_gate",
+                    "lang": "hi-Latn",
+                    "channel": "app",
+                },
+            }
+        ],
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["drained"] == 1
+    welfare = client.get("/api/v1/welfare/queue", headers=_auth("uwo"))
+    assert welfare.status_code == 200, welfare.text
+    assert "MB-6604" in {item["case_id"] for item in welfare.json()}
+    medical = client.get("/api/v1/medical/acute", headers=_auth("mo"))
+    assert medical.status_code == 200, medical.text
+    assert "MB-6604" in {item["case_id"] for item in medical.json()}
+
+
 def test_post_acute_under_two_seconds() -> None:
     started = time.perf_counter()
     response = client.post(
@@ -307,7 +335,7 @@ def test_audio_manifest_and_sw_cache(tmp_path) -> None:
 
 
 def test_realtime_filters_individual_keys() -> None:
-    from app.realtime import filter_payload, groups_for, negotiate_token
+    from app.realtime import acute_officer_groups, filter_payload, groups_for, negotiate_token
 
     commander = principal_for_demo(DemoLoginRequest(role=Role.COMMANDER))
     token = negotiate_token(commander)
@@ -315,6 +343,11 @@ def test_realtime_filters_individual_keys() -> None:
     assert "token:" not in " ".join(groups_for(commander))
     cleaned = filter_payload(Role.COMMANDER, {"unit": "c02", "token": "st_hiddenhiddenhid"})
     assert "token" not in cleaned
+    care = acute_officer_groups("force.north.n01.foxtrot")
+    assert "role:uwo" in care
+    assert "role:mo" in care
+    assert "role:commander" not in care
+    assert "role:hq" not in care
 
 
 def test_command_and_hq_fuzz_no_individual_data() -> None:

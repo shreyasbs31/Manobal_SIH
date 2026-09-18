@@ -10,12 +10,14 @@ import yaml
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from .acute import AcuteRequest, process_acute
 from .auth import PERSONAS, Principal
 from .config import get_settings
 from .errors import ApiError
 from .i18n import SCHEDULED, catalog_for, t
 from .personalisation import PERSONALISATION_FIELDS, get_profile, public_profile, update_profile
 from .privacy.rights import KILLSWITCHES, RECEIPTS, TREND_REQUESTS, purge
+from .realtime import notify_world
 from .recommender import TOOLKIT_IDS, observe_reward, ranking_payload
 from .scoring.forecast import ADVERSE_FEATURES, EXCLUDED_ATTRIBUTES, REGISTRY
 from .scoring.ruleset import REPO_ROOT
@@ -217,6 +219,66 @@ PSS_ITEMS = (
     "In the last month, how often have you felt difficulties were piling up so high "
     "that you could not overcome them?",
 )
+
+WHO5_ITEMS = (
+    "I have felt cheerful and in good spirits",
+    "I have felt calm and relaxed",
+    "I have felt active and vigorous",
+    "I woke up feeling fresh and rested",
+    "My daily life has been filled with things that interest me",
+)
+
+GAD7_ITEMS = (
+    "Feeling nervous, anxious, or on edge",
+    "Not being able to stop or control worrying",
+    "Worrying too much about different things",
+    "Trouble relaxing",
+    "Being so restless that it is hard to sit still",
+    "Becoming easily annoyed or irritable",
+    "Feeling afraid as if something awful might happen",
+)
+
+CBI_ITEMS = (
+    "How often do you feel tired",
+    "How often are you physically exhausted",
+    "How often are you emotionally exhausted",
+    "How often do you think, I cannot take it anymore",
+    "How often do you feel worn out",
+    "How often do you feel weak and susceptible to illness",
+)
+
+PCPTSD5_ITEMS = (
+    "Had nightmares about the event or thought about it when you did not want to",
+    "Tried hard not to think about the event or went out of your way to avoid situations that reminded you of it",
+    "Been constantly on guard, watchful, or easily startled",
+    "Felt numb or detached from people, activities, or your surroundings",
+    "Felt guilty or unable to stop blaming yourself or others for the event or any problems it may have caused",
+)
+
+AUDITC_ITEMS = (
+    "How often do you have a drink containing alcohol",
+    "How many drinks containing alcohol do you have on a typical day when you are drinking",
+    "How often do you have six or more drinks on one occasion",
+)
+
+ASSESSMENT_PROMPTS = {
+    "phq9": PHQ9_ITEMS,
+    "pss10": PSS_ITEMS,
+    "who5": WHO5_ITEMS,
+    "gad7": GAD7_ITEMS,
+    "cbi": CBI_ITEMS,
+    "pcptsd5": PCPTSD5_ITEMS,
+    "auditc": AUDITC_ITEMS,
+}
+
+DEFAULT_ASSESSMENT_OPTIONS = (
+    "Not at all",
+    "Several days",
+    "More than half the days",
+    "Nearly every day",
+)
+AUDITC_OPTIONS = ("Never", "Monthly or less", "Two to four times a month", "Weekly or more")
+WHO5_OPTIONS = ("At no time", "Some of the time", "More than half the time", "All of the time")
 
 
 class OnboardingBody(BaseModel):
@@ -800,6 +862,7 @@ async def post_checkin(
         },
     )
     lang = str(profile.get("language") or "en")
+    await notify_world("checkin")
     return {
         "saved": True,
         "message": t("checkin.saved", lang if lang in {"en", "hi", "ta"} else "en"),
@@ -835,16 +898,19 @@ async def get_assessment(
         raise ApiError(
             "not_found", "Instrument not found", hint="Pick from the list", status_code=404
         )
-    if instrument_id == "phq9":
-        prompts = list(PHQ9_ITEMS)
-    elif instrument_id == "pss10":
-        prompts = list(PSS_ITEMS)
-    else:
+    prompts = list(ASSESSMENT_PROMPTS.get(instrument_id) or ())
+    if not prompts:
         prompts = [f"Item {index + 1}" for index in range(int(match["items"]))]
+    if instrument_id == "auditc":
+        options = list(AUDITC_OPTIONS)
+    elif instrument_id == "who5":
+        options = list(WHO5_OPTIONS)
+    else:
+        options = list(DEFAULT_ASSESSMENT_OPTIONS)
     return {
         **match,
         "prompts": prompts,
-        "options": ["Not at all", "Several days", "More than half the days", "Nearly every day"],
+        "options": options,
     }
 
 
@@ -944,9 +1010,12 @@ async def get_buddy(
 ) -> dict[str, Any]:
     token = principal.subject_token or ""
     row = BUDDY.get(token) or {"paired": False}
+    pings = list(row.get("pings") or [])
+    last = pings[-1] if pings else None
     return {
         "paired": bool(row.get("paired")),
         "code": row.get("code"),
+        "last": last,
         "lessons": [
             "Notice a change in sleep or replies, then ask once, kindly.",
             "Listen more than you advise.",
@@ -1215,6 +1284,9 @@ async def sync_queue(
         if item.kind == "checkin":
             body = CheckInBody.model_validate(item.payload)
             await post_checkin(body, principal)
+        elif item.kind == "acute":
+            acute = AcuteRequest.model_validate(item.payload)
+            await process_acute(acute, principal)
     return {"drained": len(accepted), "ids": accepted, "edge_up": True}
 
 
@@ -1230,6 +1302,7 @@ async def set_edge_link(
     if EDGE_LINK_UP and EDGE_QUEUE:
         drained = len(EDGE_QUEUE)
         EDGE_QUEUE.clear()
+    await notify_world("edge")
     return {"up": EDGE_LINK_UP, "queued": len(EDGE_QUEUE), "drained": drained}
 
 

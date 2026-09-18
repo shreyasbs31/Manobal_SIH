@@ -12,8 +12,7 @@ export default function SaathiLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const chrome =
     pathname.startsWith("/app/safety") ||
-    pathname.startsWith("/app/toolkit/breathe") ||
-    pathname.startsWith("/app/toolkit/four_seven_eight")
+    pathname.startsWith("/app/toolkit/")
       ? "none"
       : pathname.startsWith("/app/check-in") ||
           pathname === "/app/saathi" ||

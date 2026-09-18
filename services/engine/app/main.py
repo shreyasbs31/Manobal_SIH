@@ -75,7 +75,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="MANOBAL engine",
     version="0.1.0",
-    description="Token-only foundation API",
+    description=(
+        "API process for MANOBAL. Open http://localhost:3000 to use the product and sign in there. "
+        "You do not paste an access token into /docs for the demo."
+    ),
     lifespan=lifespan,
 )
 install_error_handlers(app)
@@ -84,10 +87,14 @@ app.include_router(personnel_router)
 app.include_router(voice_router)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.web_origin],
+    allow_origins=[
+        settings.web_origin,
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["authorization", "content-type", "x-trace-id"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["authorization", "content-type", "x-trace-id", "accept"],
 )
 
 
@@ -138,6 +145,17 @@ class HealthResponse(BaseModel):
     status: str
     service: str = "engine"
     at: datetime
+
+
+@app.get("/")
+def engine_root() -> dict[str, str]:
+    return {
+        "service": "manobal-engine",
+        "status": "ok",
+        "app": "http://localhost:3000",
+        "health": "/api/v1/system/health",
+        "note": "This is the API process. Open http://localhost:3000 and sign in there. You do not paste an access token into this page.",
+    }
 
 
 class EntraCallbackResponse(LoginResponse):

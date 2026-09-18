@@ -54,8 +54,9 @@ export default function HqPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!payload}>
       {payload ? (
         <div className="mb-home-stack">
-          <p>
-            Theatre comparison stays grouped. Cells under the minimum size stay hidden.
+          <p className="mb-desk-intro">
+            Force HQ compares theatres, not people. Hidden cells stay hatched when a group is too
+            small. Use the simulator before you change leave policy.
             {profile.data ? " Policy lens: rotation length." : ""}
           </p>
           <table className="mb-formation" aria-label="Theatre comparison">

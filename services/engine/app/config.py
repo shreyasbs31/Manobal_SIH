@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     webpubsub_connection_string: str = ""
 
     access_jwt_secret: SecretStr = SecretStr("access_dev_only_change_me_32bytes")
-    access_token_minutes: int = Field(default=15, ge=1, le=60)
+    access_token_minutes: int = Field(default=15, ge=1, le=1440)
     grant_private_key_file: Path = Path("infra/keys/grant-private.pem")
     grant_issuer: str = "manobal-engine"
     grant_audience: str = "manobal-vault"

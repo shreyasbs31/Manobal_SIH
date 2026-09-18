@@ -12,8 +12,7 @@ import type {
 } from "@simplewebauthn/types";
 import type { LoginResponse } from "@manobal/contracts";
 
-const engineUrl =
-  process.env.NEXT_PUBLIC_ENGINE_URL ?? "http://localhost:8000";
+import { engineBaseUrl } from "@/lib/engine";
 
 interface OptionsEnvelope<T> {
   transaction_id: string;
@@ -24,7 +23,7 @@ async function post<TResponse>(
   path: string,
   body: object,
 ): Promise<TResponse> {
-  const response = await fetch(`${engineUrl}${path}`, {
+  const response = await fetch(`${engineBaseUrl()}${path}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),

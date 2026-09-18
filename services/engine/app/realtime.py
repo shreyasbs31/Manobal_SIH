@@ -12,6 +12,24 @@ from .config import Settings, get_settings
 
 INDIVIDUAL_KEYS = frozenset({"token", "subject_token", "case_id", "person_id", "service_no"})
 
+# Care desks only. Commander and HQ stay on aggregate groups without case keys.
+ACUTE_OFFICER_ROLES = ("role:uwo", "role:mo", "role:counsellor")
+WORLD_GROUPS = (
+    "role:personnel",
+    "role:uwo",
+    "role:counsellor",
+    "role:mo",
+    "role:commander",
+    "role:hq",
+    "role:wdec",
+    "role:director",
+    "role:admin",
+)
+
+
+def acute_officer_groups(unit_path: str) -> list[str]:
+    return [*ACUTE_OFFICER_ROLES, f"unit:{unit_path}"]
+
 
 def groups_for(principal: Principal) -> list[str]:
     groups = [f"role:{principal.role.value}", f"unit:{principal.scope_path}"]
@@ -95,7 +113,7 @@ async def publish(
     hub = active.realtime_url.replace("ws://", "http://").replace("wss://", "https://")
     parsed = urlparse(hub)
     local_url = f"{parsed.scheme}://{parsed.netloc}/publish"
-    async with httpx.AsyncClient(timeout=2.0) as client:
+    async with httpx.AsyncClient(timeout=0.4) as client:
         try:
             await client.post(
                 local_url,
@@ -116,3 +134,27 @@ async def publish(
             await _publish_azure(event_type, payload, groups, connection)
         except httpx.HTTPError:
             return
+
+
+async def notify_world(reason: str) -> None:
+    await publish("world.changed", {"reason": reason}, list(WORLD_GROUPS))
+
+
+async def notify_acute_opened(*, case_id: str, unit_path: str, subject_token: str) -> None:
+    await publish(
+        "acute.opened",
+        {"tier": "T4", "case_id": case_id},
+        acute_officer_groups(unit_path),
+    )
+    if subject_token:
+        await publish("acute.opened", {"tier": "T4"}, [f"token:{subject_token}"])
+
+
+async def notify_ledger_viewed(*, subject_token: str, case_id: str) -> None:
+    if not subject_token:
+        return
+    await publish(
+        "ledger.viewed",
+        {"action": "identity.viewed", "case_id": case_id},
+        [f"token:{subject_token}"],
+    )

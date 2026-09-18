@@ -183,16 +183,44 @@ export function SafetyPlanEditor({
   );
 }
 
-export function LeaveWindowPicker() {
+export function LeaveWindowPicker({
+  start,
+  end,
+  onChange,
+}: {
+  start?: string | undefined;
+  end?: string | undefined;
+  onChange?: ((next: { start: string; end: string }) => void) | undefined;
+}) {
+  const [innerStart, setInnerStart] = useState("2026-10-04");
+  const [innerEnd, setInnerEnd] = useState("2026-10-12");
+  const startValue = start ?? innerStart;
+  const endValue = end ?? innerEnd;
   return (
     <form className="mb-card mb-leave">
       <label>
         Suggested window start
-        <input defaultValue="2026-10-04" type="date" />
+        <input
+          onChange={(event) => {
+            const next = { start: event.target.value, end: endValue };
+            setInnerStart(next.start);
+            onChange?.(next);
+          }}
+          type="date"
+          value={startValue}
+        />
       </label>
       <label>
         Suggested window end
-        <input defaultValue="2026-10-12" type="date" />
+        <input
+          onChange={(event) => {
+            const next = { start: startValue, end: event.target.value };
+            setInnerEnd(next.end);
+            onChange?.(next);
+          }}
+          type="date"
+          value={endValue}
+        />
       </label>
       <p>Unit blackout windows are shown at unit level only. MANOBAL does not submit leave.</p>
     </form>

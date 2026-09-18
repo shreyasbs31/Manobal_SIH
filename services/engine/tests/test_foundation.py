@@ -25,6 +25,15 @@ ROLES = tuple(role.value for role in Role)
 PERSONA_IDS = tuple(PERSONAS)
 
 
+def test_engine_root_points_at_the_web_app() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["service"] == "manobal-engine"
+    assert payload["app"] == "http://localhost:3000"
+    assert "access token" in payload["note"].lower()
+
+
 def test_demo_login_mints_every_role() -> None:
     for role in ROLES:
         body: dict[str, str] = {"role": role}

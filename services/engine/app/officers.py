@@ -488,8 +488,15 @@ def copilot_answer(question: str, lang: str = "en") -> dict[str, Any]:
     return {
         "refuse": False,
         "answer": (
-            f"Charlie Coy share at T2 or above is {metrics['share_t2']}. "
-            f"Duty hours {metrics['duty_hours']}, night load {metrics['night_load']}."
+            (
+                f"Charlie Coy में T2 या उससे ऊपर हिस्सा {metrics['share_t2']} है. "
+                f"ड्यूटी घंटे {metrics['duty_hours']}, रात का भार {metrics['night_load']}."
+            )
+            if lang.startswith("hi")
+            else (
+                f"Charlie Coy share at T2 or above is {metrics['share_t2']}. "
+                f"Duty hours {metrics['duty_hours']}, night load {metrics['night_load']}."
+            )
         ),
         "chart_spec": {"type": "bar", "metric": "duty_hours", "value": metrics["duty_hours"]},
         "tools_used": ["get_unit_metrics", "list_top_drivers"],

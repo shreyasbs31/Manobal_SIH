@@ -9,6 +9,7 @@ import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
 import { enqueue } from "@/lib/offline";
 import { useEngine } from "@/lib/use-engine";
+import { announceWorld } from "@/lib/world";
 
 const TAGS = [
   "Duty",
@@ -59,17 +60,27 @@ export default function CheckInPage() {
     };
     const lang = data?.home.language ?? "en";
     const line = t("checkin.saved", lang === "hi" || lang === "ta" ? lang : "en");
-    if (offline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+    const airplane =
+      typeof window !== "undefined" && window.localStorage.getItem("manobal.airplane") === "1";
+    const networkDown =
+      offline || airplane || (typeof navigator !== "undefined" && !navigator.onLine);
+    if (networkDown) {
       await enqueue("checkin", body);
       setSavedLine(line);
       return;
     }
-    const result = await engineClient().saveCheckIn(body);
-    setSavedLine(result.message ?? line);
+    try {
+      const result = await engineClient().saveCheckIn(body);
+      announceWorld("checkin");
+      setSavedLine(result.message ?? line);
+    } catch {
+      await enqueue("checkin", body);
+      setSavedLine(line);
+    }
   }
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
+    <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
       {done ? (
         <div className="mb-checkin">
           <BaselineRibbonChart
@@ -158,8 +169,15 @@ export default function CheckInPage() {
             Save
           </button>
         </div>
-      ) : busy && !question ? (
+      ) : (busy || offline) && !question ? (
         <div className="mb-checkin">
+          <h1>Save this check-in on the phone</h1>
+          {offline ? (
+            <div>
+              <p>Listen and tap. Speech recognition is not needed offline.</p>
+              <audio controls preload="auto" src="/audio/grounding.en.wav" />
+            </div>
+          ) : null}
           <button className="mb-primary" onClick={() => void finish()} type="button">
             Save
           </button>

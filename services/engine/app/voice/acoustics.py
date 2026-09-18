@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 
 FEATURE_COUNT = 88
+MIN_SPEECH_BYTES = 16000  # ~500 ms of 16 kHz mono int16
+MIN_SPEECH_RMS = 1200.0
 
 
 def _opensmile_features(pcm: bytes, sample_rate: int) -> list[float] | None:
@@ -41,6 +43,16 @@ def acoustic_features(pcm: bytes, sample_rate: int = 16000) -> list[float]:
     base = [rms, zcr, centroid, float(samples.std()), float(samples.mean())]
     tiled = (base * ((FEATURE_COUNT // len(base)) + 1))[:FEATURE_COUNT]
     return tiled
+
+
+def pcm_has_speech(pcm: bytes) -> bool:
+    if len(pcm) < MIN_SPEECH_BYTES:
+        return False
+    samples = np.frombuffer(pcm, dtype=np.int16)
+    if samples.size == 0:
+        return False
+    rms = float(np.sqrt(np.mean(samples.astype(np.float64) ** 2)))
+    return rms >= MIN_SPEECH_RMS
 
 
 def zeroise(buffer: bytearray) -> int:

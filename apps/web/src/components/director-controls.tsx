@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { engineClient } from "@/lib/engine";
 import { drainQueue } from "@/lib/offline";
+import { announceWorld } from "@/lib/world";
 
 export function DirectorControls() {
   const [edge, setEdge] = useState("up");
@@ -34,6 +35,7 @@ export function DirectorControls() {
           setAir(next);
           window.localStorage.setItem("manobal.airplane", next ? "1" : "0");
           window.dispatchEvent(new Event("manobal-airplane"));
+          announceWorld("airplane");
         }}
         type="button"
       >

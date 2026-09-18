@@ -19,6 +19,7 @@ def test_governance_kpis_parity_ruleset_and_locked_acute() -> None:
     headers = _auth("wdec")
     kpis = client.get("/api/v1/gov/kpis", headers=headers)
     assert kpis.status_code == 200, kpis.text
+    assert kpis.json()["source"] in {"core.assessment", "demo_cases_memory"}
     labels = {row["label"] for row in kpis.json()["kpis"]}
     assert "Lead time" in labels
     assert "False-positive rate" in labels
@@ -95,6 +96,7 @@ def test_lab_worlds_zero_penalty_and_benchmark() -> None:
     primary = client.get("/api/v1/lab/metrics?world=primary", headers=headers).json()
     shifted = client.get("/api/v1/lab/metrics?world=shifted", headers=headers).json()
     assert primary["world"] == "primary"
+    assert primary["source"] in {"core.assessment", "demo_cases_memory"}
     assert shifted["world"] == "shifted"
     assert "Imran stays T1" in primary["personas"]["imran"]
     assert "Thomas stays T0" in primary["personas"]["thomas"]
@@ -135,6 +137,7 @@ def test_director_scenarios_reset_and_outage() -> None:
     } <= ids
     shot_ids = {row["id"] for row in board["shots"]}
     assert {"landing", "workspace", "deepak", "governance", "lab", "architecture"} <= shot_ids
+    assert {"voice", "karthik", "copilot-aggregate", "hindi-brief", "deepgram-outage", "deepak-typed"} <= shot_ids
     loaded = client.post("/api/v1/demo/scenario/deepak_acute", headers=headers)
     assert loaded.status_code == 200
     assert "safety" in loaded.json()["phone"]

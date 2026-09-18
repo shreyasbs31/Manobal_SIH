@@ -43,32 +43,48 @@ export default function SaathiHomePage() {
   );
   const cards = (data?.context_cards ?? (data ? [data.nudge] : [])).slice(0, 2);
   const local = localNudgeRules({
-    sleepNightsLow: data?.persona === "arjun" ? 3 : 0,
-    consecutiveDuty: data?.persona === "arjun" ? 11 : 0,
+    sleepNightsLow: offline || data?.persona === "arjun" ? 3 : 0,
+    consecutiveDuty: offline || data?.persona === "arjun" ? 11 : 0,
   });
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
-      {data ? (
+    <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
+      {data || offline ? (
         <div className="mb-home-stack">
-          <div className="mb-ribbon-hero">
-            <ContourTexture height={180} seed={data.persona_id} width={390} />
-            <BaselineRibbonChart
-              label="Your mood and sleep against your usual range"
-              takeaway={data.takeaway}
-              values={[...data.ribbon]}
-              variant="hero"
-            />
-          </div>
-          <article className="mb-checkin-card">
-            <div>
-              <h2>{data.checkin.title}</h2>
-              <p>{data.checkin.done ? "Done for today" : `${data.checkin.duration_s} seconds`}</p>
+          {data ? (
+            <div className="mb-ribbon-hero">
+              <ContourTexture height={180} seed={data.persona_id} width={390} />
+              <BaselineRibbonChart
+                label="Your mood and sleep against your usual range"
+                takeaway={data.takeaway}
+                values={[...data.ribbon]}
+                variant="hero"
+              />
             </div>
-            <Link className="mb-primary" href={data.checkin.href}>
-              {data.checkin.done ? "Open" : "Start"}
-            </Link>
-          </article>
+          ) : (
+            <h1 className="mb-type-title">Saathi</h1>
+          )}
+          {data ? (
+            <article className="mb-checkin-card">
+              <div>
+                <h2>{data.checkin.title}</h2>
+                <p>{data.checkin.done ? "Done for today" : `${data.checkin.duration_s} seconds`}</p>
+              </div>
+              <Link className="mb-primary" href={data.checkin.href}>
+                {data.checkin.done ? "Open" : "Start"}
+              </Link>
+            </article>
+          ) : (
+            <article className="mb-checkin-card">
+              <div>
+                <h2>Daily check-in</h2>
+                <p>Works on this phone without a network.</p>
+              </div>
+              <Link className="mb-primary" href="/app/check-in">
+                Start
+              </Link>
+            </article>
+          )}
           <p className="mb-section-label">For you now</p>
           {cards.map((card) => (
             <article className="mb-context-card" key={card.title}>
@@ -81,7 +97,7 @@ export default function SaathiHomePage() {
             </article>
           ))}
           {offline
-            ? local.slice(0, Math.max(0, 2 - cards.length)).map((card) => (
+            ? local.map((card) => (
                 <article className="mb-context-card" key={card.title}>
                   <SceneSleepWindDown />
                   <div>
@@ -103,8 +119,12 @@ export default function SaathiHomePage() {
             })}
           </nav>
           <p className="mb-status-strip">
-            Wearable {data.status?.wearable ?? "off"}
-            {data.status?.last_sync ? ` · Last sync saved` : null}
+            Wearable {data?.status?.wearable ?? "off"}
+            {data?.status?.last_sync ? ` · Last sync saved` : null}
+          </p>
+          <p>
+            Home is your rhythm and what to do next. Check in, then pick Talk, Breathe, a counsellor,
+            or leave. Assessments and concerns live under Me.
           </p>
         </div>
       ) : null}

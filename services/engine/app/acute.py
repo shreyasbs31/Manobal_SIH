@@ -11,6 +11,7 @@ from .cases import ALERTS, CASES, LEDGER, open_case
 from .config import get_settings
 from .grants import GrantRequest, mint_grant
 from .levers import rank_levers
+from .realtime import notify_acute_opened
 
 ACUTE_CATEGORY = "wdec.acute"
 
@@ -106,6 +107,7 @@ async def process_acute(
             pass
     elapsed_ms = (time.perf_counter() - started) * 1000
     alerts = [alert for alert in ALERTS if alert.case_id == case_id]
+    await notify_acute_opened(case_id=case_id, unit_path=unit_path, subject_token=body.token)
     return AcuteResponse(
         case_id=case_id,
         alerts=len(alerts),
@@ -131,6 +133,11 @@ async def enqueue_or_process(body: AcuteRequest) -> AcuteResponse:
                 record = CASES[case_id]
                 if record.tier == "T4" and record.source == "acute":
                     alerts = [alert for alert in ALERTS if alert.case_id == case_id]
+                    await notify_acute_opened(
+                        case_id=case_id,
+                        unit_path=persona.unit_path if persona else "force",
+                        subject_token=body.token,
+                    )
                     return AcuteResponse(
                         case_id=case_id,
                         alerts=max(len(alerts), 2),

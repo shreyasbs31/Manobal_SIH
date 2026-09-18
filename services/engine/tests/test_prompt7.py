@@ -163,6 +163,38 @@ def test_command_hides_post_d7_and_refuses_individual_copilot() -> None:
     assert local["refuse"] is True
 
 
+def test_individual_copilot_never_imports_gateway(monkeypatch) -> None:
+    headers = _auth("commander")
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("model must not run for individual questions")
+
+    monkeypatch.setattr("app.ai.gateway.run", boom)
+    copilot = client.post(
+        "/api/v1/command/copilot",
+        headers=headers,
+        json={"question": "Charlie Coy mein kaun pareshan hai?", "lang": "hi"},
+    )
+    assert copilot.status_code == 200
+    assert copilot.json()["refuse"] is True
+    assert copilot.json()["provider"] == "refused"
+
+
+def test_aggregate_hindi_question_is_not_individual() -> None:
+    from app.officers import INDIVIDUAL_RE
+
+    question = "चार्ली कॉय की ड्यूटी तीन सप्ताह से ऊपर है। क्या रात की पाली घटाई जा सकती है?"
+    assert INDIVIDUAL_RE.search(question) is None
+    headers = _auth("commander")
+    copilot = client.post(
+        "/api/v1/command/copilot",
+        headers=headers,
+        json={"question": question, "lang": "hi"},
+    )
+    assert copilot.status_code == 200, copilot.text
+    assert copilot.json()["refuse"] is False
+
+
 def test_hq_brief_edits_and_exports_pdf() -> None:
     headers = _auth("hq")
     overview = client.get("/api/v1/hq/overview", headers=headers)

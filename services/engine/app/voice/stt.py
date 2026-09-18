@@ -1,12 +1,44 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import httpx
 
 from ..config import Settings, get_settings, live_providers_enabled
 from ..providers.endpoints import speech_stt_url
+from ..providers.outages import is_forced_outage
 from .routing import keyterms, stt_route
+
+_LETTER_RE = re.compile(r"[A-Za-z\u0900-\u097F\u0B80-\u0BFF]{2,}")
+
+
+def usable_transcript(alt: dict[str, Any] | None, min_confidence: float = 0.6) -> str | None:
+    if not alt:
+        return None
+    text = str(alt.get("transcript") or alt.get("Display") or alt.get("Text") or "").strip()
+    if not text or not _LETTER_RE.search(text):
+        return None
+    confidence = alt.get("confidence")
+    if confidence is None:
+        confidence = alt.get("Confidence")
+    if confidence is not None:
+        try:
+            if float(confidence) < min_confidence:
+                return None
+        except (TypeError, ValueError):
+            return None
+    words = alt.get("words") or []
+    if words:
+        scores = []
+        for word in words:
+            try:
+                scores.append(float(word.get("confidence") or 0))
+            except (TypeError, ValueError):
+                scores.append(0.0)
+        if scores and (sum(scores) / len(scores)) < 0.55:
+            return None
+    return text
 
 
 async def transcribe_pcm(pcm: bytes, lang: str) -> str | None:
@@ -16,6 +48,8 @@ async def transcribe_pcm(pcm: bytes, lang: str) -> str | None:
     settings = get_settings()
     try:
         if route.get("provider") == "deepgram":
+            if is_forced_outage("deepgram"):
+                return await _azure(pcm, route, settings)
             text = await _deepgram(pcm, route, settings)
             if text:
                 return text
@@ -72,8 +106,7 @@ async def _deepgram(pcm: bytes, route: dict[str, Any], settings: Settings) -> st
             last_error = exc
             continue
         alts = payload.get("results", {}).get("channels", [{}])[0].get("alternatives", [])
-        transcript = str(alts[0].get("transcript", "")).strip() if alts else ""
-        return transcript or None
+        return usable_transcript(alts[0] if alts else None)
     if last_error:
         return None
     return None
@@ -102,4 +135,10 @@ async def _azure(pcm: bytes, route: dict[str, Any], settings: Settings) -> str |
         )
         response.raise_for_status()
         payload = response.json()
-    return str(payload.get("DisplayText") or payload.get("Text") or "").strip() or None
+    status = str(payload.get("RecognitionStatus") or "Success")
+    if status not in {"Success", ""}:
+        return None
+    nbest = payload.get("NBest") or []
+    if nbest:
+        return usable_transcript(nbest[0])
+    return usable_transcript({"transcript": payload.get("DisplayText") or payload.get("Text") or ""})

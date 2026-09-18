@@ -229,3 +229,29 @@ Choices implied by the spec (recorded, not blocked):
 14. [x] `DEMO_RUNBOOK.md` Azure steps: warm-up, quota check, reset, fallback switches. Check: those headings exist.
 
 End-of-prompt gate: live provider rows that this machine can reach pass (`make providers-check` 11 pass, 0 fail); local Web PubSub and Key Vault are labelled 31.1; Architecture shows real regions; Azure part 2 is 31.1 because `azd env list` is empty; `make test`, `make lint`, `copy-lint`, UI review on touched screens.
+
+## Prompt 10A-2: Demo spine with evidence
+
+Host `make providers-check` is not proof. The engine container had no Entra identity: `infra/.cache/foundry.token` was an empty directory, so Docker mounted a directory, DefaultAzureCredential failed, and `AZURE_OPENAI_API_KEY` was unset. Speech, Translator, Content Safety, ACS, and Deepgram keys were already in the container.
+
+Choices implied by the spec (recorded, not blocked):
+- Local Docker Azure OpenAI: Entra file token if it is a non-empty file; otherwise `AZURE_OPENAI_API_KEY` plus `AZURE_OPENAI_ENDPOINT`. Azure itself stays Entra or managed identity.
+- Copilot aggregates call live `main` with aggregate-only tools. Individual questions match `INDIVIDUAL_RE` and return before any model call.
+- Voice turns use `fast`, stream the first sentence into TTS, run safety gates in parallel, and cache the companion system prompt.
+- Retrieval uses `embed` for English and `embed_ml` for Hindi, Hinglish, and Tamil, plus rerank when the deployment answers. Hash embeddings stay the FORCE_LOCAL path.
+- Translator HTTP errors for kok, sa, sat fall back to `main` and stay flagged machine-translated.
+- Lab and Governance numbers come from core tables when rows exist, otherwise from the in-memory demo cases, never from typed 4.2 / 0.11 literals.
+- Director spine presets include a recorded-turn control so Hindi and Tamil voice tests do not need a microphone.
+
+1. [x] Engine auth inside Docker: key or Entra file; `make providers-check` runs in the engine container and prints each auth path. Check: `e2e/artifacts/spine/providers-check.txt` 11 pass; Foundry `entra_file`.
+2. [x] Playwright against `http://localhost:3000` for Arjun Hindi voice, Karthik Tamil voice, Deepak typed and spoken distress, Hindi case brief, Copilot aggregate, Copilot refuse, Deepgram outage, Lab numbers. Check: png, network.log, engine.log under `e2e/artifacts/spine/`. 9/9 passed.
+3. [ ] `docs/SPINE_STATUS.md` one row per test, pass only with evidence, fail has root cause and fix. Check: 27.2 offline still fail; other rows pass with paths.
+4. [x] Copilot live main for aggregates; individual refusal before the model. Check: `test_individual_copilot_never_imports_gateway`; engine log `copilot aggregate provider=main` and `copilot refuse individual provider=refused`.
+5. [x] Stream first sentence to TTS; fast class; parallel gates; cached prompt; 20-turn first-audio p50/p95. Check: p50 2914 ms p95 3429 ms vs 2500 ms, miss, recorded in `voice-latency.txt`.
+6. [x] Real embeddings plus rerank; per-language retrieval eval; registry records the choice. Check: `e2e/artifacts/spine/retrieval.json` en=embed, hi/hi-Latn/ta=embed_ml, recall_at_3 1.0.
+7. [x] kok, sa, sat Translator errors fall back to main and stay machine-translated. Check: `translator-fallback.txt` and `infra/i18n/machine.json`.
+8. [ ] Service worker serves 27.2 navigations offline; Lab and Governance numbers computed, not literals. Check: Lab/Gov `source` is core.assessment (live). Offline Playwright still fail 1,4,8,10; test 7 hung. Fixes are in tree, web image not rebuilt yet.
+9. [x] Director one-click preset per 6.4 test with what to do and what should happen. Check: live `/director` table 17 Sep 2026. `deepak-typed` waits on engine rebuild.
+10. [ ] Update `docs/AUDIT.md` and a plain-language summary. Check: in progress; offline still open.
+
+End-of-prompt gate: every `docs/SPINE_STATUS.md` row is pass with evidence; Director presets replay each moment; `make test`, `make lint`, `copy-lint`.

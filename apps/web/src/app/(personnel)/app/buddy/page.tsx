@@ -29,6 +29,13 @@ export default function BuddyPage() {
           {data.paired ? (
             <>
               <p>Paired with a buddy in your unit. You never see their data.</p>
+              {data.last ? (
+                <p>
+                  Last check-in: {data.last.kind === "ok" ? "they said they are okay" : "you asked them to check in"}.
+                </p>
+              ) : (
+                <p>No check-in yet. Ask once, then wait.</p>
+              )}
               <button
                 className="mb-secondary"
                 onClick={() => {

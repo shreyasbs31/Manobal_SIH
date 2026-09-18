@@ -41,6 +41,7 @@ export default function MePage() {
   const [lang, setLang] = useState(
     typeof window === "undefined" ? "en" : window.localStorage.getItem("manobal.language") ?? "en",
   );
+  const [pulseNote, setPulseNote] = useState("");
   const items = data?.consents.items ?? [];
   const checked = consents.length ? consents : items.map((item) => item.on);
   const reloadRef = useRef(reload);
@@ -62,8 +63,8 @@ export default function MePage() {
   }, []);
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
-      {data ? (
+    <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
+      {data || offline ? (
         <div className="mb-home-stack">
           <h2 className="mb-type-title">Me</h2>
           <div className="mb-me-points">
@@ -81,12 +82,16 @@ export default function MePage() {
           {lang !== "en" && lang !== "hi" && lang !== "ta" ? <MachineTranslatedBadge /> : null}
 
           <h2 className="mb-section-label">My trends</h2>
-          <BaselineRibbonChart
-            label="Sleep hours against your usual range"
-            takeaway="Your sleep has been below your usual rhythm for 3 nights."
-            values={data.trends.points}
-            variant="detail"
-          />
+          {data ? (
+            <BaselineRibbonChart
+              label="Sleep hours against your usual range"
+              takeaway="Your sleep has been below your usual rhythm for 3 nights."
+              values={data.trends.points}
+              variant="detail"
+            />
+          ) : (
+            <p>Your last saved sleep and mood stay on this phone.</p>
+          )}
 
           {items.map((item, index) => (
             <ConsentToggleCard
@@ -105,9 +110,9 @@ export default function MePage() {
           ))}
 
           <h2 className="mb-section-label">Who viewed my information</h2>
-          {data.ledger.items.length === 0 ? (
+          {data && data.ledger.items.length === 0 ? (
             <p>No access yet.</p>
-          ) : (
+          ) : data ? (
             data.ledger.items.map((item, index) => (
               <AccessLedgerItem
                 actor={
@@ -124,15 +129,21 @@ export default function MePage() {
                 when={item.at ?? ""}
               />
             ))
+          ) : (
+            <p>Saved on this phone. Officers cannot see this list while you are offline.</p>
           )}
           <ReceiptCard hash={receipt.hash} time={receipt.time} />
 
           <h2 className="mb-section-label">Rights centre</h2>
-          <p>
-            Notice {data.rights.notice.version}. Hash {data.rights.notice.hash}.
-          </p>
+          {data ? (
+            <p>
+              Notice {data.rights.notice.version}. Hash {data.rights.notice.hash}.
+            </p>
+          ) : (
+            <p>Rights stay on this phone.</p>
+          )}
           <nav aria-label="Rights" className="mb-rights">
-            {data.rights.actions.map((action) => (
+            {(data?.rights.actions ?? []).map((action) => (
               <span key={action}>
                 {action} <span aria-hidden="true">›</span>
               </span>
@@ -165,35 +176,51 @@ export default function MePage() {
           <p>One anonymous question this week. Results are never shown individually.</p>
           <button
             className="mb-secondary"
-            onClick={() => void engineClient().savePulse("unit", 1)}
+            onClick={() => {
+              void engineClient()
+                .savePulse("unit", 1)
+                .then(() => setPulseNote("Saved. Command sees a company share, never your name."));
+            }}
             type="button"
           >
             This week felt heavy
           </button>
           <button
             className="mb-secondary"
-            onClick={() => void engineClient().savePulse("unit", 0)}
+            onClick={() => {
+              void engineClient()
+                .savePulse("unit", 0)
+                .then(() => setPulseNote("Saved. Command sees a company share, never your name."));
+            }}
             type="button"
           >
             This week felt steady
           </button>
-
           <h2 className="mb-section-label">Trust pulse</h2>
           <p>I believe this system exists to support me.</p>
           <button
             className="mb-secondary"
-            onClick={() => void engineClient().savePulse("trust", 1)}
+            onClick={() => {
+              void engineClient()
+                .savePulse("trust", 1)
+                .then(() => setPulseNote("Saved. Trust pulse stays anonymous."));
+            }}
             type="button"
           >
-            Yes
+            Yes, I believe this system exists to support me
           </button>
           <button
             className="mb-secondary"
-            onClick={() => void engineClient().savePulse("trust", 0)}
+            onClick={() => {
+              void engineClient()
+                .savePulse("trust", 0)
+                .then(() => setPulseNote("Saved. Trust pulse stays anonymous."));
+            }}
             type="button"
           >
             Not yet
           </button>
+          {pulseNote ? <p>{pulseNote}</p> : null}
 
           <h2 className="mb-section-label">Things Saathi remembers</h2>
           <p>Off by default. Saved items stay with you, never scoring, never officers.</p>
@@ -201,14 +228,14 @@ export default function MePage() {
             className="mb-secondary"
             onClick={() => {
               void engineClient()
-                .saveRemembers({ opt_in: !data.remembers.opt_in })
+                .saveRemembers({ opt_in: !(data?.remembers.opt_in ?? false) })
                 .then(() => reload());
             }}
             type="button"
           >
-            {data.remembers.opt_in ? "Turn off remembering" : "Turn on remembering"}
+            {(data?.remembers.opt_in ?? false) ? "Turn off remembering" : "Turn on remembering"}
           </button>
-          {data.remembers.items.map((item) => (
+          {(data?.remembers.items ?? []).map((item) => (
             <p key={item.text}>
               {item.group}: {item.text}
             </p>

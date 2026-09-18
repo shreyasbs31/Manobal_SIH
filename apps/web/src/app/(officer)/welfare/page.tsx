@@ -89,6 +89,10 @@ export default function WelfarePage() {
       offline={offline}
     >
       <div>
+        <p className="mb-desk-intro">
+          This desk holds named cases for your unit. Command never sees this queue. Open a case to
+          contact, rest, or refer. Tabs cover incidents, self-referrals, follow-ups, and the digest.
+        </p>
         {t4[0] ? (
           <div className="mb-t4-banner" role="status">
             Acute case {t4[0].case_id}. Acknowledge within {t4[0].sla_label}.
@@ -160,25 +164,27 @@ export default function WelfarePage() {
           </div>
         ) : null}
         {tab === "Incident check-ins" ? (
-          <TabList
-            empty="No one in this unit has asked to talk."
-            items={asRows(meta.incidents, "token")}
+          <TabCards
+            empty="No one in this unit has asked to talk after an incident."
+            items={asObjects(meta.incidents)}
+            kind="incident"
           />
         ) : null}
         {tab === "Self-referrals" ? (
-          <TabList
+          <TabCards
             empty="No self-referrals."
-            items={asRows(meta.self_referrals, "case_id")}
+            items={asObjects(meta.self_referrals)}
+            kind="referral"
           />
         ) : null}
         {tab === "Follow-ups due" ? (
-          <TabList empty="No follow-ups due." items={asRows(meta.followups, "case_id")} />
+          <TabCards empty="No follow-ups due." items={asObjects(meta.followups)} kind="followup" />
         ) : null}
         {tab === "Closed" ? (
-          <TabList empty="No closed cases." items={asIdRows(meta.closed)} />
+          <TabCards empty="No closed cases." items={asIdObjects(meta.closed)} kind="closed" />
         ) : null}
         {tab === "Digest" ? (
-          <TabList empty="No digest items today." items={asIdRows(meta.digest)} />
+          <TabCards empty="No digest items today." items={asIdObjects(meta.digest)} kind="digest" />
         ) : null}
         <section>
           <h2>Workload</h2>
@@ -223,26 +229,23 @@ function QueueAside({ current }: { current: WelfareCase }) {
   );
 }
 
-function asRows(value: unknown, key: string): string[] {
+function asObjects(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) {
     return [];
   }
   return value.map((item) => {
-    if (typeof item === "string") {
-      return item;
+    if (item && typeof item === "object") {
+      return item as Record<string, unknown>;
     }
-    if (item && typeof item === "object" && key in item) {
-      return String((item as Record<string, unknown>)[key]);
-    }
-    return JSON.stringify(item);
+    return { case_id: String(item) };
   });
 }
 
-function asIdRows(value: unknown): string[] {
+function asIdObjects(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value.map((item) => String(item));
+  return value.map((item) => ({ case_id: String(item) }));
 }
 
 function asNumbers(value: unknown): number[] {
@@ -252,15 +255,43 @@ function asNumbers(value: unknown): number[] {
   return value.map((item) => Number(item) || 0);
 }
 
-function TabList({ items, empty }: { items: string[]; empty: string }) {
+function TabCards({
+  items,
+  empty,
+  kind,
+}: {
+  items: Record<string, unknown>[];
+  empty: string;
+  kind: "incident" | "referral" | "followup" | "closed" | "digest";
+}) {
   if (items.length === 0) {
     return <p>{empty}</p>;
   }
   return (
-    <ul>
-      {items.map((item) => (
-        <li key={item}>{item}</li>
-      ))}
+    <ul className="mb-home-stack">
+      {items.map((item, index) => {
+        const caseId = String(item.case_id ?? item.window_id ?? `row-${index}`);
+        const href = item.case_id ? `/welfare/cases/${String(item.case_id)}` : "/welfare";
+        const detail =
+          kind === "incident"
+            ? "Someone asked to talk after an incident. Open the queue to pick up the case."
+            : kind === "referral"
+              ? `${String(item.channel ?? "I want to talk")} · ${String(item.status ?? "open")}`
+              : kind === "followup"
+                ? `Due ${String(item.due ?? "soon")}. ${String(item.reason ?? "")}`
+                : kind === "closed"
+                  ? "Closed. Open to read the log."
+                  : "In today's digest.";
+        return (
+          <li className="mb-card" key={`${caseId}-${index}`}>
+            <h2>{caseId}</h2>
+            <p>{detail}</p>
+            <a className="mb-secondary" href={href}>
+              Open
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

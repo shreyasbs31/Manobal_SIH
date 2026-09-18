@@ -12,11 +12,24 @@ export default function AssessmentsPage() {
   );
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
-      {data ? (
+    <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
+      {data || offline ? (
         <div className="mb-home-stack">
           <h1 className="mb-type-title">Assessments</h1>
-          {data.items.map((item) => (
+          <p>
+            Short questionnaires on this phone. AUDIT-C never leaves the device. PHQ-9 item 9 opens
+            safety if you need it.
+          </p>
+          {(data?.items ?? [
+            {
+              id: "pss10",
+              title: "PSS-10",
+              badge: "self",
+              badge_label: "Self-only",
+              self_only: true,
+              items: 10,
+            },
+          ]).map((item) => (
             <article className="mb-instrument" key={item.id}>
               <div>
                 <h2>{item.title}</h2>

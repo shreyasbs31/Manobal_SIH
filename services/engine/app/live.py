@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
+import json
+import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -21,10 +24,12 @@ from .incident import (
 )
 from .levers import rank_levers
 from .officers import (
+    INDIVIDUAL_RE,
     acute_guide,
     case_brief_fields,
     command_posture_payload,
     copilot_answer,
+    copilot_tools,
     counsel_desk,
     draft_order,
     hq_payload,
@@ -55,7 +60,7 @@ from .privacy.rights import (
     set_killswitch,
 )
 from .calls import issue_call_token
-from .realtime import groups_for, negotiate_token
+from .realtime import groups_for, negotiate_token, notify_ledger_viewed, notify_world
 from .providers.endpoints import foundry_is_live
 from .oversight import (
     admin_payload,
@@ -177,13 +182,7 @@ async def me_voice(
     return {
         "persona_id": persona.case_id,
         "language": language,
-        "lines": [
-            {"speaker": "you", "text": "Aaj neend poori nahi hui"},
-            {
-                "speaker": "saathi",
-                "text": "Raat ki duty ke baad aisa ho sakta hai. Kya aaj thoda aaram mil paaya?",
-            },
-        ],
+        "lines": [],
         "audio_cleared_ms": 84,
         "model_caption": (
             "Prototype: open-weight model hosted on Azure. Deployable on force servers."
@@ -225,6 +224,41 @@ async def companion_turn(
         "gate": result.gate,
         "hosting_caption": HOSTING_CAPTION,
     }
+
+
+VOICE_FIXTURES = {
+    "arjun-hi": {"lang": "hi", "text": "रात की ड्यूटी के बाद नींद पूरी नहीं हुई"},
+    "karthik-ta": {"lang": "ta", "text": "இரவு டியூட்டிக்கு பிறகு தூக்கம் சரியில்லை"},
+    "deepak-distress": {"lang": "hi-Latn", "text": "main jeena nahi chahta"},
+    "meena-en": {"lang": "en", "text": "Sleep was short after night duty."},
+}
+_FIXTURE_AUDIO: dict[str, dict[str, object]] = {}
+
+
+@router.get("/voice/fixtures/{fixture_id}")
+async def voice_fixture(
+    fixture_id: str,
+    principal: Annotated[Principal, Depends(require("me:read", RowPredicate.OWN))],
+) -> dict[str, object]:
+    del principal
+    row = VOICE_FIXTURES.get(fixture_id)
+    if row is None:
+        raise ApiError("fixture_missing", "Unknown recorded turn", hint="Pick a Director preset", status_code=404)
+    cached = _FIXTURE_AUDIO.get(fixture_id)
+    if cached is not None:
+        return cached
+    from .voice.tts import synth_sentence
+
+    audio, voice = await synth_sentence(row["text"], row["lang"])
+    payload = {
+        "id": fixture_id,
+        "lang": row["lang"],
+        "transcript": row["text"],
+        "voice": voice,
+        "audio_b64": base64.b64encode(audio).decode("ascii"),
+    }
+    _FIXTURE_AUDIO[fixture_id] = payload
+    return payload
 
 
 @router.get("/me/consents")
@@ -327,6 +361,7 @@ async def welfare_digest(
 async def welfare_case(
     case_id: str,
     principal: Annotated[Principal, Depends(require("welfare:read", RowPredicate.UNIT_SUBTREE))],
+    lang: str = Query(default="hi"),
 ) -> dict[str, object]:
     _ensure_persona_cases()
     case = CASES.get(case_id)
@@ -358,6 +393,20 @@ async def welfare_case(
         }
         for index, lever in enumerate(picked)
     ]
+    fields = case_brief_fields(case.case_id)
+    from .ai.gateway import local_task_text, run as gateway_run
+
+    try:
+        brief_result = await gateway_run("case_brief", {"fields": fields, "text": json.dumps(fields)}, lang)
+        brief = brief_result.text
+        brief_provider = brief_result.provider
+    except Exception:  # noqa: BLE001
+        brief = local_task_text("case_brief", {"fields": fields}, lang)
+        brief_provider = "local"
+    if not any(f"[{key}]" in brief for key in ("tier", "domain", "onset", "lever")):
+        brief = local_task_text("case_brief", {"fields": fields}, lang)
+        if brief_provider != "local":
+            brief_provider = f"{brief_provider}+marks"
     return {
         "case_id": case.case_id,
         "tier": case.tier,
@@ -372,14 +421,10 @@ async def welfare_case(
             }
             for domain in case.dominant_domains[:3]
         ],
-        "brief": (
-            "Tier is {tier} [tier]. "
-            "The leading domain is {domain} [domain]. "
-            "Drift began {onset} [onset]. "
-            "First lever to consider is {lever} [lever]."
-        ).format(**case_brief_fields(case.case_id)),
-        "brief_fields": case_brief_fields(case.case_id),
+        "brief": brief,
+        "brief_fields": fields,
         "brief_label": "Written by Saathi AI, check before use",
+        "brief_provider": brief_provider,
         "openers": [
             "Aaj duty ke baad baat karne ka waqt hai?",
             "Kaise ho. Rest mil paaya kya?",
@@ -478,7 +523,7 @@ async def welfare_reveal(
 ) -> dict[str, object]:
     _ensure_persona_cases()
     try:
-        return reveal_identity(
+        revealed = reveal_identity(
             case_id=case_id,
             actor=principal.actor_id,
             purpose_code=body.purpose_code,
@@ -495,6 +540,10 @@ async def welfare_reveal(
             hint="Choose care contact and write why you need to reach them",
             status_code=422,
         ) from error
+    record = CASES.get(case_id)
+    if record is not None:
+        await notify_ledger_viewed(subject_token=record.token, case_id=case_id)
+    return revealed
 
 
 class NoteBody(BaseModel):
@@ -685,7 +734,62 @@ async def command_copilot(
     ],
 ) -> dict[str, object]:
     del principal
-    return copilot_answer(body.question, body.lang)
+    if INDIVIDUAL_RE.search(body.question or ""):
+        refused = copilot_answer(body.question, body.lang)
+        refused["provider"] = "refused"
+        logging.getLogger("uvicorn.error").warning(
+            "copilot refuse individual provider=refused"
+        )
+        return refused
+    from .ai.gateway import run as gateway_run, strip_dashes
+
+    tools = copilot_tools()
+    try:
+        result = await gateway_run(
+            "command_copilot",
+            {"question": body.question, "aggregates": tools, "text": body.question},
+            body.lang,
+        )
+    except Exception:  # noqa: BLE001
+        local = copilot_answer(body.question, body.lang)
+        local["provider"] = "local"
+        local["refuse"] = False
+        return local
+    text = strip_dashes(result.text)
+    parsed: dict[str, object]
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        payload = {}
+    if isinstance(payload, dict) and payload.get("answer"):
+        chart = payload.get("chart_spec") or {
+            "type": "bar",
+            "metric": "duty_hours",
+            "value": tools["get_unit_metrics"]["duty_hours"],
+        }
+        parsed = {
+            "refuse": False,
+            "answer": strip_dashes(str(payload["answer"])),
+            "chart_spec": chart,
+            "tools_used": payload.get("tools_used") or ["get_unit_metrics", "list_top_drivers"],
+            "provider": result.provider,
+        }
+    else:
+        parsed = {
+            "refuse": False,
+            "answer": text,
+            "chart_spec": {
+                "type": "bar",
+                "metric": "duty_hours",
+                "value": tools["get_unit_metrics"]["duty_hours"],
+            },
+            "tools_used": ["get_unit_metrics", "list_top_drivers"],
+            "provider": result.provider,
+        }
+    logging.getLogger("uvicorn.error").warning(
+        "copilot aggregate provider=%s", parsed["provider"]
+    )
+    return parsed
 
 
 @router.get("/hq/overview")
@@ -827,6 +931,14 @@ async def gov_models_route(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
+    from .config import live_providers_enabled
+    from .ai.corpus import LIVE_EMBEDDED, run_retrieval_eval
+
+    if live_providers_enabled() and not LIVE_EMBEDDED:
+        try:
+            await run_retrieval_eval()
+        except Exception:  # noqa: BLE001
+            pass
     return gov_models_payload()
 
 
@@ -1222,7 +1334,9 @@ async def demo_scenario(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return set_scenario(name)
+    result = set_scenario(name)
+    await notify_world("scenario")
+    return result
 
 
 @router.post("/demo/reset")
@@ -1230,7 +1344,9 @@ async def demo_reset(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return reset_demo_state()
+    result = reset_demo_state()
+    await notify_world("reset")
+    return result
 
 
 @router.post("/demo/tamper")
@@ -1238,7 +1354,9 @@ async def demo_tamper(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return tamper_chain()
+    result = tamper_chain()
+    await notify_world("tamper")
+    return result
 
 
 @router.post("/demo/restore")
@@ -1246,7 +1364,9 @@ async def demo_restore(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return restore_chain()
+    result = restore_chain()
+    await notify_world("restore")
+    return result
 
 
 @router.post("/demo/outage")
@@ -1255,7 +1375,9 @@ async def demo_outage(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return set_outage(body.provider, body.opened)
+    result = set_outage(body.provider, body.opened)
+    await notify_world("outage")
+    return result
 
 
 @router.post("/demo/resilience")
@@ -1264,7 +1386,9 @@ async def demo_resilience(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return set_resilience(body.enabled)
+    result = set_resilience(body.enabled)
+    await notify_world("resilience")
+    return result
 
 
 @router.post("/demo/director-clock")
@@ -1273,7 +1397,9 @@ async def demo_director_clock(
     principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
 ) -> dict[str, object]:
     del principal
-    return advance_clock(days=body.days, running=body.running, speed=body.speed)
+    result = advance_clock(days=body.days, running=body.running, speed=body.speed)
+    await notify_world("clock")
+    return result
 
 
 @router.post("/demo/nightly")
@@ -1283,6 +1409,7 @@ async def demo_nightly(
     del principal
     _ensure_persona_cases()
     ensure_lab_worlds()
+    await notify_world("nightly")
     return {"status": "scored", "subjects": 8000}
 
 

@@ -9,6 +9,7 @@ import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
 import { drainQueue } from "@/lib/offline";
 import { useEngine } from "@/lib/use-engine";
+import { announceWorld } from "@/lib/world";
 
 type Shot = {
   id: string;
@@ -16,6 +17,7 @@ type Shot = {
   persona: string;
   href: string;
   clicks: string;
+  expect?: string;
 };
 
 type Scenario = { id: string; label: string; href?: string; phone: string; console: string };
@@ -41,6 +43,7 @@ export default function DirectorPage() {
   async function act(work: () => Promise<unknown>, ok: string) {
     try {
       await work();
+      announceWorld("director");
       setNotice(ok);
       reload();
     } catch (caught: unknown) {
@@ -97,6 +100,7 @@ export default function DirectorPage() {
                 setAir(next);
                 window.localStorage.setItem("manobal.airplane", next ? "1" : "0");
                 window.dispatchEvent(new Event("manobal-airplane"));
+                announceWorld("airplane");
               }}
               type="button"
             >
@@ -134,6 +138,24 @@ export default function DirectorPage() {
               type="button"
             >
               Simulate outage
+            </button>
+            <button
+              className="mb-secondary"
+              onClick={() =>
+                void act(() => engineClient().demoOutage("deepgram", true), "Deepgram outage on.")
+              }
+              type="button"
+            >
+              Deepgram outage
+            </button>
+            <button
+              className="mb-secondary"
+              onClick={() =>
+                void act(() => engineClient().demoOutage("deepgram", false), "Deepgram outage off.")
+              }
+              type="button"
+            >
+              Deepgram restored
             </button>
             <button
               className="mb-secondary"
@@ -184,13 +206,15 @@ export default function DirectorPage() {
             ))}
           </div>
           <h2>Stage presets</h2>
+          <p>Each row is one demo spine test. Open it, follow What to do, and check What should happen.</p>
           <table className="mb-compare">
-            <caption>One row per recording shot</caption>
+            <caption>One row per recording shot and spine test</caption>
             <thead>
               <tr>
                 <th scope="col">Shot</th>
                 <th scope="col">Open</th>
-                <th scope="col">Clicks</th>
+                <th scope="col">What to do</th>
+                <th scope="col">What should happen</th>
               </tr>
             </thead>
             <tbody>
@@ -201,6 +225,7 @@ export default function DirectorPage() {
                     <Link href={shot.href}>{shot.id}</Link>
                   </td>
                   <td>{shot.clicks}</td>
+                  <td>{shot.expect ?? shot.clicks}</td>
                 </tr>
               ))}
             </tbody>

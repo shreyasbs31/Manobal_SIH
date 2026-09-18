@@ -18,7 +18,7 @@ async def content_safety_self_harm(text: str) -> bool | None:
     if key:
         headers["Ocp-Apim-Subscription-Key"] = key
     try:
-        async with httpx.AsyncClient(timeout=1.2) as client:
+        async with httpx.AsyncClient(timeout=4.0) as client:
             response = await client.post(
                 url,
                 headers=headers,
@@ -45,7 +45,7 @@ async def prompt_shields_attack(text: str) -> bool | None:
     if key:
         headers["Ocp-Apim-Subscription-Key"] = key
     try:
-        async with httpx.AsyncClient(timeout=1.2) as client:
+        async with httpx.AsyncClient(timeout=4.0) as client:
             response = await client.post(
                 url,
                 headers=headers,

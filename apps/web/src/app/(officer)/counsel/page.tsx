@@ -14,14 +14,17 @@ export default function CounselPage() {
   const profile = useEngine("officer-profile", (client, signal) => client.officerProfile(signal));
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("");
-  const active = data?.requests[0];
+  const [picked, setPicked] = useState("");
+  const active =
+    data?.requests.find((item) => String(item.id) === picked) ?? data?.requests[0];
 
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
         <div className="mb-home-stack">
-          <p>
-            Language match first, then load. Hindi requests go to Anjali.
+          <p className="mb-desk-intro">
+            Counsellors take named or anonymous sessions. Notes stay on this desk. Welfare sees a
+            suggested rest lever, not your notes.
             {profile.data ? " Languages Hindi, Marathi, English." : ""}
           </p>
           <section>
@@ -35,12 +38,17 @@ export default function CounselPage() {
           <section>
             <h2>Requests</h2>
             {data.requests.map((item) => (
-              <p key={String(item.id)}>
+              <button
+                className={String(item.id) === String(active?.id) ? "mb-primary" : "mb-secondary"}
+                key={String(item.id)}
+                onClick={() => setPicked(String(item.id))}
+                type="button"
+              >
                 {String(item.kind) === "named" ? "Named" : "Anonymous"}{" "}
                 {String(item.language) === "hi" ? "Hindi" : "English"}
-                {item.handle ? `, handle ${String(item.handle)}` : ""}. {String(item.summary)} Routed to
-                Anjali.
-              </p>
+                {item.handle ? `, handle ${String(item.handle)}` : ""}. {String(item.summary)} Routed
+                to Anjali.
+              </button>
             ))}
           </section>
           {active ? (

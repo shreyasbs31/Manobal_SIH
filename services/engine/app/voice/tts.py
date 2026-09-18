@@ -11,7 +11,7 @@ from ..config import Settings, get_settings, live_providers_enabled
 from ..providers.endpoints import speech_tts_url
 from .routing import tts_route
 
-TTS_TIMEOUT_S = 8.0
+TTS_TIMEOUT_S = 20.0
 
 
 def silent_wav_bytes(seconds: float = 0.35, rate: int = 16000) -> bytes:

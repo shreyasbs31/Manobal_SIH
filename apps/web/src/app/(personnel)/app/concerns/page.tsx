@@ -18,6 +18,10 @@ export default function ConcernsPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={false}>
       <div className="mb-home-stack">
         <h1 className="mb-type-title">Raise a concern</h1>
+        <p>
+          Leave, land, family, or colleagues. Welfare sees the category and your words, not a score.
+          You can send it without your name.
+        </p>
         <label>
           Category
           <select onChange={(event) => setCategory(event.target.value)} value={category}>
@@ -43,6 +47,9 @@ export default function ConcernsPage() {
         <button
           className="mb-primary"
           onClick={() => {
+            if (!text.trim()) {
+              return;
+            }
             void engineClient()
               .saveConcern({ category, text, anonymous })
               .then(() => {
@@ -55,11 +62,19 @@ export default function ConcernsPage() {
           Send
         </button>
         <h2 className="mb-section-label">Status</h2>
-        {(data?.items ?? []).map((row) => (
-          <p key={String(row.id)}>
-            {String(row.category)} · {String(row.status)} · SLA {String(row.sla)}
-          </p>
-        ))}
+        {(data?.items ?? []).length === 0 ? (
+          <p>No concerns sent yet.</p>
+        ) : (
+          (data?.items ?? []).map((row) => (
+            <article className="mb-card" key={String(row.id)}>
+              <h2>{String(row.category)}</h2>
+              <p>
+                {String(row.status)} · SLA {String(row.sla)}
+                {row.anonymous ? " · sent without your name" : ""}
+              </p>
+            </article>
+          ))
+        )}
       </div>
     </ScreenState>
   );

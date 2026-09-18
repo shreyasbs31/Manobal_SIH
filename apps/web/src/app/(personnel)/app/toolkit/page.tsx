@@ -11,26 +11,46 @@ export default function ToolkitPage() {
     client.meToolkit(signal),
   );
 
+  const items = data?.items ?? [
+    {
+      id: "breathe",
+      title: "Box breathing",
+      detail: "Four counts in, hold, out, hold.",
+      href: "/app/toolkit/breathe",
+      offline: true,
+    },
+    {
+      id: "grounding",
+      title: "5-4-3-2-1 grounding",
+      detail: "Name what you can see, feel, and hear.",
+      href: "/app/toolkit/grounding",
+      offline: true,
+    },
+  ];
+
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
-      {data ? (
-        <div className="mb-home-stack">
-          <h2 className="mb-type-title">Toolkit</h2>
-          <p>Breathing, rest, and short reads work without a network.</p>
-          {data.items.map((item, index) => (
-            <article className="mb-context-card" key={item.id}>
-              {index === 0 ? <SceneSleepWindDown /> : <SceneEmptyPath />}
-              <div>
-                <h2>{item.title}</h2>
-                <p>{item.detail}</p>
-                <Link className="mb-primary" href={item.href}>
-                  Start
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : null}
+    <ScreenState error={error} loading={loading && !offline} offline={offline} empty={false}>
+      <div className="mb-home-stack">
+        <h2 className="mb-type-title">Toolkit</h2>
+        <p>
+          Breathing, rest, letters, and short reads stay on this phone. Nothing here is sent to a
+          commander. Open one and follow the steps. Helped or not for me only changes the order for
+          you.
+        </p>
+        {items.map((item, index) => (
+          <article className="mb-context-card" key={item.id}>
+            {index === 0 ? <SceneSleepWindDown /> : <SceneEmptyPath />}
+            <div>
+              <h2>{item.title}</h2>
+              <p>{item.detail}</p>
+              {item.offline ? <p>Works without a network.</p> : null}
+              <Link className="mb-primary" href={item.href}>
+                Start
+              </Link>
+            </div>
+          </article>
+        ))}
+      </div>
     </ScreenState>
   );
 }

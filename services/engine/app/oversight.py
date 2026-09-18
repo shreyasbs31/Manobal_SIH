@@ -19,6 +19,7 @@ from .observability import (
 )
 from .privacy.rights import KILLSWITCHES, set_killswitch
 from .providers.router import PROVIDER_CALLS, get_router
+from .scoring.overlays import compute_overlays
 from .scoring.forecast import EXCLUDED_ATTRIBUTES, REGISTRY, metrics, register_world_metrics, train_forecast
 from .scoring.ruleset import load_ruleset, verify_yaml
 
@@ -58,8 +59,9 @@ SHOTS: list[dict[str, str]] = [
         "persona": "arjun",
         "phone": "/app/saathi",
         "console": "/welfare",
-        "href": "/stage?phone=/app/saathi&console=/welfare&shot=voice",
-        "clicks": "Hold to talk. Captions on. Audio-cleared chip after the turn.",
+        "href": "/stage?phone=/app/saathi&console=/welfare&shot=voice&fixture=arjun-hi",
+        "clicks": "Sign in as Arjun. Open Saathi. Click Play recorded check-in. Hindi captions and audio-cleared should appear.",
+        "expect": "Saathi replies in Hindi. Audio-cleared chip after the turn. No safety screen.",
     },
     {
         "id": "drift",
@@ -104,7 +106,18 @@ SHOTS: list[dict[str, str]] = [
         "phone": "/app",
         "console": "/command",
         "href": "/stage?phone=/app&console=/command&shot=copilot",
-        "clicks": "Ask: Charlie Coy mein kaun pareshan hai?",
+        "clicks": "Open copilot. Ask: Charlie Coy mein kaun pareshan hai?",
+        "expect": "Refusal in Hindi. No name. Unit share 20 to 30 percent. Chart still shows.",
+    },
+    {
+        "id": "copilot-aggregate",
+        "label": "Copilot Hindi aggregate",
+        "persona": "commander",
+        "phone": "/app",
+        "console": "/command",
+        "href": "/stage?phone=/app&console=/command&shot=copilot-aggregate",
+        "clicks": "Open copilot. Click the Hindi duty-hours question. Press Ask.",
+        "expect": "Live main model answers in Hindi about the unit. A chart appears. No names.",
     },
     {
         "id": "roster",
@@ -119,10 +132,21 @@ SHOTS: list[dict[str, str]] = [
         "id": "deepak",
         "label": "Deepak safety and T4",
         "persona": "deepak",
-        "phone": "/app/safety",
-        "console": "/medical",
-        "href": "/stage?phone=/app/safety&console=/medical&shot=deepak",
-        "clicks": "Safety audio, call buttons, Medical acknowledge.",
+        "phone": "/app/saathi",
+        "console": "/welfare",
+        "href": "/stage?phone=/app/saathi&console=/welfare&shot=deepak&fixture=deepak-distress",
+        "clicks": "Sign in as Deepak. Type 'main jeena nahi chahta', then Play recorded check-in for the spoken path.",
+        "expect": "No model reply. Safety screen. T4 on Welfare and Medical within 5 seconds.",
+    },
+    {
+        "id": "deepak-typed",
+        "label": "Deepak typed distress",
+        "persona": "deepak",
+        "phone": "/app/saathi",
+        "console": "/welfare",
+        "href": "/stage?phone=/app/saathi&console=/welfare&shot=deepak-typed",
+        "clicks": "Sign in as Deepak. Keyboard. Type main jeena nahi chahta. Send.",
+        "expect": "No model reply. Safety screen. Welfare and Medical show T4.",
     },
     {
         "id": "governance",
@@ -140,7 +164,8 @@ SHOTS: list[dict[str, str]] = [
         "phone": "/app",
         "console": "/lab",
         "href": "/stage?phone=/app&console=/lab&shot=lab",
-        "clicks": "Toggle shifted world. Read the synthetic-data note.",
+        "clicks": "Toggle shifted world. Read the source line under the figures.",
+        "expect": "Precision, recall, and Brier come from core or demo cases. Source line is visible. Imran T1, Thomas T0.",
     },
     {
         "id": "offline",
@@ -175,8 +200,9 @@ SHOTS: list[dict[str, str]] = [
         "persona": "karthik",
         "phone": "/app/saathi",
         "console": "/welfare",
-        "href": "/stage?phone=/app/saathi&console=/welfare&shot=karthik",
-        "clicks": "Sign in as Karthik. Voice check-in in Tamil.",
+        "href": "/stage?phone=/app/saathi&console=/welfare&shot=karthik&fixture=karthik-ta",
+        "clicks": "Sign in as Karthik. Click Play recorded check-in.",
+        "expect": "Tamil captions. Saathi replies. Audio-cleared chip. No safety screen.",
     },
     {
         "id": "rajesh",
@@ -204,6 +230,26 @@ SHOTS: list[dict[str, str]] = [
         "console": "/command/roster",
         "href": "/stage?phone=/app/rest&console=/command/roster&shot=meena",
         "clicks": "EL/CL window. Copy says MANOBAL does not submit leave.",
+    },
+    {
+        "id": "hindi-brief",
+        "label": "Hindi case brief",
+        "persona": "uwo",
+        "phone": "/app/me",
+        "console": "/welfare/cases/MB-4091",
+        "href": "/stage?phone=/app/me&console=/welfare/cases/MB-4091&shot=hindi-brief",
+        "clicks": "Sign in as welfare. Open MB-4091. Brief language Hindi.",
+        "expect": "Four sentences with [tier] [domain] [onset] [lever] field marks.",
+    },
+    {
+        "id": "deepgram-outage",
+        "label": "Deepgram outage fallback",
+        "persona": "meena",
+        "phone": "/app/saathi",
+        "console": "/governance",
+        "href": "/stage?phone=/app/saathi&console=/governance&shot=deepgram-outage&fixture=meena-en",
+        "clicks": "Director: Simulate outage with provider deepgram. Sign in as Meena. Play recorded check-in.",
+        "expect": "Turn still completes via Azure Speech. Captions appear.",
     },
 ]
 
@@ -439,52 +485,10 @@ def reset_demo_state() -> dict[str, Any]:
 
 
 def gov_kpis() -> dict[str, Any]:
-    ensure_lab_worlds()
+    overlay = compute_overlays()
     return {
-        "kpis": [
-            {
-                "label": "Lead time",
-                "value": "4.2 d",
-                "hint": "Median days from onset to first action",
-                "code": "K1",
-            },
-            {
-                "label": "False-positive rate",
-                "value": "0.11",
-                "hint": "Alerts with no later corroboration",
-                "code": "K3",
-            },
-            {
-                "label": "Alert burden",
-                "value": "1.4 / 100",
-                "hint": "Open T2+ cases per hundred enrolled",
-                "code": "K10",
-            },
-            {
-                "label": "Ack time T4",
-                "value": "3.1 min",
-                "hint": "Median until a human acknowledges",
-                "code": "K11",
-            },
-            {
-                "label": "Break-glass rate",
-                "value": "0.4%",
-                "hint": "Identity reveals per open case",
-                "code": "K12",
-            },
-            {
-                "label": "Trust index",
-                "value": "Held",
-                "hint": "Opt-out does not change scoring",
-                "code": "K13",
-            },
-            {
-                "label": "Enrolment integrity",
-                "value": "Held",
-                "hint": "No duplicate tokens in the seed",
-                "code": "K14",
-            },
-        ],
+        "kpis": overlay["kpis"],
+        "source": overlay["source"],
         "cost_guard": cost_guard_active(),
         "cost_banner": (
             "Daily estimated spend is over the cap. Companion stays on the cheaper class."
@@ -495,23 +499,21 @@ def gov_kpis() -> dict[str, Any]:
 
 
 def gov_fairness() -> dict[str, Any]:
-    rows = [
-        {"label": "Flag rate by rank band", "ratio": 0.92, "slice": "rank_band"},
-        {"label": "Flag rate by theatre", "ratio": 1.08, "slice": "theatre"},
-        {"label": "Flag rate by language group", "ratio": 0.97, "slice": "language"},
-    ]
+    overlay = compute_overlays()
+    rows = overlay["fairness"]
     return {
         "fairness": rows,
         "exposure_parity": [
             {
                 "slice": row["slice"],
                 "ratio": row["ratio"],
-                "within_band": 0.8 <= row["ratio"] <= 1.25,
+                "within_band": 0.8 <= float(row["ratio"]) <= 1.25,
             }
             for row in rows
         ],
         "band": "0.80 to 1.25",
         "note": "Ratios compare group flag rate to the force rate. No ranks of people.",
+        "source": overlay["source"],
     }
 
 
@@ -812,48 +814,29 @@ def set_admin_flag(name: str, enabled: bool) -> dict[str, Any]:
 
 
 def lab_payload(world: str = "primary") -> dict[str, Any]:
+    overlay = compute_overlays()
     ensure_lab_worlds()
-    chosen = world if world in REGISTRY else "primary"
-    primary = REGISTRY.get("primary", {})
-    shifted = REGISTRY.get("shifted", {})
-    metrics_body = {
-        str(key): round(float(value), 3)
-        for key, value in dict(REGISTRY.get(chosen, {}).get("metrics") or {}).items()
-        if isinstance(value, (int, float))
-    }
+    chosen = world if world in {"primary", "shifted"} else "primary"
+    metrics_body = overlay["metrics"] if chosen == "primary" else overlay["shifted_metrics"]
     return {
         "world": chosen,
-        "primary": primary,
-        "shifted": shifted,
+        "source": overlay["source"],
+        "primary": REGISTRY.get("primary", {}),
+        "shifted": REGISTRY.get("shifted", {}),
         "metrics": metrics_body,
-        "calibration": [
-            {"predicted": 0.15, "observed": 0.14},
-            {"predicted": 0.45, "observed": 0.41},
-            {"predicted": 0.75, "observed": 0.70},
-        ],
-        "confusion": {"tp": 18, "fp": 3, "tn": 22, "fn": 5},
-        "ablations": [
-            {
-                "name": "No forecast",
-                "delta": "Lead time +2.1 d",
-                "note": "Early T1 lift disappears.",
-            },
-            {
-                "name": "No wearable domain",
-                "delta": "Recall -0.04",
-                "note": "Body corroboration thins.",
-            },
-        ],
+        "calibration": overlay["calibration"],
+        "confusion": overlay["confusion"],
+        "ablations": overlay["ablations"],
         "zero_penalty": {
             "excluded": sorted(EXCLUDED_ATTRIBUTES),
             "present_in_model": False,
             "note": "Gender, home region, language, religion, and caste never enter scoring.",
         },
-        "personas": {
-            "imran": "Imran stays T1. Workload eased after the rest week.",
-            "thomas": "Thomas stays T0. Coverage is complete and the ribbon is flat.",
-        },
-        "honest": "These figures are from synthetic worlds. They are not a field trial.",
+        "personas": overlay["personas"],
+        "honest": (
+            "These figures are computed from the core database when assessment rows exist, "
+            "otherwise from the in-memory demo cases. They are not a field trial."
+        ),
     }
 
 
@@ -979,6 +962,11 @@ def advance_clock(*, days: int = 0, running: bool | None = None, speed: float | 
 
 
 def set_outage(provider: str, opened: bool) -> dict[str, Any]:
+    from .providers.outages import set_forced_outage
+
+    if provider in {"deepgram", "azure_speech", "translator"}:
+        state = set_forced_outage(provider, opened)
+        return {"provider": provider, "state": state}
     router = get_router()
     breaker = router._breaker(provider)
     if opened:

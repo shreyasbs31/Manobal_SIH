@@ -9,30 +9,30 @@ classes:
 capabilities:
   companion_text:
     ordered: [open, main]
-    timeout_s: 8.0
+    timeout_s: 12.0
   companion_voice:
     ordered: [fast, open]
-    timeout_s: 3.0
+    timeout_s: 12.0
   crisis_classify:
     ordered: [fast, main]
-    timeout_s: 1.5
+    timeout_s: 8.0
     fail_safe: crisis
   output_guard:
     ordered: [fast, main]
-    timeout_s: 1.5
+    timeout_s: 8.0
     fail_safe: block
   checkin_extract:
     ordered: [fast, main]
-    timeout_s: 1.5
+    timeout_s: 8.0
   case_brief:
     ordered: [main, open]
-    timeout_s: 8.0
+    timeout_s: 20.0
   brief_verify:
     ordered: [fast, main]
-    timeout_s: 1.5
+    timeout_s: 8.0
   command_copilot:
     ordered: [main, open]
-    timeout_s: 8.0
+    timeout_s: 20.0
   hq_brief:
     ordered: [main, open]
     timeout_s: 8.0
@@ -41,7 +41,7 @@ capabilities:
     timeout_s: 8.0
   grievance_triage:
     ordered: [fast, main]
-    timeout_s: 1.5
+    timeout_s: 8.0
   embeddings:
     ordered: [embeddings]
     timeout_s: 8.0
@@ -74,10 +74,10 @@ capabilities:
     timeout_s: 0.8
   content_safety:
     ordered: [azure_content_safety]
-    timeout_s: 1.2
+    timeout_s: 4.0
   prompt_shields:
     ordered: [azure_prompt_shields]
-    timeout_s: 1.2
+    timeout_s: 4.0
 
 personnel_or_safety_tasks:
   - companion_turn

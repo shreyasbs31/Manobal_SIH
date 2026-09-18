@@ -1,53 +1,52 @@
-# MANOBAL verification audit (Prompt 9, updated Prompt 10)
+# MANOBAL verification audit (Prompt 9, updated Prompt 10 and 10A-2)
 
 Date: 17 Sep 2026. Machine: Apple Silicon Mac. Env file: `infra/.env` (template `infra/.env.example`). This audit did not open `infra/.env`, `infra/secrets.env`, or `infra/keys/`. Settings load those files through the settings loader and print only pass or fail.
 
-Goal: an honest status before go-live. Prompt 9 recorded labelled fallbacks. Prompt 10 replaced the local AI path with live providers on this Mac. Azure hosting, the iPhone domain, and Key Vault split remain 31.1.
+Goal: an honest status before go-live. Prompt 9 recorded labelled fallbacks. Prompt 10 replaced the local AI path with live providers on this Mac. Prompt 10A-2 proved those providers from the engine container and ran the demo spine through the UI. Azure hosting, the iPhone domain, and Key Vault split remain 31.1. Spine evidence lives in `docs/SPINE_STATUS.md`.
 
 ## Status table
 
 | Item | Spec | Status | Evidence |
 |---|---|---|---|
-| Demo spine exists as screens | 2.2, 24, 30.3 | pass | Routes and Director presets match `docs/SHOT_LIST.md`. Local demo-spine E2E exists in `e2e/tests/demo-spine.spec.ts`. |
-| Stub search on recorded paths | 2.2, 32.13 | partial | No TODO, FIXME, or lorem in app code. Recorded paths still use one landing fixture ribbon, Me fixture copy, and hardcoded Lab or Governance figures. Live AI fallbacks remain for outages. See section 1. Owner: numbers pass, not Prompt 10. |
-| Foundry main, fast, open, embeddings | 3.2, 3.3, 31.1 | pass | Azure OpenAI v1 + Entra on manobal-ai-resource. `make providers-check`: main 4652 ms, fast 4958 ms, open 3345 ms, embeddings dim 1024 in 4288 ms. Host is manobal-ai-resource.openai.azure.com. |
-| Deepgram | 13.2, 31.1 | pass | Listen nova-3 916 ms on this machine. English TTS is flux-meena-en. |
-| Azure Speech | 13.2, 31.1 | pass | TTS 505 ms via the regional TTS host. Hindi hi-IN-SwaraNeural, Hinglish hi-IN-AnanyaNeural. |
-| Translator | 3.2, 27.2 i18n | pass | translate en to hi 402 ms. Catalog regenerated; kok, sa, sat returned HTTP 400 and stay English with review pending. |
-| Content Safety | 12.3, 3.2 | pass | text analyze 1175 ms. |
-| ACS | 15.4, 31.1 | partial | identities create 510 ms. Talk and Counsel issue a calling token. Two-browser call across networks was not run. |
-| Web PubSub | 18, 31.1 | pass | Local realtime hub (31.1). Azure send is implemented when a connection string is set. `azd env list` is empty, so Azure PubSub is not live. |
-| Key Vault | 14.1, 31.1 | pass | Local wrap file (31.1). Azure wrap/unwrap and the engine-refused split wait on azd. |
-| `make providers-check` | 05 go-live 8.2 | pass | 11 pass, 0 fail on this machine. Missing live provider names: none. |
-| Spec 27.2 offline, Playwright network off | 27.2 | partial | See section 3. Structured voice copy and cached audio pass. Local nudges and the safety plan work on an already-open page. Fresh navigations after `setOffline(true)` often fail (`net::ERR_INTERNET_DISCONNECTED`) because the service worker does not reliably serve HTML. Owner: Cursor, make SW cache and serve every Saathi document in 27.2; you rehearse on an iPhone with Wi-Fi and cellular off. |
-| Shot list, 1920 by 1080, rubric | 30.3, UI 9 | partial | Frames in `e2e/artifacts/audit/*-1920.png`. Landing, Copilot, Lab, roster, and Architecture are video-usable. Stage splits share one session, so one pane is often a scope error. Drift and one Governance capture were empty or still loading. See section 4. Owner: you record phone and console as two views, or Cursor adds a stage dual-session; wait for iframe load before rolling. |
-| Lab, Governance, Landing numbers | 8.9, 32.11 | fail | Landing figures are cited but marked "verify before citation". Governance K1, K3, K10 to K12 are hardcoded strings. Lab precision, recall, and Brier come from a 48-row in-memory fit, not the seed database. Confusion and ablations are hardcoded. Benchmark size was 8,000 `z_score` loops; now 80,000 subjects in memory. Live `POST /api/v1/lab/benchmark` on this stack: `subjects` 80000, `seconds` 1.109. Owner: you verify landing citations; Cursor compute Governance and Lab overlays from the database before the pitch quotes them. |
-| `make dev` health-checks data stores first | 05 go-live 8.6 | pass | `make infra-ready` starts `core-db`, `vault-db`, and Redis, waits, then `pg_isready` and `redis-cli ping`. `make dev` runs that before the rest of the stack. |
-| Architecture shows healthy | 17.12, 23.6 | pass | Live `GET /api/v1/system/selftest` returned `healthy: true` with core reachable, all five extensions, vault isolated, Zone X held. Architecture copy: "Stack: healthy. Core database reachable." (`e2e/artifacts/audit/architecture-1920.png`). |
-| Spec 32 weakness walk | 32 | partial | Prevention is in code for most items. Recorded Stage frames can still show empty panes, loading, labelled cloud fallbacks, and unverified landing statistics. See section 7. Owner steps sit on the failing rows. |
-| Spec 23.6 local stack | 23.6 | partial | Local stack and live providers work on this Mac. Azure from scratch, hosted E2E URL, passkeys on a public domain, and iPhone Home Screen are not done. Owner: you, azd env. |
+| Demo spine exists as screens | 2.2, 24, 30.3 | pass | Director table and Stage captions cover the 6.4 tests. Playwright `e2e/tests/spine.spec.ts` 9/9 against Docker `http://localhost:3000`. |
+| Stub search on recorded paths | 2.2, 32.13 | partial | No TODO, FIXME, or lorem in app code. Landing ribbon is still a fixture. Lab and Governance now print a `Source:` line from `core.assessment` or `demo_cases_memory`. Live AI fallbacks remain for outages. |
+| Foundry main, fast, open, embeddings | 3.2, 3.3, 31.1 | pass | In-container `make providers-check`: Foundry `entra_file`, main 2832 ms, fast 2222 ms, open 2524 ms, embeddings dim 1024 in 1301 ms. File `e2e/artifacts/spine/providers-check.txt`. |
+| Deepgram | 13.2, 31.1 | pass | In-container listen nova-3 1869 ms, auth `deepgram_key`. |
+| Azure Speech | 13.2, 31.1 | pass | In-container TTS 517 ms, auth `speech_key`. |
+| Translator | 3.2, 27.2 i18n | pass | In-container translate en to hi 744 ms. kok, sa, sat HTTP 400 then `main_model`, still `machine_translated`. |
+| Content Safety | 12.3, 3.2 | pass | In-container text analyze 1227 ms. |
+| ACS | 15.4, 31.1 | partial | In-container identities create 692 ms. Two-browser call across networks was not run. |
+| Web PubSub | 18, 31.1 | pass | Local realtime hub (31.1). |
+| Key Vault | 14.1, 31.1 | pass | Local wrap file (31.1). |
+| `make providers-check` | 05 go-live 8.2 | pass | Must run inside the engine container. Host-only check is not proof. Container: 11 pass, 0 fail. |
+| Spec 27.2 offline, Playwright network off | 27.2 | fail | See section 3 and `docs/SPINE_STATUS.md`. Pass 2,3,5,6,9,11,12. Fail 1,4,8,10. Test 7 hung. Fixes are in the tree; web image not rebuilt in this pass. |
+| Shot list, 1920 by 1080, rubric | 30.3, UI 9 | partial | Unchanged from Prompt 9 frames. Use the new spine pngs under `e2e/artifacts/spine/` for the 6.4 beats. |
+| Lab, Governance, Landing numbers | 8.9, 32.11 | partial | Lab and Governance `Source: core.assessment` on the live stack 17 Sep 2026. Empty assessment table produced zeros (lead n/a, precision 0.00), not 4.2 / 0.11. Overlay now uses `demo_cases_memory` when that table is empty (engine rebuild needed). Landing citations still "verify before citation". |
+| `make dev` health-checks data stores first | 05 go-live 8.6 | pass | Unchanged. |
+| Architecture shows healthy | 17.12, 23.6 | pass | Unchanged. |
+| Spec 32 weakness walk | 32 | partial | Copilot refusal and Deepak T4 are now proven on the live stack. Offline nav and 2.5 s first audio are still misses. |
+| Spec 23.6 local stack | 23.6 | partial | Local Docker now reaches Foundry. Azure from scratch still 31.1. |
 
-## Fixes made during this audit
+## Fixes made during Prompt 10A-2
 
-1. `Makefile`: `infra-ready` health-checks core Postgres, vault Postgres, and Redis before `make dev` starts the engine. Added `make providers-check`.
-2. Engine and vault settings load `infra/.env` through the settings loader (still never printed).
-3. `POST /lab/benchmark` scores 80,000 generated subjects in memory (`score_generated_subjects` in `services/engine/app/scoring/core.py`). Lab button copy is now "Run 80,000 in-memory benchmark".
-4. Architecture self-test shows "Stack: healthy" or "not healthy", plus core database reachable.
-5. `scripts/providers-check.py`: one real call per named provider, pass or fail table, exception type only.
-6. Engine image installs `libgomp1` so LightGBM can load. Without it, Lab and Governance KPIs returned 500 in Docker (`libgomp.so.1` missing).
-7. Web image copies `public/` into the standalone runner. `/sw.js` and `/audio/*.wav` were 404 before this.
-8. Regenerated silent pre-rendered WAV files under `apps/web/public/audio/` (gitignored) so the service worker precache list can exist.
-9. Playwright: `e2e/tests/audit-offline.spec.ts` and `e2e/scripts/audit-shots.mjs`. Shots saved under `e2e/artifacts/audit/`.
+1. `foundry.token` must be a file. `make foundry-token` removes a directory. Compose mounts `infra/.cache` read-only. Auth order: entra file, then `AZURE_OPENAI_API_KEY` plus `AZURE_OPENAI_ENDPOINT`, then DefaultAzureCredential.
+2. `make providers-check` execs `python -m app.providers.probe` inside the engine container and prints each auth path.
+3. Copilot aggregates call live `main`. Individual questions return `provider=refused` before `gateway.run`.
+4. Voice turns stream the first sentence into TTS, run gates in parallel, cache the companion prompt, use `fast` with a short limit.
+5. Retrieval uses `embed` (en) and `embed_ml` (hi, hi-Latn, ta) plus rerank. Registry records the choice.
+6. Translator HTTP 400 for kok, sa, sat falls back to `main` and stays flagged machine-translated.
+7. Lab and Governance overlays compute from `core.assessment` when rows exist, else `demo_cases_memory`. No 4.2 d or 0.11 literals.
+8. Service worker v4, offline shells, and crisis send no longer wait on the network. Web image rebuild is still required before 27.2 can be re-proven.
 
 ## Ranked remaining risks for the video
 
-1. **Voice turn misses the 1.8 s budget.** Measured on this Mac, India to eastus2: fast LLM p50 4808 ms, p95 6459 ms; Hindi TTS p50 375 ms, p95 430 ms; combined p50 5184 ms, p95 6837 ms. The orb must show thinking. Do not say "under 1.8 seconds" on camera. Owner: stream first-sentence TTS, or keep a short pre-rendered first byte.
-2. **Azure URL, Key Vault split, passkeys, and iPhone Home Screen are not done.** `azd env list` is empty. Web PubSub and Key Vault pass only as local 31.1. Owner: you create an azd env and finish Prompt 10 part 2.
-3. **Stage cannot show phone and console as two roles at once.** One `sessionStorage` token is shared with both iframes. Owner: record the phone and the console as separate views, or add a dual-session Stage.
-4. **Quoted numbers are not all from the database.** Do not say 4.2 day lead time or false-positive 0.11 as measured field facts. Owner: you fix citations; Cursor replace hardcoded Lab and Governance overlays.
-5. **Offline on a real phone is not proven.** Playwright with the network disabled still fails several 27.2 navigations. Owner: harden SW document cache; you film airplane mode on the iPhone after the HTTPS domain exists.
-6. **Human review is pending.** Live TTS WAV files, Translator catalog (kok, sa, sat still English), and crisis copy need Hindi, Tamil, and safety review.
-7. **ACS two-browser call is not proven.** identities create passed; Talk issues a token. Owner: join from two browsers on two networks before the talk shot.
+1. **First audio is still over 2.5 s.** n=20 from this Mac to eastus2: p50 2914 ms, p95 3429 ms. Streaming helped versus the old 5.2 s combined p50. Do not say under 2.5 s. Show thinking. Owner: you keep a pre-rendered first byte if the take needs instant sound.
+2. **Azure URL, Key Vault split, passkeys, and iPhone Home Screen are not done.** `azd env list` is empty. Owner: you, Prompt 10 part 2.
+3. **Stage still shares one session across iframes.** Record phone and console as two views.
+4. **Lab looks empty until assessment rows exist or the overlay fallback image is rebuilt.** Live UI showed precision 0.00 and "No assessment rows yet." Do not quote those zeros as a trial result. Source line is honest.
+5. **Offline 27.2 is not green.** Playwright still failed check-in queue, toolkit, nudges, and plan. Crisis send hung. Fixes are coded. Rebuild web, rerun `audit-offline.spec.ts`, then film airplane mode on the iPhone.
+6. **Human review is pending.** TTS, kok/sa/sat catalog, crisis copy.
+7. **ACS two-browser call is not proven.**
 
 ---
 
@@ -75,7 +74,7 @@ No TODO, FIXME, or lorem in application TypeScript or Python.
 
 Gallery `/dev/components` still uses contract fixtures. That is in spec.
 
-Docker note: engine and engine-acute now take `env_file: .env` from the compose file directory (`infra/.env`) and mount `infra/.cache/foundry.token` for Entra inside the container. `make foundry-token` refreshes that file. Host `make providers-check` does not need the file; it uses DefaultAzureCredential.
+Docker note: engine and engine-acute take `env_file: .env` from `infra/` and mount `infra/.cache` at `/run/manobal/cache`. `FOUNDRY_AD_TOKEN_FILE=/run/manobal/cache/foundry.token`. That path must be a file, not a directory. `make providers-check` runs in the container when engine is up.
 
 ---
 
@@ -101,24 +100,24 @@ Docker note: engine and engine-acute now take `env_file: .env` from the compose 
 
 ## 3. Spec 27.2, Playwright offline context
 
-Harness: `e2e/tests/audit-offline.spec.ts` against `http://localhost:3000` after `make dev`, using `context.setOffline(true)`.
+Harness: `e2e/tests/audit-offline.spec.ts` against `http://localhost:3000` after `make dev`, using `context.setOffline(true)`. Latest run 17 Sep 2026, four workers.
 
 | # | Capability | Result | Notes |
 |---|---|---|---|
-| 1 | Daily check-in (tap) | fail | UI can complete; IndexedDB queue count stayed 0 in the run. Owner: Cursor, assert enqueue after Save while offline. |
-| 2 | Structured voice check-in | pass | "Listen and tap. Speech recognition is not needed offline." and cached `/audio/grounding.en.wav`. |
-| 3 | Assessments | fail | Options not ready after offline navigation. Owner: cache assessment routes in the SW. |
-| 4 | Toolkit | fail | Toolkit copy missing after offline navigation. Owner: SW cache `/app/toolkit` and item pages. |
-| 5 | Safety screen | fail | `page.goto` after offline: `ERR_INTERNET_DISCONNECTED`. Code has `tel:` and cached audio when the page stays open. Owner: SW serve `/app/safety`. |
-| 6 | SOS by SMS | fail | Same navigation miss. `sms:` link exists on the page (`safety/page.tsx`). Owner: same as 5; you confirm on a phone. |
-| 7 | Crisis lexicon gate | fail | Same navigation miss. `browserLexiconHit` is in-bundle and does not need the network. Owner: stay on Saathi, then go offline, then type. |
-| 8 | Local self-care nudges | pass | Sleep toolkit and "Why this? Three nights of low sleep on this phone." appeared while offline. The assertion was too strict (three matches). |
-| 9 | My trends | fail | Me page empty after offline navigation. Snapshot write exists in `use-engine.ts`. Owner: SW cache `/app/me`. |
-| 10 | Safety plan, journal, self-only | pass | "Saved on this phone." after Save. Device-only `localStorage`. |
-| 11 | Acute packet | fail | Safety navigation failed offline. Retry copy exists when the page is already open. Owner: same as 5. |
-| 12 | Resync | fail | Could not finish a clean offline enqueue then drain. Drain helpers exist (`drainQueue`). Owner: Cursor, one passing drain test; you show the edge queue on Architecture after airplane mode. |
+| 1 | Daily check-in (tap) | fail | UI can complete; IndexedDB queue count stayed 0. Save still reached the engine. Fix in tree: enqueue when airplane or fetch fails. |
+| 2 | Structured voice check-in | pass | Cached copy and `/audio/grounding.en.wav`. |
+| 3 | Assessments | pass | Options rendered after offline navigation. |
+| 4 | Toolkit | fail | Toolkit copy missing after offline navigation. Fix in tree: static toolkit shell plus SW v4. |
+| 5 | Safety screen | pass | `tel:` visible after offline goto. |
+| 6 | SOS by SMS | pass | `sms:` link visible. |
+| 7 | Crisis lexicon gate | fail | Hung on `postAcute` while offline. Fix in tree: navigate to safety without awaiting the network. |
+| 8 | Local self-care nudges | fail | Home empty or server cards hid Sleep toolkit. Fix in tree: always show local nudges when offline. |
+| 9 | My trends | pass | Me page snapshot. |
+| 10 | Safety plan, journal, self-only | fail | Save button missing after offline goto (wrong document). Fix in tree: cache `/app/plan` after SW controls. |
+| 11 | Acute packet | pass | Retry copy and Tele-MANAS. |
+| 12 | Resync | pass | Token still present after network returns. |
 
-Code for the encrypted queue, snapshots, lexicon, SMS, and tel is present. The gap is "open this screen with the network already off", which the spec and the iPhone rehearsal require.
+Code for the encrypted queue, snapshots, lexicon, SMS, and tel is present. Rebuild the web image and rerun before claiming 27.2.
 
 ---
 
@@ -157,11 +156,8 @@ Scale 1 to 5. Target 4 on every line. Files: `e2e/artifacts/audit/<shot>-1920.pn
 |---|---|---|---|
 | Landing | Over 80%, Most on duty, Named stressors | Hardcoded; "Public reporting on CRPF data" / MHA draft; dates "verify before citation" | No, until a person verifies the source and date |
 | Landing ribbon | 3.1 to 5.4 | Fixture series | Illustration only |
-| Governance K1 4.2 d, K3 0.11, K10 1.4 / 100, K11 3.1 min, K12 0.4% | Literals in `gov_kpis()` | No |
-| Governance fairness 0.92, 1.08, 0.97 | Literals in `gov_fairness()` | No |
-| Lab precision 0.917, recall 0.957, f1 0.936, brier 0.056, auroc 0.986, auprc 0.98 | `ensure_lab_worlds()` LightGBM on 48 random rows, not `manobal_core` | Partial. Computed, but not from the seed |
-| Lab confusion 18, 3, 22, 5 | Literal | No |
-| Lab ablations +2.1 d, -0.04 | Literal | No |
+| Governance K1, K3, K10 to K12 | Computed in `compute_overlays()` from `core.assessment` or `demo_cases_memory`. Live 17 Sep 2026: source core.assessment, lead n/a, FP 0.00 because assessment rows were empty. | Partial. Honest source. Do not quote 4.2 d or 0.11. |
+| Lab precision, recall, Brier | Same overlay. Live: 0.00 / 0.00 / 0.00 with "No assessment rows yet." | Partial until fallback image is rebuilt or seed writes assessments |
 | Lab Imran T1, Thomas T0 | Copy, matches spec 29 | Acceptable as story copy |
 | Lab benchmark | **80,000 subjects in memory, 1.109 s** on the live engine after the audit fix | Yes, measure and quote this pair |
 

@@ -304,9 +304,10 @@ export class ManobalClient {
     return this.request("/api/v1/calls/token", { method: "POST" });
   }
 
-  meBuddy(signal?: AbortSignal): Promise<{
+    meBuddy(signal?: AbortSignal): Promise<{
     paired: boolean;
     code?: string;
+    last?: { kind: string; at: string } | null;
     lessons: string[];
     privacy: string;
   }> {
@@ -394,6 +395,10 @@ export class ManobalClient {
     return this.request("/api/v1/me/sync", { method: "POST", body: items });
   }
 
+  realtimeNegotiate(signal?: AbortSignal): Promise<{ token: string; groups: string[] }> {
+    return this.request("/api/v1/realtime/negotiate", { method: "POST", signal });
+  }
+
   i18n(lang: string, signal?: AbortSignal): Promise<{
     lang: string;
     reviewed: boolean;
@@ -436,8 +441,8 @@ export class ManobalClient {
     return this.request("/api/v1/welfare/queue", { signal });
   }
 
-  welfareCase(caseId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
-    return this.request(`/api/v1/welfare/cases/${caseId}`, { signal });
+  welfareCase(caseId: string, lang = "hi", signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/welfare/cases/${caseId}?lang=${encodeURIComponent(lang)}`, { signal });
   }
 
   medicalAcute(signal?: AbortSignal): Promise<WelfareCase[]> {
@@ -574,6 +579,7 @@ export class ManobalClient {
     answer: string;
     chart_spec: { type: string; metric: string; value: string };
     tools_used: string[];
+    provider?: string;
   }> {
     return this.request("/api/v1/command/copilot", { method: "POST", body: { question, lang } });
   }
@@ -604,6 +610,7 @@ export class ManobalClient {
 
   govOverview(signal?: AbortSignal): Promise<{
     kpis: { label: string; value: string; hint: string; code?: string }[];
+    source?: string;
     cost_guard?: boolean;
     cost_banner?: string;
   }> {
@@ -865,5 +872,15 @@ export class ManobalClient {
     hosting_caption: string;
   }> {
     return this.request("/api/v1/companion/turn", { method: "POST", body });
+  }
+
+  voiceFixture(id: string): Promise<{
+    id: string;
+    lang: string;
+    transcript: string;
+    voice: string;
+    audio_b64: string;
+  }> {
+    return this.request(`/api/v1/voice/fixtures/${id}`);
   }
 }

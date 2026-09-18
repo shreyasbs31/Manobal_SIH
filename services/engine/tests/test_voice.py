@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from app.auth import DemoLoginRequest, Role, mint_access_token, principal_for_demo
 from app.privacy.rights import KILLSWITCHES
-from app.voice.acoustics import acoustic_features, zeroise
+from app.voice.acoustics import acoustic_features, pcm_has_speech, zeroise
+from app.voice.stt import usable_transcript
 from app.voice.routing import stt_route, tts_route
 from app.voice.session import voice_router
 from fastapi import FastAPI
@@ -103,6 +104,54 @@ def test_spoken_hinglish_distress_does_not_reach_model() -> None:
         assert acute["model_reached"] is False
 
 
+def test_empty_end_of_turn_does_not_invent_speech() -> None:
+    token = _token("arjun")
+    with client.websocket_connect(f"/api/v1/voice/session?access_token={token}") as ws:
+        ws.send_json({"type": "start", "lang": "hi", "mode": "checkin"})
+        assert ws.receive_json()["type"] == "session.ready"
+        ws.send_json({"type": "end_of_turn"})
+        event = ws.receive_json()
+        assert event["type"] == "no_speech"
+        ws.send_bytes(b"\x00\x00" * 8000)
+        ws.send_json({"type": "end_of_turn", "heard": True})
+        silent = ws.receive_json()
+        assert silent["type"] == "no_speech"
+
+
+def test_pcm_has_speech_rejects_silence() -> None:
+    assert pcm_has_speech(b"") is False
+    assert pcm_has_speech(b"\x00\x00" * 16000) is False
+    assert pcm_has_speech(b"\x64\x00" * 16000) is False
+    speech = (b"\x00\x70" * 8000) + (b"\xff\x7f" * 8000)
+    assert pcm_has_speech(speech) is True
+
+
+def test_usable_transcript_rejects_low_confidence_noise() -> None:
+    assert usable_transcript({"transcript": "1 minute.", "confidence": 0.21}) is None
+    assert usable_transcript({"transcript": "..."}) is None
+    assert (
+        usable_transcript({"transcript": "रात की ड्यूटी के बाद नींद पूरी नहीं हुई", "confidence": 0.92})
+        == "रात की ड्यूटी के बाद नींद पूरी नहीं हुई"
+    )
+
+
+def test_voice_start_can_auth_without_query_token() -> None:
+    token = _token("arjun")
+    with client.websocket_connect("/api/v1/voice/session") as ws:
+        ws.send_json(
+            {"type": "start", "lang": "hi", "mode": "checkin", "access_token": token}
+        )
+        ready = ws.receive_json()
+        assert ready["type"] == "session.ready"
+
+
+def test_voice_start_without_auth_fails_cleanly() -> None:
+    with client.websocket_connect("/api/v1/voice/session") as ws:
+        ws.send_json({"type": "start", "lang": "hi", "mode": "checkin"})
+        event = ws.receive_json()
+        assert event["type"] == "auth.failed"
+
+
 def test_saathi_page_wires_contour_captions_and_hosting_caption() -> None:
     from pathlib import Path
 
@@ -110,3 +159,9 @@ def test_saathi_page_wires_contour_captions_and_hosting_caption() -> None:
     assert "VoiceContour amplitude={amplitude}" in page
     assert "CaptionStream" in page
     assert "Prototype: open-weight model hosted on Azure. Deployable on force servers." in page
+    assert "Talk it through" not in page
+    assert "Hands-free" not in page
+    assert 'aria-label="Conversation mode"' not in page
+    assert page.count("Play recorded check-in") == 1
+    assert "sendingRef" in page
+    assert "no_speech" in page

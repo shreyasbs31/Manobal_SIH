@@ -8,8 +8,11 @@ up:
 
 foundry-token:
 	mkdir -p infra/.cache
-	touch infra/.cache/foundry.token
-	az account get-access-token --resource https://cognitiveservices.azure.com --query accessToken -o tsv > infra/.cache/foundry.token 2>/dev/null || true
+	if [ -d infra/.cache/foundry.token ]; then rm -rf infra/.cache/foundry.token; fi
+	az account get-access-token --resource https://cognitiveservices.azure.com --query accessToken -o tsv > infra/.cache/foundry.token.tmp \
+		&& mv infra/.cache/foundry.token.tmp infra/.cache/foundry.token \
+		|| rm -f infra/.cache/foundry.token.tmp
+	if [ ! -e infra/.cache/foundry.token ]; then : > infra/.cache/foundry.token; fi
 
 infra-ready: foundry-token
 	$(COMPOSE) up --detach --wait --wait-timeout 180 core-db vault-db redis
@@ -23,8 +26,12 @@ dev: infra-ready
 providers-missing:
 	PYTHONPATH=services/engine uv run python -c "from app.config import get_settings; print(', '.join(get_settings().missing_live_provider_names()) or 'none')"
 
-providers-check:
-	PYTHONPATH=services/engine:services/vault uv run python scripts/providers-check.py
+providers-check: foundry-token
+	@if $(COMPOSE) ps --status running -q engine 2>/dev/null | grep -q .; then \
+		$(COMPOSE) exec -T engine python -m app.providers.probe; \
+	else \
+		PYTHONPATH=services/engine:services/vault uv run python scripts/providers-check.py; \
+	fi
 
 lint:
 	corepack pnpm --recursive lint
@@ -69,7 +76,7 @@ eval:
 	PYTHONPATH=services/engine uv run pytest infra/evals
 
 eval-live:
-	LIVE_EVALS=1 PYTHONPATH=services/engine uv run pytest infra/evals/test_live_routing.py -q
+	LIVE_EVALS=1 PYTHONPATH=services/engine uv run pytest infra/evals/test_live_routing.py infra/evals/test_retrieval.py -q
 
 translate-catalog:
 	PYTHONPATH=services/engine uv run python scripts/translate-catalog.py

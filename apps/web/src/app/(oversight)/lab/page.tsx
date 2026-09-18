@@ -9,6 +9,7 @@ import { useEngine } from "@/lib/use-engine";
 
 type Lab = {
   world: string;
+  source?: string;
   metrics: Record<string, number>;
   calibration: { predicted: number; observed: number }[];
   confusion: { tp: number; fp: number; tn: number; fn: number };
@@ -35,6 +36,7 @@ export default function LabPage() {
             Primary and shifted synthetic worlds sit side by side. Numbers belong here, not on
             command screens.
           </p>
+          <p>Source: {data.source ?? "core or demo cases"}.</p>
           <div className="mb-action-row">
             <button
               aria-pressed={world === "primary"}

@@ -73,6 +73,4 @@ def speech_stt_url(settings: Settings) -> str:
 
 
 def foundry_is_live(settings: Settings) -> bool:
-    return live_providers_enabled() and bool(settings.foundry_endpoint) and bool(
-        foundry_v1_base_url(settings)
-    )
+    return live_providers_enabled() and bool(foundry_v1_base_url(settings))

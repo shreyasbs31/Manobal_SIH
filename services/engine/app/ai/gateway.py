@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -126,6 +127,13 @@ def local_task_text(task: str, inputs: dict[str, Any], lang: str) -> str:
         domain = fields.get("domain", "workload")
         onset = fields.get("onset", "about 20 days")
         lever = fields.get("lever", "REST_48H")
+        if lang.startswith("hi"):
+            return (
+                f"स्तर {tier} है [tier]. "
+                f"मुख्य क्षेत्र {domain} है [domain]. "
+                f"बदलाव {onset} पहले दिखने लगा [onset]. "
+                f"पहला लीवर {lever} है [lever]."
+            )
         return (
             f"Tier is {tier} [tier]. "
             f"The leading domain is {domain} [domain]. "
@@ -187,15 +195,27 @@ async def run(
         "translate_ui": "catalog",
         "conversation_coach": "practice",
     }[task]
-    payload_text = str(inputs.get("text") or inputs.get("brief") or json.dumps(inputs, default=str))
-    messages = bind_user(prompt.text, tag, payload_text)
+    if task == "command_copilot":
+        payload_text = (
+            f"<question>{inputs.get('question', '')}</question>\n"
+            f"<aggregates>{json.dumps(inputs.get('aggregates') or {}, default=str)}</aggregates>"
+        )
+        messages = [
+            {"role": "system", "content": prompt.text},
+            {"role": "user", "content": payload_text},
+        ]
+    elif task == "case_brief":
+        payload_text = json.dumps(
+            {"language": lang, "fields": inputs.get("fields") or {}},
+            default=str,
+        )
+        messages = bind_user(prompt.text, "fields", payload_text)
+    else:
+        payload_text = str(inputs.get("text") or inputs.get("brief") or json.dumps(inputs, default=str))
+        messages = bind_user(prompt.text, tag, payload_text)
     from ..config import get_settings, live_providers_enabled
 
-    use_local = (
-        task == "command_copilot"
-        or (not live_providers_enabled())
-        or (not get_settings().foundry_endpoint)
-    )
+    use_local = (not live_providers_enabled()) or (not get_settings().foundry_endpoint)
     extra: dict[str, Any] = {}
     provider = "local"
     latency_ms = 0.0
@@ -223,15 +243,23 @@ async def run(
                 model_class = str(decision.get("en") or "open")
             else:
                 model_class = "main"
+        max_tokens = spec["max_tokens"]
+        if task == "companion_turn" and voice:
+            max_tokens = 128
+            model_class = model_class or "fast"
+        extra_payload = {
+            "messages": messages,
+            "text": payload_text,
+            "temperature": spec["temp"],
+            "max_tokens": max_tokens,
+            "model_class": model_class,
+            "voice": voice,
+        }
+        if task == "command_copilot":
+            extra_payload["model_class"] = "main"
         response = await router.complete(
             capability,
-            {
-                "messages": messages,
-                "text": payload_text,
-                "temperature": spec["temp"],
-                "max_tokens": spec["max_tokens"],
-                "model_class": model_class,
-            },
+            extra_payload,
             beat_id=beat_id,
             language=lang,
         )
@@ -239,6 +267,13 @@ async def run(
         provider = response.provider
         latency_ms = response.latency_ms
         extra = dict(response.extra)
+        if task == "crisis_classify" and "crisis" not in extra:
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, dict):
+                    extra.update(parsed)
+            except json.JSONDecodeError:
+                extra = {"crisis": True, "error": True}
         if response.provider == "fail_safe":
             text = local_task_text(task, inputs, lang)
             provider = "fail_safe"
@@ -260,3 +295,27 @@ async def run(
         verified=verified,
         extra=extra,
     )
+
+
+async def stream_companion_sentences(
+    inputs: dict[str, Any],
+    lang: str,
+) -> AsyncIterator[str]:
+    from ..config import get_settings, live_providers_enabled
+    from ..providers.foundry import FoundryClient
+
+    if not live_providers_enabled() or not get_settings().foundry_endpoint:
+        text = local_task_text("companion_turn", inputs, lang)
+        yield text
+        return
+    prompt = load_prompt("companion_turn")
+    payload_text = str(inputs.get("text") or json.dumps(inputs, default=str))
+    messages = bind_user(prompt.text, "user", payload_text)
+    client = FoundryClient()
+    async for sentence in client.chat_stream(
+        "fast",
+        messages,
+        max_tokens=220,
+        timeout_s=20.0,
+    ):
+        yield strip_dashes(strip_markdown(sentence))

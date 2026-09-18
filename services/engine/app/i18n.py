@@ -133,10 +133,20 @@ def catalog_for(lang: str) -> dict[str, Any]:
     table.update(_machine_table(lang))
     if lang in CATALOG:
         table.update(CATALOG[lang])
+    source = "reviewed"
+    if MACHINE_PATH.exists():
+        try:
+            payload = json.loads(MACHINE_PATH.read_text(encoding="utf-8"))
+            body = payload.get(lang) or {}
+            if isinstance(body, dict) and body.get("source"):
+                source = str(body["source"])
+        except (OSError, json.JSONDecodeError):
+            source = "reviewed"
     return {
         "lang": lang,
         "reviewed": reviewed(lang),
         "machine_translated": machine,
         "review": "pending" if machine else "reviewed",
+        "source": source if machine else "reviewed",
         "strings": table,
     }

@@ -1,6 +1,8 @@
 {
   "as": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "কৰ্তব্যৰ পিছত আপুনি কেনে আছে?",
       "home.lay.within": "আপুনি আপোনাৰ সচৰাচৰ ছন্দৰ ভিতৰত আছে।",
@@ -21,6 +23,8 @@
   },
   "bn": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ডিউটির পর কেমন আছেন?",
       "home.lay.within": "আপনি আপনার স্বাভাবিক ছন্দের মধ্যে আছেন।",
@@ -41,6 +45,8 @@
   },
   "brx": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "नोंथाङा खामानि मावनायनि उनाव माबोरै दं?",
       "home.lay.within": "नोंथाङा नोंथांनि सरासनस्रा खबामनि सिङाव दं।",
@@ -61,6 +67,8 @@
   },
   "doi": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "तुस ड्यूटी दे बाद कनेहा रौंह् दे ओ?",
       "home.lay.within": "तुस अपनी सामान्य लय च ओ।",
@@ -81,6 +89,8 @@
   },
   "gu": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ડ્યુટી પછી તમે કેમ છો?",
       "home.lay.within": "તમે તમારી સામાન્ય લયમાં છો.",
@@ -101,6 +111,8 @@
   },
   "kn": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ಕರ್ತವ್ಯದ ನಂತರ ನೀವು ಹೇಗಿದ್ದೀರಿ?",
       "home.lay.within": "ನೀವು ನಿಮ್ಮ ಸಾಮಾನ್ಯ ಲಯದೊಳಗೆ ಇದ್ದೀರಿ.",
@@ -121,6 +133,8 @@
   },
   "ks": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ڈیوٹی پتہٕ کیُتھ چھِو تُہۍ ؟",
       "home.lay.within": "تُہۍ چھِو پننِس معموٗل تالہِ منٛز۔",
@@ -141,27 +155,31 @@
   },
   "kok": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "main_model",
     "error": "HTTP 400",
     "strings": {
-      "home.checkin.title": "How are you after duty?",
-      "home.lay.within": "You are within your usual rhythm.",
-      "home.lay.sleepLow": "Your sleep has been below your usual rhythm for {n} nights.",
-      "safety.title": "You are not alone.",
-      "safety.reaching": "Someone is being asked to reach you.",
-      "privacy.commander": "Your commander never sees you.",
-      "checkin.saved": "Saved. Thank you for checking in.",
-      "offline.bar": "Offline. {n} check-ins saved on this phone.",
-      "onboarding.support": "Support, not surveillance",
-      "onboarding.commander": "Your commander never sees you",
-      "onboarding.control": "You control your data",
-      "exception.body": "If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.",
-      "home.greeting.arjun": "Suprabhat, Arjun",
-      "home.greeting.meena": "Namaste, Meena",
-      "home.greeting.karthik": "Vanakkam, Karthik"
+      "home.checkin.title": "ड्युटी उपरांत तुमी कशे आसात?",
+      "home.lay.within": "तुमी तुमच्या नेहमीच्या लयीत आसात.",
+      "home.lay.sleepLow": "तुमची न्हीद {n} रातीं सावन तुमच्या नेहमीच्या लयी परस उणी आसा.",
+      "safety.title": "तुमी एकले नात.",
+      "safety.reaching": "कोणाक तरी तुमचे कडेन पावपाक सांगतात.",
+      "privacy.commander": "तुमचो कमांडर तुमकां केन्नाच पळयना.",
+      "checkin.saved": "जतन केलां. चेक-इन केल्ल्या खातीर देव बरें करूं.",
+      "offline.bar": "ऑफलाइन. ह्या फोनार {n} चेक-इन जतन केल्यात.",
+      "onboarding.support": "आदार, नदरदारी न्हय",
+      "onboarding.commander": "तुमचो कमांडर तुमकां केन्नाच पळयना",
+      "onboarding.control": "तुमच्या म्हायतीचेर तुमचो ताबो आसा",
+      "exception.body": "तुमी तातडीच्या धोक्यांत आसल्यार, एका कल्याण अधिकाऱ्याक आनी एका वैजकी अधिकाऱ्याक तुमचे कडेन पावपाक सांगतात. हो एकलोच अपवाद आसा. तरीय तुमचो कमांडर तुमचे चेक-इन वा साथी कडेन केल्लीं संभाशणां पळयना.",
+      "home.greeting.arjun": "सुप्रभात, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "वणक्कम, कार्तिक"
     }
   },
   "mai": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "अहाँ कर्तव्यक पाछाँ केहन छी?",
       "home.lay.within": "अहाँ अपन सामान्य लयमे छी।",
@@ -182,6 +200,8 @@
   },
   "ml": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ഡ്യൂട്ടി കഴിഞ്ഞ് എങ്ങനെയുണ്ട്?",
       "home.lay.within": "നിങ്ങൾ നിങ്ങളുടെ പതിവ് താളത്തിനകത്താണ്.",
@@ -202,6 +222,8 @@
   },
   "mni": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ꯗ꯭ꯌꯨꯇꯤ ꯃꯇꯨꯡꯗ ꯅꯍꯥꯛ ꯀꯔꯝꯅ ꯂꯩꯔꯤꯕꯅꯣ?",
       "home.lay.within": "ꯅꯍꯥꯛ ꯅꯈꯣꯏꯒꯤ ꯃꯍꯧꯁꯥꯒꯤ ꯇꯥꯟꯊꯥꯒꯤ ꯃꯅꯨꯡꯗ ꯂꯩꯔꯦ꯫",
@@ -222,6 +244,8 @@
   },
   "mr": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "तुम्ही ड्युटीच्या मागे कसे आहात?",
       "home.lay.within": "तुम्ही तुमच्या नेहमीच्या लयीत आहात.",
@@ -242,6 +266,8 @@
   },
   "ne": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ड्युटीको पछि कसरी लाग्नुभएको छ ?",
       "home.lay.within": "तपाईं आफ्नो सामान्य लयमा हुनुहुन्छ।",
@@ -262,6 +288,8 @@
   },
   "or": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ଡ୍ୟୁଟି ପରେ ଆପଣ କିପରି ଅଛନ୍ତି?",
       "home.lay.within": "ଆପଣ ଆପଣଙ୍କ ସାଧାରଣ ରିଦିମ୍ ମଧ୍ୟରେ ଅଛନ୍ତି।",
@@ -282,6 +310,8 @@
   },
   "pa": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ਡਿਊਟੀ ਤੋਂ ਬਾਅਦ ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",
       "home.lay.within": "ਤੁਸੀਂ ਆਪਣੀ ਸਾਧਾਰਨ ਲੈਅ ਦੇ ਅੰਦਰ ਹੋ।",
@@ -302,48 +332,54 @@
   },
   "sa": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "main_model",
     "error": "HTTP 400",
     "strings": {
-      "home.checkin.title": "How are you after duty?",
-      "home.lay.within": "You are within your usual rhythm.",
-      "home.lay.sleepLow": "Your sleep has been below your usual rhythm for {n} nights.",
-      "safety.title": "You are not alone.",
-      "safety.reaching": "Someone is being asked to reach you.",
-      "privacy.commander": "Your commander never sees you.",
-      "checkin.saved": "Saved. Thank you for checking in.",
-      "offline.bar": "Offline. {n} check-ins saved on this phone.",
-      "onboarding.support": "Support, not surveillance",
-      "onboarding.commander": "Your commander never sees you",
-      "onboarding.control": "You control your data",
-      "exception.body": "If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.",
-      "home.greeting.arjun": "Suprabhat, Arjun",
-      "home.greeting.meena": "Namaste, Meena",
-      "home.greeting.karthik": "Vanakkam, Karthik"
+      "home.checkin.title": "कर्तव्यपालनानन्तरं त्वं कथमसि?",
+      "home.lay.within": "त्वं स्वस्य सामान्यलयानुसारम् असि।",
+      "home.lay.sleepLow": "{n} रात्रिभ्यः तव निद्रा सामान्यलयापेक्षया न्यूना आसीत्।",
+      "safety.title": "त्वम् एकाकी नासि।",
+      "safety.reaching": "कश्चित् त्वां सम्पर्कं कर्तुम् अनुरुध्यते।",
+      "privacy.commander": "तव सेनानायकः त्वां कदापि न पश्यति।",
+      "checkin.saved": "रक्षितम्। स्थितिं निवेदितवते धन्यवादः।",
+      "offline.bar": "अन्तर्जालसम्पर्को नास्ति। अस्मिन् दूरभाषे {n} स्थितिनिवेदनानि रक्षितानि।",
+      "onboarding.support": "सहायता, न तु निरीक्षणम्",
+      "onboarding.commander": "तव सेनानायकः त्वां कदापि न पश्यति",
+      "onboarding.control": "तव दत्तांशः तव नियन्त्रणे अस्ति",
+      "exception.body": "यदि त्वं सद्यः संकटे असि, तर्हि कल्याणाधिकारी चिकित्साधिकारी च त्वां सम्पर्कं कर्तुम् अनुरुध्येते। एष एव एकमात्रोऽपवादः। तथापि तव सेनानायकः तव स्थितिनिवेदनानि अथवा साथिना सह तव सम्भाषणानि न पश्यति।",
+      "home.greeting.arjun": "सुप्रभातम्, अर्जुन",
+      "home.greeting.meena": "नमस्ते, मीना",
+      "home.greeting.karthik": "नमस्ते, कार्तिक"
     }
   },
   "sat": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "main_model",
     "error": "HTTP 400",
     "strings": {
-      "home.checkin.title": "How are you after duty?",
-      "home.lay.within": "You are within your usual rhythm.",
-      "home.lay.sleepLow": "Your sleep has been below your usual rhythm for {n} nights.",
-      "safety.title": "You are not alone.",
-      "safety.reaching": "Someone is being asked to reach you.",
-      "privacy.commander": "Your commander never sees you.",
-      "checkin.saved": "Saved. Thank you for checking in.",
-      "offline.bar": "Offline. {n} check-ins saved on this phone.",
+      "home.checkin.title": "ᱰᱤᱭᱩᱴᱤ ᱛᱟᱭᱚᱢ ᱟᱢ ᱪᱮᱫ ᱞᱮᱠᱟ ᱢᱮᱱᱟᱢᱟ?",
+      "home.lay.within": "ᱟᱢ ᱟᱢᱟᱜ ᱫᱤᱱᱟᱹᱢ ᱪᱟᱞ ᱞᱮᱠᱟᱜᱮᱢ ᱢᱮᱱᱟᱜ-ᱟ᱾",
+      "home.lay.sleepLow": "{n} ᱧᱤᱫᱟᱹ ᱫᱷᱟᱹᱵᱤᱡ ᱟᱢᱟᱜ ᱡᱟᱹᱯᱤᱫ ᱫᱤᱱᱟᱹᱢ ᱠᱷᱚᱱ ᱠᱚᱢ ᱜᱮᱭᱟ᱾",
+      "safety.title": "ᱟᱢ ᱮᱥᱠᱟᱨ ᱵᱟᱝ ᱢᱮᱱᱟᱢᱟ᱾",
+      "safety.reaching": "ᱢᱤᱫ ᱦᱚᱲ ᱟᱢ ᱥᱟᱶ ᱡᱚᱯᱚᱲᱟᱣ ᱞᱟᱹᱜᱤᱫ ᱠᱩᱞᱤᱭᱮᱱᱟ᱾",
+      "privacy.commander": "ᱟᱢᱟᱜ ᱠᱚᱢᱟᱱᱰᱟᱨ ᱛᱤᱥ ᱦᱚᱸ ᱟᱢ ᱵᱟᱭ ᱧᱮᱞ ᱢᱮᱭᱟ᱾",
+      "checkin.saved": "ᱥᱟᱧᱪᱟᱣᱮᱱᱟ᱾ ᱪᱮᱠ-ᱤᱱ ᱞᱟᱹᱜᱤᱫ ᱫᱷᱚᱱᱭᱚᱵᱟᱫ᱾",
+      "offline.bar": "ᱚᱯᱷᱞᱟᱭᱤᱱ᱾ ᱱᱚᱣᱟ ᱯᱷᱚᱱ ᱨᱮ {n} ᱜᱚᱴᱟᱝ ᱪᱮᱠ-ᱤᱱ ᱥᱟᱧᱪᱟᱣᱮᱱᱟ᱾",
       "onboarding.support": "Support, not surveillance",
       "onboarding.commander": "Your commander never sees you",
       "onboarding.control": "You control your data",
       "exception.body": "If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.",
-      "home.greeting.arjun": "Suprabhat, Arjun",
-      "home.greeting.meena": "Namaste, Meena",
-      "home.greeting.karthik": "Vanakkam, Karthik"
+      "home.greeting.arjun": "ᱥᱟᱹᱜᱩᱱ ᱥᱮᱛᱟᱜ, ᱟᱨᱡᱩᱱ",
+      "home.greeting.meena": "ᱡᱚᱦᱟᱨ, ᱢᱤᱱᱟ",
+      "home.greeting.karthik": "ᱡᱚᱦᱟᱨ, ᱠᱟᱨᱛᱷᱤᱠ"
     }
   },
   "sd": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "توهان ڊيوٽي کان پوءِ ڪيئن آهيو؟",
       "home.lay.within": "توهان پنهنجي عام تال جي اندر آهيو.",
@@ -364,6 +400,8 @@
   },
   "te": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "డ్యూటీ తరువాత మీరు ఎలా ఉన్నారు?",
       "home.lay.within": "మీరు మీ సాధారణ లయలో ఉన్నారు.",
@@ -384,6 +422,8 @@
   },
   "ur": {
     "review": "pending",
+    "machine_translated": true,
+    "source": "translator",
     "strings": {
       "home.checkin.title": "ڈیوٹی کے بعد آپ کیسے ہیں؟",
       "home.lay.within": "آپ اپنی معمول کی رفتار میں ہیں۔",

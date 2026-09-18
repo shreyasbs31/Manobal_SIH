@@ -75,7 +75,7 @@ services:
       dockerfile: infra/realtime/Dockerfile
     environment:
       PORT: "8080"
-      JWT_SECRET: realtime_dev_only_change_me
+      JWT_SECRET: realtime_dev_only_change_me_32bx
     ports:
       - "8080:8080"
     healthcheck:
@@ -187,6 +187,7 @@ services:
       REALTIME_URL: ws://realtime:8080
       SIM_TIME_COMPRESSION: "60"
       ACCESS_JWT_SECRET: access_dev_only_change_me_32bytes
+      ACCESS_TOKEN_MINUTES: "480"
       REALTIME_JWT_SECRET: realtime_dev_only_change_me_32bx
       INCIDENT_HMAC_SECRET: incident_dev_only_change_me
       GRANT_PRIVATE_KEY_FILE: /run/manobal/grant-private.pem
@@ -195,10 +196,10 @@ services:
       BLOB_ACCOUNT_KEY: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
       BLOB_CONTAINER: audit-anchors
       ENTRA_ROLE_MAP: '{"MANOBAL.Personnel":"personnel","MANOBAL.Welfare":"uwo","MANOBAL.Counsellor":"counsellor","MANOBAL.Medical":"mo","MANOBAL.Command":"commander","MANOBAL.HQ":"hq","MANOBAL.WDEC":"wdec","MANOBAL.DPO":"dpo","MANOBAL.Integrations":"hrms_integrator","MANOBAL.Admin":"admin","MANOBAL.Director":"director"}'
-      FOUNDRY_AD_TOKEN_FILE: /run/manobal/foundry.token
+      FOUNDRY_AD_TOKEN_FILE: /run/manobal/cache/foundry.token
     volumes:
       - ./keys/grant-private.pem:/run/manobal/grant-private.pem:ro
-      - ./.cache/foundry.token:/run/manobal/foundry.token:ro
+      - ./.cache:/run/manobal/cache:ro
     ports:
       - "8000:8000"
     depends_on:
@@ -249,10 +250,10 @@ services:
       BLOB_ACCOUNT_NAME: devstoreaccount1
       BLOB_ACCOUNT_KEY: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
       BLOB_CONTAINER: audit-anchors
-      FOUNDRY_AD_TOKEN_FILE: /run/manobal/foundry.token
+      FOUNDRY_AD_TOKEN_FILE: /run/manobal/cache/foundry.token
     volumes:
       - ./keys/grant-private.pem:/run/manobal/grant-private.pem:ro
-      - ./.cache/foundry.token:/run/manobal/foundry.token:ro
+      - ./.cache:/run/manobal/cache:ro
     depends_on:
       engine:
         condition: service_healthy

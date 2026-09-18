@@ -36,8 +36,8 @@ export function CaptionStream({
   return (
     <div className="mb-captions" aria-live="polite">
       {language ? <span className="mb-chip">{language}</span> : null}
-      {normalised.map((line) => (
-        <p className="mb-caption-line" data-speaker={line.speaker} key={line.text}>
+      {normalised.map((line, index) => (
+        <p className="mb-caption-line" data-speaker={line.speaker} key={`${line.speaker}-${index}`}>
           {line.speaker === "you" ? "You: " : "Saathi: "}
           {line.text}
         </p>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from ..scoring.ruleset import REPO_ROOT, sign_yaml, verify_yaml
@@ -32,6 +33,7 @@ class SignedPrompt:
     path: Path
 
 
+@lru_cache(maxsize=32)
 def load_prompt(task: str) -> SignedPrompt:
     filename = TASK_FILES[task]
     path = PROMPTS_DIR / filename

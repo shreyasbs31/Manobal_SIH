@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -40,6 +41,7 @@ class PipelineResult:
     gate: str | None = None
     transliterated: str | None = None
     hosting_caption: str = HOSTING_CAPTION
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 def resolve_mode(requested: str, *, tier: str, reflect_allowed: bool) -> Mode:
@@ -83,6 +85,7 @@ async def run_pipeline(
     opt_in_remembers: bool = False,
     chunks: list[dict[str, str]] | None = None,
     beat_id: str | None = None,
+    skip_model: bool = False,
 ) -> PipelineResult:
     import time
 
@@ -95,6 +98,9 @@ async def run_pipeline(
     gated = f"{raw} {transliterated}"
     t_gate = time.perf_counter()
     if lexicon_hit(gated):
+        import logging
+
+        logging.getLogger("uvicorn.error").warning("pipeline_acute gate=lexicon lang=%s", lang)
         await _open_acute(token, lang, voice)
         return PipelineResult(
             acute=True,
@@ -120,9 +126,16 @@ async def run_pipeline(
             gate="injection",
             transliterated=transliterated,
         )
-    crisis = await _classifier_crisis(transliterated, lang)
-    safety = await content_safety_self_harm(transliterated)
+    crisis, safety, shield = await asyncio.gather(
+        _classifier_crisis(transliterated, lang),
+        content_safety_self_harm(transliterated),
+        prompt_shields_attack(raw),
+    )
     if crisis or safety is True:
+        import logging
+
+        gate_name = "crisis_classify" if crisis else "content_safety"
+        logging.getLogger("uvicorn.error").warning("pipeline_acute gate=%s lang=%s", gate_name, lang)
         await _open_acute(token, lang, voice)
         return PipelineResult(
             acute=True,
@@ -130,13 +143,12 @@ async def run_pipeline(
             reply=None,
             script=FIXED_SAFETY,
             mode=mode,
-            provider="crisis_classify" if crisis else "content_safety",
+            provider=gate_name,
             model_reached=False,
-            gate="crisis_classify" if crisis else "content_safety",
+            gate=gate_name,
             transliterated=transliterated,
             latency_ms={"gates": (time.perf_counter() - started) * 1000},
         )
-    shield = await prompt_shields_attack(raw)
     if shield is True:
         return PipelineResult(
             acute=False,
@@ -177,6 +189,19 @@ async def run_pipeline(
         context["remembers"] = remembers[:20]
     if chosen == "ask":
         context["chunks"] = chunks or []
+    if skip_model:
+        return PipelineResult(
+            acute=False,
+            injection=False,
+            reply=None,
+            script=None,
+            mode=chosen,
+            provider="pending",
+            model_reached=False,
+            transliterated=transliterated,
+            latency_ms={"gates": (time.perf_counter() - started) * 1000},
+            context=context,
+        )
     result = await run("companion_turn", context, lang, voice=voice, beat_id=beat_id)
     reply = result.text
     citations: list[str] = []

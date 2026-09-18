@@ -79,7 +79,20 @@ export {
 } from "./companion";
 export { VoiceContour } from "./voice-contour";
 export type { VoiceState } from "./voice-contour";
-export { MOTION, motionToOpacityOnly, useBreath, usePrefersReducedMotion } from "./motion";
+export {
+  BOX_BREATH_PATTERN,
+  BREATH_SCALE_MAX,
+  BREATH_SCALE_MIN,
+  FOUR_SEVEN_EIGHT_PATTERN,
+  MOTION,
+  breathPhaseAt,
+  breathScaleAt,
+  motionToOpacityOnly,
+  useBreath,
+  useBreathCycle,
+  usePrefersReducedMotion,
+} from "./motion";
+export { BreathGuide } from "./breath-guide";
 export {
   breathPulse,
   chimeKindForQueue,

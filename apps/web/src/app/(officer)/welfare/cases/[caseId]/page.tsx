@@ -17,6 +17,7 @@ import { useMemo, useState } from "react";
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
+import { announceWorld } from "@/lib/world";
 
 interface CasePayload {
   case_id: string;
@@ -47,9 +48,11 @@ interface RevealCard {
 export default function CaseWorkspacePage() {
   const params = useParams<{ caseId: string }>();
   const caseId = params.caseId;
+  const [briefLang, setBriefLang] = useState("hi");
   const { data, error, loading, offline, reload } = useEngine(
-    `case-${caseId}`,
-    (client, signal) => client.welfareCase(caseId, signal) as unknown as Promise<CasePayload>,
+    `case-${caseId}-${briefLang}`,
+    (client, signal) =>
+      client.welfareCase(caseId, briefLang, signal) as unknown as Promise<CasePayload>,
   );
   const [purpose, setPurpose] = useState("care_contact");
   const [justification, setJustification] = useState("");
@@ -60,7 +63,6 @@ export default function CaseWorkspacePage() {
   const [followUp, setFollowUp] = useState("D+2");
   const [refer, setRefer] = useState("");
   const [trend, setTrend] = useState("Sleep, not yet requested");
-  const [briefLang, setBriefLang] = useState("hi");
   const [message, setMessage] = useState("");
 
   const nodes = useMemo(() => (data ? briefNodes(data.brief, data.brief_fields) : []), [data]);
@@ -205,6 +207,7 @@ export default function CaseWorkspacePage() {
                           } catch {
                             // BroadcastChannel is optional in older webviews.
                           }
+                          announceWorld("ledger");
                         })
                         .catch((caught: unknown) => {
                           setMessage(caught instanceof Error ? caught.message : "Reveal failed");
