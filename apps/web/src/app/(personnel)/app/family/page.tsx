@@ -17,11 +17,10 @@ export default function FamilyPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
         <div className="mb-home-stack">
-          <h1 className="mb-type-title">Family connect</h1>
           <article className="mb-context-card">
             <SceneFamilyCall />
             <div>
-              <p>Reminders stay on this phone. The shareable page has no personal data.</p>
+              <p>Reminders stay on this phone. The family page does not include your name.</p>
             </div>
           </article>
           <div className="mb-action-row">

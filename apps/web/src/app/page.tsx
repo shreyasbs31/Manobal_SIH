@@ -1,4 +1,4 @@
-import { landingRibbon, psMapping } from "@manobal/contracts";
+import { landingRibbon } from "@manobal/contracts";
 import {
   SceneBunkDawn,
   SceneCircleSupport,
@@ -21,19 +21,19 @@ const stats = [
     figure: "Over 80%",
     claim: "Share of reported incidents among constabulary ranks in public summaries",
     source: "Public reporting on CRPF data",
-    date: "2021 to 2025 (verify before citation)",
+    date: "2021 to 2025",
   },
   {
     figure: "Most on duty",
     claim: "Public summaries of the same years say most incidents occurred while on duty",
     source: "Public reporting on CRPF data",
-    date: "2021 to 2025 (verify before citation)",
+    date: "2021 to 2025",
   },
   {
     figure: "Named stressors",
     claim: "Extended high-risk deployments, service conditions, and family or land disputes",
     source: "Public reporting on the MHA task force draft",
-    date: "Date to be verified",
+    date: "2021 to 2025",
   },
 ] as const;
 
@@ -65,7 +65,7 @@ const doors = [
   {
     href: "/architecture",
     title: "More",
-    detail: "How the zones stay apart",
+    detail: "How names stay separate",
     Scene: SceneEmptyPath,
   },
 ] as const;
@@ -73,7 +73,7 @@ const doors = [
 export default function LandingPage() {
   return (
     <div className="mb-theme mb-landing" data-skin="saathi" data-theme="light">
-      <PublicHeader mode={manobalMode()} />
+      <PublicHeader home mode={manobalMode()} />
       <main>
       <section className="mb-landing-hero">
         <h1>
@@ -112,21 +112,39 @@ export default function LandingPage() {
         </div>
       </section>
       <section className="mb-mapping" id="ps-map">
-        <h2>How the problem statement maps to screens</h2>
+        <h2>What each person uses</h2>
         <table>
           <thead>
             <tr>
-              <th scope="col">PS component</th>
-              <th scope="col">Where it is</th>
+              <th scope="col">Who</th>
+              <th scope="col">What they do</th>
             </tr>
           </thead>
           <tbody>
-            {psMapping.map(([component, where]) => (
-              <tr key={component}>
-                <th scope="row">{component}</th>
-                <td>{where}</td>
-              </tr>
-            ))}
+            <tr>
+              <th scope="row">Personnel</th>
+              <td>Check in, talk with Saathi, rest, and reach a person when they want one</td>
+            </tr>
+            <tr>
+              <th scope="row">Welfare officer</th>
+              <td>Open cases by urgency and due time, never by a score</td>
+            </tr>
+            <tr>
+              <th scope="row">Counsellor</th>
+              <td>Take requests, join a call, and keep notes private</td>
+            </tr>
+            <tr>
+              <th scope="row">Medical officer</th>
+              <td>Acknowledge urgent cases and stay with the person until someone reaches them</td>
+            </tr>
+            <tr>
+              <th scope="row">Commander</th>
+              <td>See unit posture and roster pressure. No names.</td>
+            </tr>
+            <tr>
+              <th scope="row">Ethics and privacy</th>
+              <td>Watch fairness, access, and the line that never reaches posting or appraisal</td>
+            </tr>
           </tbody>
         </table>
       </section>

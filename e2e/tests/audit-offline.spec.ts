@@ -101,7 +101,7 @@ test.describe("spec 27.2 offline", () => {
     await warm(page, ["/app/check-in"]);
     await goOffline(page, context);
     await page.goto("/app/check-in", { waitUntil: "domcontentloaded" }).catch(() => undefined);
-    await expect(page.getByText("Listen and tap. Speech recognition is not needed offline.")).toBeVisible();
+    await expect(page.getByText("Listen, then tap an answer.")).toBeVisible();
     await expect(page.locator("audio[src='/audio/grounding.en.wav']")).toHaveCount(1);
     await shot(page, "offline-2-voice-checkin");
   });

@@ -10,5 +10,5 @@ def test_on_device_preview_is_english_only() -> None:
     assert "WebGPU" in text or "webgpu" in text.lower()
     page = Path("apps/web/src/app/(personnel)/app/saathi/page.tsx").read_text(encoding="utf-8")
     assert "onDevice" in page
-    assert "ON_DEVICE_LABEL" in page
+    assert "localReflect" in page
     assert "sessionLang.startsWith(\"en\")" in page or "lang.startsWith(\"en\")" in page

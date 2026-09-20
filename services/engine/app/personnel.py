@@ -70,14 +70,14 @@ CONSENTS = (
     {
         "id": "self_report",
         "title": "Daily check-in",
-        "leavesPhone": "Mood, energy, sleep, and tags you choose",
+        "leavesPhone": "A short summary of your check-in",
         "whoCanSee": "Only you unless you ask someone to help",
         "default": False,
     },
     {
         "id": "wearable",
-        "title": "Wearable rest signals",
-        "leavesPhone": "Rest and heart-rate summaries, not a live stream",
+        "title": "Rest from a watch or band",
+        "leavesPhone": "Rest summaries, not a live stream",
         "whoCanSee": "Only you, and a welfare officer if you later share a trend",
         "default": False,
     },
@@ -498,7 +498,7 @@ def evaluate_jitai(profile: dict[str, Any], persona_id: str) -> dict[str, str] |
             {
                 "title": "Nap and light plan for tonight",
                 "detail": "A short wind-down before the next night duty.",
-                "why": "A night shift starts within 24 hours. This is a private self-care prompt.",
+                "why": "A night shift starts within 24 hours.",
                 "kind": "jitai",
                 "rule": "NIGHT_TOMORROW",
             }
@@ -508,7 +508,7 @@ def evaluate_jitai(profile: dict[str, Any], persona_id: str) -> dict[str, str] |
             {
                 "title": "Five-minute recovery routine",
                 "detail": "A short reset after many duty days in a row.",
-                "why": "This is the tenth consecutive duty day in the cached roster.",
+                "why": "This is the tenth duty day in a row.",
                 "kind": "jitai",
                 "rule": "DUTY_STREAK_10",
             }
@@ -1021,7 +1021,7 @@ async def get_buddy(
             "Listen more than you advise.",
             "If you are worried, ask the welfare officer for help. You will not see any data.",
         ],
-        "privacy": "A buddy never sees any data, tier, or score.",
+        "privacy": "Your buddy never sees how you are doing in the app.",
     }
 
 
@@ -1261,7 +1261,7 @@ def local_nudge_rules(profile: dict[str, Any]) -> list[dict[str, str]]:
         cards.append({"title": "Sleep toolkit", "why": "Three nights of low sleep on this phone."})
     if int(profile.get("consecutive_duty") or 0) >= 10:
         cards.append(
-            {"title": "Five-minute recovery", "why": "Ten duty days in a row in the cached roster."}
+            {"title": "Five-minute recovery", "why": "Ten duty days in a row."}
         )
     return cards
 

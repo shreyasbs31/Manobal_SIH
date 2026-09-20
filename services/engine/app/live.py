@@ -31,6 +31,7 @@ from .officers import (
     copilot_answer,
     copilot_tools,
     counsel_desk,
+    book_counsel,
     draft_order,
     hq_payload,
     hq_simulate,
@@ -64,10 +65,13 @@ from .realtime import groups_for, negotiate_token, notify_ledger_viewed, notify_
 from .providers.endpoints import foundry_is_live
 from .oversight import (
     admin_payload,
+    admin_assign,
+    admin_reembed,
     advance_clock,
     architecture_payload,
     chain_state,
     dpo_decide,
+    dpo_notice,
     dpo_payload,
     director_payload,
     ensure_lab_worlds,
@@ -80,7 +84,12 @@ from .oversight import (
     gov_reviews,
     gov_rulesets,
     integrations_payload,
+    integrations_release,
+    integrations_retry,
+    integrations_run,
+    integrations_set_schedule,
     integrations_upload,
+    integrations_webhook_test,
     lab_payload,
     public_trust,
     reset_demo_state,
@@ -877,6 +886,28 @@ async def counsel_suggest(
     return suggest_lever(body.case_id, body.lever, body.sentence)
 
 
+class CounselBookBody(BaseModel):
+    slot_id: str
+    request_id: str
+
+
+@router.post("/counsel/book")
+async def counsel_book(
+    body: CounselBookBody,
+    principal: Annotated[Principal, Depends(require("counsel:write", RowPredicate.ASSIGNED))],
+) -> dict[str, object]:
+    del principal
+    try:
+        return book_counsel(body.slot_id, body.request_id)
+    except KeyError as error:
+        raise ApiError(
+            "slot_not_found",
+            "That slot is not on today's calendar",
+            hint="Pick a listed time",
+            status_code=404,
+        ) from error
+
+
 @router.get("/medical/referrals")
 async def medical_referral_list(
     principal: Annotated[Principal, Depends(require("medical:read", RowPredicate.UNIT_SUBTREE))],
@@ -931,14 +962,6 @@ async def gov_models_route(
     principal: Annotated[Principal, Depends(require("gov:read", RowPredicate.GOVERNANCE))],
 ) -> dict[str, object]:
     del principal
-    from .config import live_providers_enabled
-    from .ai.corpus import LIVE_EMBEDDED, run_retrieval_eval
-
-    if live_providers_enabled() and not LIVE_EMBEDDED:
-        try:
-            await run_retrieval_eval()
-        except Exception:  # noqa: BLE001
-            pass
     return gov_models_payload()
 
 
@@ -1118,7 +1141,7 @@ async def calls_token(
 
 @router.get("/admin/audio")
 async def admin_audio(
-    principal: Annotated[Principal, Depends(require("demo:write", RowPredicate.DEMO_CONTROL))],
+    principal: Annotated[Principal, Depends(require("admin:read", RowPredicate.AUTHENTICATED))],
 ) -> dict[str, object]:
     del principal
     return {"manifest": manifest(), "cache": sw_cache_list()}
@@ -1204,6 +1227,20 @@ class UploadBody(BaseModel):
     rows: list[dict[str, Any]] = []
 
 
+class RunBody(BaseModel):
+    source: str = "hrms.csv"
+
+
+class ScheduleBody(BaseModel):
+    enabled: bool
+
+
+class AssignBody(BaseModel):
+    officer: str
+    unit: str
+    valid_until: str = "2027-03-31"
+
+
 class OutageBody(BaseModel):
     provider: str
     opened: bool = True
@@ -1247,6 +1284,20 @@ async def dpo_request_decide(
     return dpo_decide(request_id, body.decision)
 
 
+class DpoNoticeBody(BaseModel):
+    status: str
+
+
+@router.post("/dpo/notices/{notice_id}")
+async def dpo_notice_set(
+    notice_id: str,
+    body: DpoNoticeBody,
+    principal: Annotated[Principal, Depends(require("dpo:write", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return dpo_notice(notice_id, body.status)
+
+
 @router.get("/integrations/jobs")
 async def integrations_jobs(
     principal: Annotated[
@@ -1278,6 +1329,72 @@ async def integrations_hrms_upload(
     return integrations_upload(body.filename, body.rows)
 
 
+@router.post("/integrations/hrms/batch")
+async def integrations_hrms_batch(
+    body: UploadBody,
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_upload(body.filename, body.rows)
+
+
+@router.post("/integrations/jobs/run")
+async def integrations_jobs_run(
+    body: RunBody,
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_run(body.source)
+
+
+@router.post("/integrations/schedules/{schedule_id}")
+async def integrations_schedule_set(
+    schedule_id: str,
+    body: ScheduleBody,
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_set_schedule(schedule_id, body.enabled)
+
+
+@router.post("/integrations/incident/test")
+async def integrations_incident_test(
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_webhook_test()
+
+
+@router.post("/integrations/jobs/{job_id}/retry")
+async def integrations_job_retry(
+    job_id: str,
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_retry(job_id)
+
+
+@router.post("/integrations/quarantine/{row_id}/release")
+async def integrations_quarantine_release(
+    row_id: str,
+    principal: Annotated[
+        Principal, Depends(require("integrations:write", RowPredicate.AUTHENTICATED))
+    ],
+) -> dict[str, object]:
+    del principal
+    return integrations_release(row_id)
+
+
 @router.get("/admin/console")
 async def admin_console(
     principal: Annotated[Principal, Depends(require("admin:read", RowPredicate.AUTHENTICATED))],
@@ -1293,6 +1410,23 @@ async def admin_flags(
 ) -> dict[str, object]:
     del principal
     return set_admin_flag(body.name, body.enabled)
+
+
+@router.post("/admin/assign")
+async def admin_assign_route(
+    body: AssignBody,
+    principal: Annotated[Principal, Depends(require("admin:write", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return admin_assign(body.officer, body.unit, body.valid_until)
+
+
+@router.post("/admin/corpus")
+async def admin_corpus_reembed(
+    principal: Annotated[Principal, Depends(require("admin:write", RowPredicate.AUTHENTICATED))],
+) -> dict[str, object]:
+    del principal
+    return admin_reembed()
 
 
 @router.get("/lab/metrics")

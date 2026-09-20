@@ -2,9 +2,11 @@
 
 import type { WelfareCase } from "@manobal/contracts";
 import { CaseCard, CaseStrip, SlaTimer, chimeKindForQueue, playConsoleChime } from "@manobal/ui";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
 const TABS = [
@@ -17,7 +19,8 @@ const TABS = [
 ] as const;
 
 export default function WelfarePage() {
-  const { data, error, loading, offline } = useEngine("welfare-queue", (client, signal) =>
+  const router = useRouter();
+  const { data, error, loading, offline, reload } = useEngine("welfare-queue", (client, signal) =>
     client.welfareQueue(signal),
   );
   const tabs = useEngine("welfare-tabs", (client, signal) => client.welfareTabs(signal));
@@ -25,6 +28,8 @@ export default function WelfarePage() {
   const queue = data ?? [];
   const [selected, setSelected] = useState("");
   const [tab, setTab] = useState<(typeof TABS)[number]>("Queue");
+  const [done, setDone] = useState<Record<string, string>>({});
+  const [notice, setNotice] = useState("");
   useEffect(() => {
     if (!selected && queue[0]) {
       setSelected(queue[0].case_id);
@@ -67,18 +72,36 @@ export default function WelfarePage() {
         if (next) setSelected(next.case_id);
       }
       if (event.key === "Enter" && selected) {
-        window.location.assign(`/welfare/cases/${selected}`);
+        router.push(`/welfare/cases/${selected}`);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [queue, selected]);
+  }, [queue, router, selected]);
 
   const groups = [
     { label: "Urgent", items: t4 },
     { label: "High", items: t3 },
     { label: "Elevated", items: t2 },
   ] as const;
+
+  async function act(caseId: string, outcome: string, label: string) {
+    try {
+      await engineClient().welfareAction(caseId, {
+        mode: "call",
+        lever: "REST_48H",
+        outcome,
+        follow_up: outcome === "done" ? "closed" : "D+2",
+        refer: "",
+      });
+      setDone((currentDone) => ({ ...currentDone, [caseId]: label }));
+      setNotice(label);
+      reload();
+      tabs.reload();
+    } catch (caught: unknown) {
+      setNotice(caught instanceof Error ? caught.message : "Could not update that case.");
+    }
+  }
 
   return (
     <ScreenState
@@ -88,11 +111,7 @@ export default function WelfarePage() {
       loading={loading}
       offline={offline}
     >
-      <div>
-        <p className="mb-desk-intro">
-          This desk holds named cases for your unit. Command never sees this queue. Open a case to
-          contact, rest, or refer. Tabs cover incidents, self-referrals, follow-ups, and the digest.
-        </p>
+      <div className="mb-desk">
         {t4[0] ? (
           <div className="mb-t4-banner" role="status">
             Acute case {t4[0].case_id}. Acknowledge within {t4[0].sla_label}.
@@ -101,13 +120,12 @@ export default function WelfarePage() {
         <p className="mb-queue-meta">
           <span>Open {String(meta.open ?? queue.length)}</span>
           <span>Overdue {String(meta.overdue ?? 0)}</span>
-          <span>My load {String(meta.load ?? queue.length)} of {String(meta.capacity ?? 25)}</span>
-          {profile.data ? (
-            <span>
-              Briefs in Hindi. Digest {String(profile.data.digest_time)}.
-            </span>
-          ) : null}
+          <span>
+            My load {String(meta.load ?? queue.length)} of {String(meta.capacity ?? 25)}
+          </span>
+          {profile.data ? <span>Digest at {String(profile.data.digest_time)}</span> : null}
         </p>
+        {notice ? <p role="status">{notice}</p> : null}
         <div className="mb-tabs" role="tablist" aria-label="Welfare views">
           {TABS.map((name) => (
             <button
@@ -139,7 +157,7 @@ export default function WelfarePage() {
                         event.preventDefault();
                         setSelected(item.case_id);
                       }}
-                      onDoubleClick={() => window.location.assign(`/welfare/cases/${item.case_id}`)}
+                      onDoubleClick={() => router.push(`/welfare/cases/${item.case_id}`)}
                     >
                       <CaseCard
                         caseId={item.case_id}
@@ -160,48 +178,80 @@ export default function WelfarePage() {
                 </section>
               ))}
             </div>
-            {current ? <QueueAside current={current} /> : null}
+            {current ? (
+              <QueueAside
+                current={current}
+                onRest={() => void act(current.case_id, "open", "48-hour rest logged.")}
+                onRefer={() => void act(current.case_id, "referred", "Referred to counsellor.")}
+              />
+            ) : null}
           </div>
         ) : null}
         {tab === "Incident check-ins" ? (
           <TabCards
+            done={done}
             empty="No one in this unit has asked to talk after an incident."
             items={asObjects(meta.incidents)}
             kind="incident"
+            onAction={(caseId) => void act(caseId, "open", "Picked up after the incident.")}
           />
         ) : null}
         {tab === "Self-referrals" ? (
           <TabCards
+            done={done}
             empty="No self-referrals."
             items={asObjects(meta.self_referrals)}
             kind="referral"
+            onAction={(caseId) => void act(caseId, "open", "Self-referral picked up.")}
           />
         ) : null}
         {tab === "Follow-ups due" ? (
-          <TabCards empty="No follow-ups due." items={asObjects(meta.followups)} kind="followup" />
+          <TabCards
+            done={done}
+            empty="No follow-ups due."
+            items={asObjects(meta.followups)}
+            kind="followup"
+            onAction={(caseId) => void act(caseId, "done", "Follow-up closed.")}
+          />
         ) : null}
         {tab === "Closed" ? (
-          <TabCards empty="No closed cases." items={asIdObjects(meta.closed)} kind="closed" />
+          <TabCards
+            done={done}
+            empty="No closed cases."
+            items={asIdObjects(meta.closed)}
+            kind="closed"
+          />
         ) : null}
         {tab === "Digest" ? (
-          <TabCards empty="No digest items today." items={asIdObjects(meta.digest)} kind="digest" />
+          <TabCards
+            done={done}
+            empty="No digest items today."
+            items={asIdObjects(meta.digest)}
+            kind="digest"
+            onAction={(caseId) => void act(caseId, "open", "Digest item opened.")}
+          />
         ) : null}
-        <section>
-          <h2>Workload</h2>
-          <p className="mb-workload">
-            {asNumbers(meta.workload).map((value, index) => (
-              <i key={`${value}-${index}`} style={{ height: `${8 + value * 4}px` }} />
-            ))}
-          </p>
-        </section>
+        <p className="mb-workload" aria-label="Workload this week">
+          {asNumbers(meta.workload).map((value, index) => (
+            <i key={`${value}-${index}`} style={{ height: `${8 + value * 4}px` }} />
+          ))}
+        </p>
       </div>
     </ScreenState>
   );
 }
 
-function QueueAside({ current }: { current: WelfareCase }) {
+function QueueAside({
+  current,
+  onRest,
+  onRefer,
+}: {
+  current: WelfareCase;
+  onRest: () => void;
+  onRefer: () => void;
+}) {
   return (
-    <aside className="mb-card">
+    <aside className="mb-sheet">
       <h2>
         {current.case_id} {current.tier} {current.trajectory}
       </h2>
@@ -222,9 +272,17 @@ function QueueAside({ current }: { current: WelfareCase }) {
         remainingRatio={current.remaining_ratio}
         tier={current.tier}
       />
-      <a className="mb-primary" href={`/welfare/cases/${current.case_id}`}>
-        Open case
-      </a>
+      <div className="mb-action-row">
+        <a className="mb-primary" href={`/welfare/cases/${current.case_id}`}>
+          Open case
+        </a>
+        <button className="mb-secondary" onClick={onRest} type="button">
+          Log 48-hour rest
+        </button>
+        <button className="mb-ghost" onClick={onRefer} type="button">
+          Refer
+        </button>
+      </div>
     </aside>
   );
 }
@@ -259,36 +317,50 @@ function TabCards({
   items,
   empty,
   kind,
+  done,
+  onAction,
 }: {
   items: Record<string, unknown>[];
   empty: string;
   kind: "incident" | "referral" | "followup" | "closed" | "digest";
+  done: Record<string, string>;
+  onAction?: (caseId: string) => void;
 }) {
   if (items.length === 0) {
     return <p>{empty}</p>;
   }
   return (
-    <ul className="mb-home-stack">
+    <ul className="mb-work-list">
       {items.map((item, index) => {
         const caseId = String(item.case_id ?? item.window_id ?? `row-${index}`);
         const href = item.case_id ? `/welfare/cases/${String(item.case_id)}` : "/welfare";
         const detail =
           kind === "incident"
-            ? "Someone asked to talk after an incident. Open the queue to pick up the case."
+            ? String(item.window_id ?? "Asked to talk")
             : kind === "referral"
               ? `${String(item.channel ?? "I want to talk")} · ${String(item.status ?? "open")}`
               : kind === "followup"
-                ? `Due ${String(item.due ?? "soon")}. ${String(item.reason ?? "")}`
+                ? `Due ${String(item.due ?? "soon")}`
                 : kind === "closed"
-                  ? "Closed. Open to read the log."
-                  : "In today's digest.";
+                  ? "Closed"
+                  : "In today's digest";
+        const marked = done[caseId];
         return (
-          <li className="mb-card" key={`${caseId}-${index}`}>
-            <h2>{caseId}</h2>
-            <p>{detail}</p>
-            <a className="mb-secondary" href={href}>
-              Open
-            </a>
+          <li className="mb-sheet" key={`${caseId}-${index}`}>
+            <div className="mb-sheet-head">
+              <h2>{caseId}</h2>
+              <span>{marked ?? detail}</span>
+            </div>
+            <div className="mb-action-row">
+              <a className="mb-secondary" href={href}>
+                Open
+              </a>
+              {onAction && !marked ? (
+                <button className="mb-primary" onClick={() => onAction(caseId)} type="button">
+                  {kind === "followup" ? "Mark done" : "Pick up"}
+                </button>
+              ) : null}
+            </div>
           </li>
         );
       })}

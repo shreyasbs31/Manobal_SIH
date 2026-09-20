@@ -7,11 +7,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   askParentForStageRole,
   currentAccessToken,
+  currentPrincipal,
   engineClient,
+  ensureDeskRole,
   inStageFrame,
   stageRoleReady,
 } from "@/lib/engine";
 import { loadSnapshot, saveSnapshot } from "@/lib/offline";
+import { principalMatchesPath } from "@/lib/stage-role";
 import { subscribeWorld } from "@/lib/world";
 
 export function useEngine<T>(
@@ -36,6 +39,8 @@ export function useEngine<T>(
   const [tick, setTick] = useState(0);
   const loaderRef = useRef(loader);
   const settledRef = useRef(false);
+  const remintAttempted = useRef(false);
+  const lastPathRef = useRef(pathname);
   loaderRef.current = loader;
 
   useEffect(() => {
@@ -65,10 +70,10 @@ export function useEngine<T>(
     });
     const poll = inStageFrame()
       ? window.setInterval(() => {
-          if (currentAccessToken() && stageRoleReady(window.location.pathname)) {
+          if (settledRef.current && currentAccessToken() && stageRoleReady(window.location.pathname)) {
             setTick((value) => value + 1);
           }
-        }, 2500)
+        }, 4000)
       : null;
     return () => {
       window.removeEventListener("offline", onOffline);
@@ -84,6 +89,11 @@ export function useEngine<T>(
   }, []);
 
   useEffect(() => {
+    if (lastPathRef.current !== pathname) {
+      lastPathRef.current = pathname;
+      settledRef.current = false;
+      remintAttempted.current = false;
+    }
     if (inStageFrame() && !stageRoleReady(pathname)) {
       askParentForStageRole(pathname);
       setLoading(true);
@@ -91,39 +101,62 @@ export function useEngine<T>(
       return;
     }
     const controller = new AbortController();
-    if (!settledRef.current) {
-      setLoading(true);
-    }
-    setError(null);
-    const airplane = window.localStorage.getItem("manobal.airplane") === "1";
-    const networkDown = !navigator.onLine || airplane;
-    void loadSnapshot<T>(key).then((cached) => {
-      if (controller.signal.aborted) {
+    let timedOut = false;
+    let waitingForRole = false;
+    let watchdog = 0;
+    void (async () => {
+      if (!inStageFrame() && !principalMatchesPath(currentPrincipal()?.role, pathname)) {
+        setLoading(true);
+        setError(null);
+        remintAttempted.current = true;
+        const ready = await ensureDeskRole(pathname);
+        if (controller.signal.aborted) {
+          return;
+        }
+        if (!ready) {
+          setError("The session does not have the required scope");
+          setLoading(false);
+          return;
+        }
+      }
+      watchdog = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 12000);
+      if (!settledRef.current) {
+        setLoading(true);
+      }
+      setError(null);
+      const airplane = window.localStorage.getItem("manobal.airplane") === "1";
+      const networkDown = !navigator.onLine || airplane;
+      const cached = await loadSnapshot<T>(key);
+      if (controller.signal.aborted && !timedOut) {
         return;
       }
       if (cached) {
         setData(cached);
+        if (timedOut) {
+          setLoading(false);
+        }
       }
       if (networkDown) {
         setOffline(true);
         setLoading(false);
+        window.clearTimeout(watchdog);
+        return;
       }
-    });
-    if (networkDown) {
-      setOffline(true);
-      return () => controller.abort();
-    }
-    let waitingForRole = false;
-    loaderRef
-      .current(engineClient(), controller.signal)
-      .then((payload) => {
+      try {
+        const payload = await loaderRef.current(engineClient(), controller.signal);
         if (!controller.signal.aborted) {
           setData(payload);
           void saveSnapshot(key, payload);
         }
-      })
-      .catch((caught: unknown) => {
+      } catch (caught: unknown) {
         if (controller.signal.aborted) {
+          if (timedOut && !settledRef.current) {
+            setError("Could not load this screen");
+            setLoading(false);
+          }
           return;
         }
         if (
@@ -138,6 +171,25 @@ export function useEngine<T>(
           settledRef.current = false;
           return;
         }
+        if (
+          !inStageFrame() &&
+          !remintAttempted.current &&
+          caught instanceof ManobalApiError &&
+          (caught.status === 403 || caught.status === 401) &&
+          !principalMatchesPath(currentPrincipal()?.role, pathname)
+        ) {
+          remintAttempted.current = true;
+          waitingForRole = true;
+          settledRef.current = false;
+          const ready = await ensureDeskRole(pathname);
+          if (ready && !controller.signal.aborted) {
+            setTick((value) => value + 1);
+          } else if (!controller.signal.aborted) {
+            setError(caught.message);
+            setLoading(false);
+          }
+          return;
+        }
         if (caught instanceof ManobalApiError) {
           setError(caught.message);
         } else if (caught instanceof Error) {
@@ -145,14 +197,18 @@ export function useEngine<T>(
         } else {
           setError("Could not load this screen");
         }
-      })
-      .finally(() => {
+      } finally {
+        window.clearTimeout(watchdog);
         if (!controller.signal.aborted && !waitingForRole) {
           settledRef.current = true;
           setLoading(false);
         }
-      });
-    return () => controller.abort();
+      }
+    })();
+    return () => {
+      window.clearTimeout(watchdog);
+      controller.abort();
+    };
   }, [key, tick, pathname]);
 
   return {

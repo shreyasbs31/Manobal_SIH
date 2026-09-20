@@ -3,10 +3,11 @@
 import { t } from "@manobal/i18n";
 import { BaselineRibbonChart, FaceScale } from "@manobal/ui";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
+import { useFlowMeta } from "@/lib/flow-meta";
 import { enqueue } from "@/lib/offline";
 import { useEngine } from "@/lib/use-engine";
 import { announceWorld } from "@/lib/world";
@@ -40,6 +41,22 @@ export default function CheckInPage() {
   const tagStep = !busy && questions.length > 0 && step === questions.length;
   const hoursStep = !busy && step === questions.length + 1;
   const done = Boolean(savedLine);
+  const questionCount = Math.max(visible.length, 1);
+  useFlowMeta(
+    done || !question ? undefined : `${step + 1} of ${questionCount}`,
+  );
+
+  useEffect(() => {
+    const onBack = (event: Event) => {
+      if (done || step <= 0) {
+        return;
+      }
+      event.preventDefault();
+      setStep((current) => current - 1);
+    };
+    window.addEventListener("manobal-screen-back", onBack);
+    return () => window.removeEventListener("manobal-screen-back", onBack);
+  }, [done, step]);
 
   const joined = useMemo(
     () => [
@@ -95,9 +112,6 @@ export default function CheckInPage() {
         </div>
       ) : question ? (
         <div className="mb-checkin">
-          <p>
-            {step + 1} of {visible.length}
-          </p>
           <h1>{question.prompt}</h1>
           <FaceScale
             label={question.id === "mood" ? "Mood" : question.id === "energy" ? "Energy" : "Sleep"}
@@ -122,7 +136,7 @@ export default function CheckInPage() {
           </Link>
           {offline ? (
             <div>
-              <p>Listen and tap. Speech recognition is not needed offline.</p>
+              <p>Listen, then tap an answer.</p>
               <audio controls preload="auto" src="/audio/grounding.en.wav" />
             </div>
           ) : null}
@@ -171,13 +185,7 @@ export default function CheckInPage() {
         </div>
       ) : (busy || offline) && !question ? (
         <div className="mb-checkin">
-          <h1>Save this check-in on the phone</h1>
-          {offline ? (
-            <div>
-              <p>Listen and tap. Speech recognition is not needed offline.</p>
-              <audio controls preload="auto" src="/audio/grounding.en.wav" />
-            </div>
-          ) : null}
+          <h1>Save this check-in</h1>
           <button className="mb-primary" onClick={() => void finish()} type="button">
             Save
           </button>

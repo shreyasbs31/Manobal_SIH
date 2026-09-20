@@ -497,6 +497,7 @@ export class ManobalClient {
 
   counselDesk(signal?: AbortSignal): Promise<{
     calendar: string[];
+    slots?: { id: string; when: string; label: string; request_id: string | null }[];
     requests: Record<string, string | null>[];
     routing: { counsellor: string; languages: string[]; matched?: boolean };
     acs: { demo_join: boolean; label: string };
@@ -520,6 +521,13 @@ export class ManobalClient {
     return this.request("/api/v1/counsel/suggest", {
       method: "POST",
       body: { case_id: caseId, lever, sentence },
+    });
+  }
+
+  counselBook(slotId: string, requestId: string): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/counsel/book", {
+      method: "POST",
+      body: { slot_id: slotId, request_id: requestId },
     });
   }
 
@@ -688,6 +696,10 @@ export class ManobalClient {
     return this.request("/api/v1/gov/reviews", { signal });
   }
 
+  govReviewDecide(id: string, status: string): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/gov/reviews/${id}`, { method: "POST", body: { status } });
+  }
+
   govAgentSafety(signal?: AbortSignal): Promise<Record<string, unknown>> {
     return this.request("/api/v1/gov/agent-safety", { signal });
   }
@@ -751,6 +763,13 @@ export class ManobalClient {
     });
   }
 
+  dpoNotice(id: string, status: string): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/dpo/notices/${id}`, {
+      method: "POST",
+      body: { status },
+    });
+  }
+
   integrationsJobs(signal?: AbortSignal): Promise<Record<string, unknown>> {
     return this.request("/api/v1/integrations/jobs", { signal });
   }
@@ -762,12 +781,49 @@ export class ManobalClient {
     });
   }
 
+  integrationsRetry(jobId: string): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/integrations/jobs/${jobId}/retry`, { method: "POST", body: {} });
+  }
+
+  integrationsRelease(rowId: string): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/integrations/quarantine/${rowId}/release`, {
+      method: "POST",
+      body: {},
+    });
+  }
+
+  integrationsRun(source: string): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/integrations/jobs/run", { method: "POST", body: { source } });
+  }
+
+  integrationsSchedule(id: string, enabled: boolean): Promise<Record<string, unknown>> {
+    return this.request(`/api/v1/integrations/schedules/${id}`, {
+      method: "POST",
+      body: { enabled },
+    });
+  }
+
+  integrationsWebhookTest(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/integrations/incident/test", { method: "POST", body: {} });
+  }
+
   adminConsole(signal?: AbortSignal): Promise<Record<string, unknown>> {
     return this.request("/api/v1/admin/console", { signal });
   }
 
   adminFlag(name: string, enabled: boolean): Promise<Record<string, unknown>> {
     return this.request("/api/v1/admin/flags", { method: "POST", body: { name, enabled } });
+  }
+
+  adminAssign(officer: string, unit: string, validUntil: string): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/admin/assign", {
+      method: "POST",
+      body: { officer, unit, valid_until: validUntil },
+    });
+  }
+
+  adminReembed(): Promise<Record<string, unknown>> {
+    return this.request("/api/v1/admin/corpus", { method: "POST", body: {} });
   }
 
   labOverview(signal?: AbortSignal): Promise<Record<string, unknown>> {

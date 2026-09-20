@@ -17,17 +17,12 @@ import { enqueue, saveJournal } from "@/lib/offline";
 import { announceWorld } from "@/lib/world";
 import {
   ON_DEVICE_HINDI_NOTE,
-  ON_DEVICE_LABEL,
   localReflect,
   onDeviceCapability,
 } from "@/lib/on-device";
 import { useEngine } from "@/lib/use-engine";
 
 const COMPANION_MODE = "checkin";
-const HOSTING_CAPTION =
-  "Prototype: open-weight model hosted on Azure. Deployable on force servers.";
-const DEMO_BANNER =
-  "Demo mode: speech is processed by a cloud service. In deployment this runs on the phone or your unit's server.";
 const HOLD_HINT = "Press and hold while you speak. Release to send.";
 const MIN_HOLD_MS = 500;
 const MIN_PEAK_RMS = 0.06;
@@ -67,8 +62,6 @@ export default function SaathiCompanionPage() {
   const [onDevice, setOnDevice] = useState(false);
   const [holding, setHolding] = useState(false);
   const [sending, setSending] = useState(false);
-  const [hostingCaption, setHostingCaption] = useState(HOSTING_CAPTION);
-  const [summary, setSummary] = useState("");
   const [fixtureBusy, setFixtureBusy] = useState(false);
   const [journalSaved, setJournalSaved] = useState(false);
   const [voiceNote, setVoiceNote] = useState<string | null>(HOLD_HINT);
@@ -104,12 +97,6 @@ export default function SaathiCompanionPage() {
   useEffect(() => {
     void onDeviceCapability().then((result) => setOnDevice(result.available));
   }, []);
-
-  useEffect(() => {
-    if (data?.model_caption) {
-      setHostingCaption(data.model_caption);
-    }
-  }, [data]);
 
   const lang = data?.language === "Tamil" ? "ta" : data?.language === "English" ? "en" : "hi";
   const hinglish = data?.language === "Hinglish";
@@ -265,7 +252,6 @@ export default function SaathiCompanionPage() {
         first_audio_ms?: number;
         audio_b64?: string;
         script?: string;
-        hosting_caption?: string;
         interim?: boolean;
         hint?: string;
       };
@@ -296,9 +282,6 @@ export default function SaathiCompanionPage() {
         authRetry.current = false;
         const waiters = readyWaiters.current.splice(0);
         waiters.forEach((resolve) => resolve());
-      }
-      if (payload.hosting_caption) {
-        setHostingCaption(payload.hosting_caption);
       }
       if (payload.type === "no_speech") {
         setState("idle");
@@ -433,7 +416,7 @@ export default function SaathiCompanionPage() {
         holdActive.current = false;
         setHolding(false);
         setState("idle");
-        setVoiceNote("Could not reach the voice service. Sign in again if this keeps happening.");
+        setVoiceNote("Voice could not start. Sign in again if this keeps happening.");
         return;
       }
       const AudioCtx =
@@ -524,7 +507,7 @@ export default function SaathiCompanionPage() {
     }
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       setState("thinking");
-      setVoiceNote("Checking what was heard.");
+      setVoiceNote("Sent. Saathi is writing.");
       socketRef.current.send(JSON.stringify({ type: "end_of_turn", heard: true }));
       return;
     }
@@ -538,7 +521,7 @@ export default function SaathiCompanionPage() {
     }
     setFixtureBusy(true);
     setState("thinking");
-    setVoiceNote("Playing the recorded Director line.");
+    setVoiceNote("Playing a recorded check-in.");
     try {
       const AudioCtx =
         window.AudioContext ||
@@ -682,9 +665,6 @@ export default function SaathiCompanionPage() {
         window.location.href = "/app/safety";
         return;
       }
-      if (result.hosting_caption) {
-        setHostingCaption(result.hosting_caption);
-      }
       const reply = result.reply ?? result.script ?? "";
       if (reply) {
         setLines((current) => upsertCaption(current, "saathi", reply));
@@ -710,18 +690,11 @@ export default function SaathiCompanionPage() {
   return (
     <ScreenState error={null} loading={loading && !data && !offline} offline={offline} empty={false}>
       <div className="mb-voice-page">
-          <div className="mb-voice-head">
-            <h1>Saathi</h1>
-            <span>{language}</span>
-          </div>
           {error ? <p role="alert">{error}</p> : null}
           {voiceNote ? <p role="status">{voiceNote}</p> : null}
           <VoiceContour amplitude={amplitude} seed={personaId} state={state} />
           {lines.length ? <CaptionStream language={language} lines={lines} /> : null}
-          {clearedMs !== null ? <AudioClearedChip ms={clearedMs} /> : null}
-          <p className="mb-hosting-caption">{hostingCaption}</p>
-          <p className="mb-hosting-caption">{DEMO_BANNER}</p>
-          {onDevice ? <p>{ON_DEVICE_LABEL}</p> : null}
+          {clearedMs !== null ? <AudioClearedChip /> : null}
           {keyboard ? (
             <form
               onSubmit={(event) => {
@@ -805,26 +778,10 @@ export default function SaathiCompanionPage() {
               ) : null}
             </div>
           )}
-          {fixtureId ? (
-            <p className="mb-hosting-caption">
-              Recorded playback is a Director demo control. It sends a fixed line so a shot can run without a microphone.
-            </p>
-          ) : null}
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              const text = lines.map((line) => `${line.speaker}: ${line.text}`).join(" ");
-              setSummary(text.slice(0, 280) || "A short check-in.");
-            }}
-            type="button"
-          >
-            End of session summary
-          </button>
-          {summary ? <p>{summary}</p> : null}
           <button
             className="mb-ghost"
             onClick={() => {
-              const text = summary || lines.map((line) => line.text).join(" ");
+              const text = lines.map((line) => line.text).join(" ");
               if (browserLexiconHit(text)) {
                 window.location.href = "/app/safety";
                 return;

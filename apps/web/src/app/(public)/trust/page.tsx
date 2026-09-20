@@ -7,6 +7,24 @@ import { ScreenState } from "@/components/screen-state";
 import { manobalMode } from "@/lib/mode";
 import { useEngine } from "@/lib/use-engine";
 
+function pickFemaleVoice(lang: string): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  const wanted = lang.toLowerCase();
+  const ranked = voices.filter((voice) => {
+    const blob = `${voice.name} ${voice.lang}`.toLowerCase();
+    if (/male|madhur|prabhat|ravi|david|george|valluvar|naveen|ryan|guy|andrew|brian|arthur|tony/.test(blob)) {
+      return false;
+    }
+    return /female|swara|neerja|ananya|heera|pallavi|zira|aria|sonia|neural/.test(blob) || voice.lang.toLowerCase().startsWith(wanted.slice(0, 2));
+  });
+  return (
+    ranked.find((voice) => /swara|neerja|ananya|female/.test(voice.name.toLowerCase())) ??
+    ranked.find((voice) => voice.lang.toLowerCase().startsWith(wanted.slice(0, 2))) ??
+    ranked[0] ??
+    null
+  );
+}
+
 export default function TrustPage() {
   const [speaking, setSpeaking] = useState(false);
   const { data, error, loading, offline } = useEngine("trust", (client, signal) =>
@@ -23,15 +41,25 @@ export default function TrustPage() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(data.read_aloud);
     utterance.lang = "en-IN";
+    const voice = pickFemaleVoice("en-IN");
+    if (voice) {
+      utterance.voice = voice;
+    }
     utterance.onend = () => setSpeaking(false);
     setSpeaking(true);
-    window.speechSynthesis.speak(utterance);
+    const start = () => window.speechSynthesis.speak(utterance);
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.addEventListener("voiceschanged", start, { once: true });
+      window.setTimeout(start, 250);
+      return;
+    }
+    start();
   }
 
   return (
     <div className="mb-theme mb-trust" data-skin="saathi" data-theme="light">
       <PublicHeader mode={manobalMode()} />
-      <main className="mb-landing-hero">
+      <main className="mb-trust-main">
         <h1>What MANOBAL collects, and what it never does</h1>
         <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
           {data ? (
@@ -86,7 +114,6 @@ export default function TrustPage() {
                 ))}
               </tbody>
             </table>
-            <p className="mb-hosting-caption">{data.hosting}</p>
             </>
           ) : null}
         </ScreenState>

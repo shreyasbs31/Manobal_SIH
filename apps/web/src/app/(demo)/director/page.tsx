@@ -113,7 +113,7 @@ export default function DirectorPage() {
               }
               type="button"
             >
-              Hold edge
+              Hold unit link
             </button>
             <button
               className="mb-secondary"
@@ -142,20 +142,20 @@ export default function DirectorPage() {
             <button
               className="mb-secondary"
               onClick={() =>
-                void act(() => engineClient().demoOutage("deepgram", true), "Deepgram outage on.")
+                void act(() => engineClient().demoOutage("deepgram", true), "Speech service outage on.")
               }
               type="button"
             >
-              Deepgram outage
+              Speech outage
             </button>
             <button
               className="mb-secondary"
               onClick={() =>
-                void act(() => engineClient().demoOutage("deepgram", false), "Deepgram outage off.")
+                void act(() => engineClient().demoOutage("deepgram", false), "Speech service restored.")
               }
               type="button"
             >
-              Deepgram restored
+              Speech restored
             </button>
             <button
               className="mb-secondary"
@@ -206,9 +206,7 @@ export default function DirectorPage() {
             ))}
           </div>
           <h2>Stage presets</h2>
-          <p>Each row is one demo spine test. Open it, follow What to do, and check What should happen.</p>
           <table className="mb-compare">
-            <caption>One row per recording shot and spine test</caption>
             <thead>
               <tr>
                 <th scope="col">Shot</th>

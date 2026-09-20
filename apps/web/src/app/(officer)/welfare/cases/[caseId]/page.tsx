@@ -10,7 +10,6 @@ import {
   TrajectoryArrow,
 } from "@manobal/ui";
 import type { FixtureTier, FixtureTrajectory } from "@manobal/contracts";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -72,9 +71,6 @@ export default function CaseWorkspacePage() {
       {data ? (
         <div className="mb-case-work">
           <header className="mb-action-row">
-            <Link className="mb-ghost" href="/welfare">
-              Queue
-            </Link>
             <strong>{data.case_id}</strong>
             <TierBadge tier={data.tier} />
             <TrajectoryArrow direction={data.trajectory} />
@@ -135,10 +131,7 @@ export default function CaseWorkspacePage() {
               </label>
               <BriefPanel>
                 <p lang={briefLang}>{nodes}</p>
-                <p className="mb-hosting-caption">
-                  Prototype: open-weight model hosted on Azure. Deployable on force servers.
-                </p>
-                <p>Openers</p>
+                <p>Ways to open the conversation</p>
                 <ol>
                   {(data.openers ?? []).map((line) => (
                     <li key={line}>{line}</li>

@@ -1,7 +1,7 @@
 "use client";
 
 import { CaseCard, EscalationLadder, SlaTimer, chimeKindForQueue, playConsoleChime } from "@manobal/ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
@@ -13,6 +13,7 @@ export default function MedicalPage() {
   );
   const extra = useEngine("medical-referrals", (client, signal) => client.medicalReferrals(signal));
   const items = data ?? [];
+  const [picked, setPicked] = useState("");
 
   useEffect(() => {
     const t4 = items.filter((item) => item.tier === "T4").length;
@@ -22,6 +23,14 @@ export default function MedicalPage() {
     }
   }, [items]);
 
+  useEffect(() => {
+    if (!picked && items[0]) {
+      setPicked(items[0].case_id);
+    }
+  }, [items, picked]);
+
+  const current = items.find((item) => item.case_id === picked) ?? items[0];
+
   return (
     <ScreenState
       empty={items.length === 0}
@@ -30,73 +39,87 @@ export default function MedicalPage() {
       loading={loading}
       offline={offline}
     >
-      <div className="mb-acute-board">
-        {items.map((item) => (
-          <article key={item.case_id}>
-            <SlaTimer
-              label="Acknowledge"
-              remainingLabel={item.sla_label}
-              remainingRatio={item.remaining_ratio}
-              tier="T4"
-            />
-            <CaseCard
-              caseId={item.case_id}
-              domains={[...item.drivers]}
-              drift={item.drift}
-              lever={item.lever_title}
-              limited={item.limited}
-              remainingRatio={item.remaining_ratio}
-              sla={item.sla_label}
-              source={item.source}
-              status={item.status}
-              tier={item.tier}
-              trajectory={item.trajectory}
-            />
-            <EscalationLadder
-              current={item.status === "ack" ? "Battalion MO" : "waiting"}
-              steps={[
-                { role: "UWO", status: "notified", time: "09:41" },
-                { role: "Company welfare deputy", status: "waiting", time: "" },
-                {
-                  role: "Battalion MO",
-                  status: item.status === "ack" ? "acknowledged" : "waiting",
-                  time: item.status === "ack" ? "now" : "",
-                },
-                { role: "Sector counsellor", status: "waiting", time: "" },
-              ]}
-            />
-            <button
-              className="mb-primary mb-ack"
-              onClick={() => {
-                void engineClient()
-                  .medicalAck(item.case_id)
-                  .then(() => reload());
-              }}
-              type="button"
-            >
-              Acknowledge
-            </button>
-          </article>
-        ))}
-        <details>
-          <summary>Referrals and guide</summary>
-          {extra.data?.items.map((item) => (
-            <p key={item.case_id}>
-              From {item.from}. {item.case_id}. {item.context}
-            </p>
-          ))}
-          {extra.data ? (
-            <>
-              <h2>{extra.data.guide.title}</h2>
-              <ol>
-                {extra.data.guide.steps.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-              <p>{extra.data.guide.note}</p>
-            </>
+      <div className="mb-desk mb-desk-fill">
+        <div className="mb-acute-board">
+          <div className="mb-acute-list">
+            {items.map((item) => (
+              <article data-focus={item.case_id === current?.case_id ? "true" : "false"} key={item.case_id}>
+                <button className="mb-sheet-head" onClick={() => setPicked(item.case_id)} type="button">
+                  <SlaTimer
+                    label="Acknowledge"
+                    remainingLabel={item.sla_label}
+                    remainingRatio={item.remaining_ratio}
+                    tier="T4"
+                  />
+                </button>
+                <CaseCard
+                  caseId={item.case_id}
+                  domains={[...item.drivers]}
+                  drift={item.drift}
+                  lever={item.lever_title}
+                  limited={item.limited}
+                  remainingRatio={item.remaining_ratio}
+                  sla={item.sla_label}
+                  source={item.source}
+                  status={item.status}
+                  tier={item.tier}
+                  trajectory={item.trajectory}
+                />
+              </article>
+            ))}
+          </div>
+          {current ? (
+            <aside className="mb-sheet">
+              <h2>{current.case_id}</h2>
+              <SlaTimer
+                label="Acknowledge"
+                remainingLabel={current.sla_label}
+                remainingRatio={current.remaining_ratio}
+                tier="T4"
+              />
+              <EscalationLadder
+                current={current.status === "ack" ? "Battalion MO" : "waiting"}
+                steps={[
+                  { role: "UWO", status: "notified", time: "09:41" },
+                  { role: "Company welfare deputy", status: "waiting", time: "" },
+                  {
+                    role: "Battalion MO",
+                    status: current.status === "ack" ? "acknowledged" : "waiting",
+                    time: current.status === "ack" ? "now" : "",
+                  },
+                  { role: "Sector counsellor", status: "waiting", time: "" },
+                ]}
+              />
+              <button
+                className="mb-primary mb-ack"
+                onClick={() => {
+                  void engineClient()
+                    .medicalAck(current.case_id)
+                    .then(() => reload());
+                }}
+                type="button"
+              >
+                {current.status === "ack" ? "Acknowledged" : "Acknowledge"}
+              </button>
+              {extra.data?.items.length ? (
+                <div className="mb-work-list">
+                  {extra.data.items.map((item) => (
+                    <button
+                      className="mb-compare-band"
+                      key={item.case_id}
+                      onClick={() => setPicked(item.case_id)}
+                      type="button"
+                    >
+                      <span>{item.case_id}</span>
+                      <strong>{item.from}</strong>
+                      <em>{item.context}</em>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </aside>
           ) : null}
-        </details>
+        </div>
       </div>
     </ScreenState>
   );

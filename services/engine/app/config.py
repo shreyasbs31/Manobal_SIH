@@ -96,12 +96,15 @@ class Settings(BaseSettings):
     deepgram_api_key: SecretStr = SecretStr("")
     dg_stt_model_en: str = "nova-3"
     dg_stt_model_hi: str = "nova-3"
-    dg_tts_voice_en: str = "flux-meena-en"
+    dg_tts_voice_en: str = "hi-IN-SwaraNeural"
     az_tts_voice_hi: str = "hi-IN-SwaraNeural"
-    az_tts_voice_hinglish: str = "hi-IN-AnanyaNeural"
+    az_tts_voice_hinglish: str = "hi-IN-SwaraNeural"
     az_tts_voice_map: dict[str, str] = Field(
         default_factory=lambda: {
+            "en": "hi-IN-SwaraNeural",
             "en-IN": "en-IN-NeerjaNeural",
+            "hi": "hi-IN-SwaraNeural",
+            "hi-Latn": "hi-IN-SwaraNeural",
             "ta": "ta-IN-PallaviNeural",
         }
     )

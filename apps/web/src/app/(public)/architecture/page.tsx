@@ -1,64 +1,51 @@
 "use client";
 
-import { PublicHeader } from "@manobal/ui";
+import { useState } from "react";
 
+import { ConsoleChrome } from "@/components/console-chrome";
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
-import { manobalMode } from "@/lib/mode";
 import { useEngine } from "@/lib/use-engine";
 
 const LAYERS = [
-  { title: "Device", detail: "Saathi PWA, offline packet, on-device gates" },
-  { title: "Unit server", detail: "Sync, lexicon, companion, alerts" },
-  { title: "Analytics", detail: "Baselines, CUSUM, forecast. No vault keys." },
-  { title: "Identity vault", detail: "Names stay here. Envelope encryption." },
+  { title: "Phone", detail: "Check-ins and talks stay on the phone when there is no network." },
+  { title: "Unit", detail: "The unit keeps sync, alerts, and Saathi replies." },
+  { title: "Patterns", detail: "Looks at unit patterns, never names." },
+  { title: "Names", detail: "Names stay locked until a welfare officer needs to reach someone." },
 ] as const;
 
 export default function ArchitecturePage() {
   const live = useEngine("architecture-live", (client, signal) => client.publicArchitecture(signal));
   const selftest = useEngine("selftest", (client, signal) => client.systemSelftest(signal));
-  const mode = useEngine("system-mode", (client, signal) => client.systemMode(signal));
+  const [layer, setLayer] = useState<(typeof LAYERS)[number]["title"] | "Zone X">("Phone");
+  const selected = LAYERS.find((item) => item.title === layer);
 
   return (
-    <div className="mb-theme mb-arch" data-skin="command" data-theme="dark">
-      <PublicHeader mode={manobalMode()} />
-      <main className="mb-command-body">
-        <h1 className="mb-type-title">Separated by design</h1>
-        <p>
-          Live self-tests prove the engine cannot reach identity storage or its keys. Command routes
-          never accept a person, case, or token parameter.
-        </p>
-        <p className="mb-hosting-caption">
-          Prototype: open-weight model hosted on Azure. Deployable on force servers.
-        </p>
-        <section>
-          <h2>Regions and models</h2>
-          <p>
-            App, Speech, and Translator run in {live.data?.regions?.app ?? "centralindia"}. Foundry
-            and Content Safety run in {live.data?.regions?.ai ?? "eastus2"} because those models are
-            not offered in the app region. Resource {live.data?.foundry_resource ?? "manobal-ai-resource"},
-            project {live.data?.foundry_project ?? "manobal-ai"}.
-          </p>
-          <ul>
-            {(live.data?.classes ?? []).map((row) => (
-              <li key={row.class_name}>
-                {row.class_name}: deployment {row.deployment}, {row.model}, {row.type}
-                {row.notes ? `. ${row.notes}` : ""}
-              </li>
-            ))}
-          </ul>
-        </section>
+    <ConsoleChrome>
+      <div className="mb-desk mb-desk-fill mb-arch">
         <div className="mb-layers" data-link={live.data?.edge_up ? "up" : "down"}>
-          {LAYERS.map((layer) => (
-            <section className="mb-layer" key={layer.title}>
-              <h2>{layer.title}</h2>
-              <p>{layer.detail}</p>
-            </section>
+          {LAYERS.map((item) => (
+            <button
+              aria-pressed={layer === item.title}
+              className="mb-layer"
+              key={item.title}
+              onClick={() => setLayer(item.title)}
+              type="button"
+            >
+              <h2>{item.title}</h2>
+              <p>{item.detail}</p>
+            </button>
           ))}
-          <section className="mb-layer" data-blocked="true">
-            <h2>Zone X</h2>
-            <p>Appraisal, promotion, posting, discipline: no connection</p>
-          </section>
+          <button
+            aria-pressed={layer === "Zone X"}
+            className="mb-layer"
+            data-blocked="true"
+            onClick={() => setLayer("Zone X")}
+            type="button"
+          >
+            <h2>Never connected</h2>
+            <p>Appraisal, promotion, posting, and discipline have no path in.</p>
+          </button>
           {(live.data?.packets ?? []).map((packet) => (
             <span
               aria-hidden="true"
@@ -68,11 +55,12 @@ export default function ArchitecturePage() {
             />
           ))}
         </div>
-        <section>
-          <h2>Edge queue</h2>
+        <aside className="mb-sheet">
+          <h2>{layer === "Zone X" ? "Never connected" : layer}</h2>
           <p>
-            Unit server link is {live.data?.edge_up ? "up" : "down"}. Held packets:{" "}
-            {live.data?.queued ?? 0}.
+            {layer === "Zone X"
+              ? "Nothing here can be used for posting, promotion, or discipline."
+              : selected?.detail}
           </p>
           <div className="mb-action-row">
             <button
@@ -84,52 +72,25 @@ export default function ArchitecturePage() {
               }}
               type="button"
             >
-              Toggle unit server link
+              {live.data?.edge_up ? "Hold the unit link" : "Restore the unit link"}
+            </button>
+            <button className="mb-ghost" onClick={() => selftest.reload()} type="button">
+              Run self-test
             </button>
           </div>
-        </section>
-        <section>
-          <h2>Self-test</h2>
           <ScreenState error={selftest.error} loading={selftest.loading} offline={selftest.offline}>
-            <p>
-              Stack:{" "}
-              {selftest.data
-                ? selftest.data.healthy
-                  ? "healthy"
-                  : "not healthy"
-                : "checking"}
-              {selftest.data
-                ? `. Core database ${selftest.data.core_database_reachable ? "reachable" : "down"}.`
-                : ""}
-            </p>
-            <ul>
+            <ul className="mb-selftest">
+              <li>{selftest.data?.healthy ? "Services are up" : selftest.data ? "Services need attention" : "Checking"}</li>
+              <li>{selftest.data?.vault_database_isolated ? "Names stay separate" : "Checking names"}</li>
               <li>
-                Engine has no vault database access
-                {selftest.data
-                  ? `: ${selftest.data.vault_database_isolated ? "held" : "failed"}`
-                  : ""}
+                {selftest.data?.zone_x_unreachable
+                  ? "Appraisal systems cannot connect"
+                  : "Checking the closed path"}
               </li>
-              <li>Command URL scan rejects case and person parameters</li>
-              <li>
-                Zone X unreachable
-                {selftest.data ? `: ${selftest.data.zone_x_unreachable ? "held" : "failed"}` : ""}
-              </li>
-              <li>Acute path cannot be switched off</li>
             </ul>
           </ScreenState>
-        </section>
-        <section className="mb-mode-panel">
-          <h2>Mode</h2>
-          <p>Runtime: {mode.data?.mode ?? manobalMode()}.</p>
-          <p>Foundry: {mode.data?.foundry ? "configured" : "unset, local fallback"}.</p>
-          <p>Speech: {mode.data?.speech ? "configured" : "unset, silent WAV"}.</p>
-          <p>ACS: {mode.data?.acs ? "configured" : "unset, labelled demo join"}.</p>
-          <p>
-            Deployment type is GlobalStandard. Alt (Grok) is officer-side text only and never serves
-            personnel or safety tasks.
-          </p>
-        </section>
-      </main>
-    </div>
+        </aside>
+      </div>
+    </ConsoleChrome>
   );
 }

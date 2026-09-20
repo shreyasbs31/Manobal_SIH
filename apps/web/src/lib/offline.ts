@@ -161,7 +161,7 @@ export function localNudgeRules(input: {
   if ((input.consecutiveDuty ?? 0) >= 10) {
     cards.push({
       title: "Five-minute recovery",
-      why: "Ten duty days in a row in the cached roster.",
+      why: "Ten duty days in a row.",
     });
   }
   return cards;

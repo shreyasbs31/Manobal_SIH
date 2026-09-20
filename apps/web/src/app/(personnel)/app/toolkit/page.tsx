@@ -30,13 +30,8 @@ export default function ToolkitPage() {
 
   return (
     <ScreenState error={error} loading={loading && !offline} offline={offline} empty={false}>
-      <div className="mb-home-stack">
-        <h2 className="mb-type-title">Toolkit</h2>
-        <p>
-          Breathing, rest, letters, and short reads stay on this phone. Nothing here is sent to a
-          commander. Open one and follow the steps. Helped or not for me only changes the order for
-          you.
-        </p>
+        <div className="mb-home-stack">
+          <p>Short practices that stay on this phone.</p>
         {items.map((item, index) => (
           <article className="mb-context-card" key={item.id}>
             {index === 0 ? <SceneSleepWindDown /> : <SceneEmptyPath />}
@@ -44,9 +39,11 @@ export default function ToolkitPage() {
               <h2>{item.title}</h2>
               <p>{item.detail}</p>
               {item.offline ? <p>Works without a network.</p> : null}
-              <Link className="mb-primary" href={item.href}>
-                Start
-              </Link>
+              <div className="mb-action-row">
+                <Link className="mb-primary" href={item.href}>
+                  Start
+                </Link>
+              </div>
             </div>
           </article>
         ))}

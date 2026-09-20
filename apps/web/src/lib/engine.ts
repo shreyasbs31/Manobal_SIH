@@ -5,10 +5,11 @@ import {
   ManobalClient,
   type DemoLoginRequest,
   type LoginResponse,
+  type ManobalRole,
   type Principal,
 } from "@manobal/contracts";
 
-import { principalMatchesPath } from "@/lib/stage-role";
+import { principalMatchesPath, roleForPath } from "@/lib/stage-role";
 
 export function engineBaseUrl(): string {
   if (typeof window !== "undefined") {
@@ -169,6 +170,53 @@ export function stageRoleReady(pathname: string): boolean {
     return false;
   }
   return principalMatchesPath(principal.role, pathname);
+}
+
+let deskRoleInFlight: Promise<boolean> | null = null;
+let latestDeskRole: ManobalRole | null = null;
+
+export async function ensureDeskRole(pathname: string): Promise<boolean> {
+  if (typeof window === "undefined") {
+    return true;
+  }
+  if (inStageFrame()) {
+    if (stageRoleReady(pathname)) {
+      return true;
+    }
+    askParentForStageRole(pathname);
+    return false;
+  }
+  const needed = roleForPath(pathname);
+  if (needed === "any" || needed === "personnel") {
+    return true;
+  }
+  if (principalMatchesPath(currentPrincipal()?.role, pathname) && currentAccessToken()) {
+    return true;
+  }
+  latestDeskRole = needed;
+  if (!deskRoleInFlight) {
+    deskRoleInFlight = (async () => {
+      try {
+        while (latestDeskRole) {
+          const role = latestDeskRole;
+          latestDeskRole = null;
+          if (currentPrincipal()?.role === role && currentAccessToken()) {
+            continue;
+          }
+          const body: DemoLoginRequest = { role, persona_id: null };
+          const login = await new ManobalClient(engineBaseUrl()).demoLogin(body);
+          persistLogin(login, body);
+          window.dispatchEvent(new Event("manobal-session"));
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    })().finally(() => {
+      deskRoleInFlight = null;
+    });
+  }
+  return deskRoleInFlight;
 }
 
 const STAGE_STORE: Record<string, { token: string; principal: string }> = {

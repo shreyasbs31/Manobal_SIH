@@ -1,7 +1,6 @@
 "use client";
 
-import { FairnessBar, KpiTile } from "@manobal/ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
@@ -24,158 +23,163 @@ interface Sector {
   band: string;
 }
 
-interface LeverItem {
-  code: string;
-  later_easing: string;
-  n: string;
-}
-
 export default function HqPage() {
   const { data, error, loading, offline, reload } = useEngine("hq-overview", (client, signal) =>
     client.hqOverview(signal),
   );
-  const profile = useEngine("officer-profile", (client, signal) => client.officerProfile(signal));
   const [brief, setBrief] = useState("");
   const [status, setStatus] = useState("");
+  const [selected, setSelected] = useState("central");
+  const [leaveRate, setLeaveRate] = useState<number | null>(null);
+  const [rotation, setRotation] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const payload = data as
     | {
         theatres: Theatre[];
         sectors: Sector[];
         capacity: { demand: string; recommend: string };
-        levers: { note: string; items: LeverItem[] };
         retention: { transfer_requests: string; exit_intent_tags: string };
         policy: Record<string, number>;
         brief: { title: string; body: string; edited: boolean };
       }
     | null;
   const body = brief || payload?.brief.body || "";
+  const policy = payload?.policy;
+  const leave = leaveRate ?? Number(policy?.leave_approval_rate ?? 0.62);
+  const months = rotation ?? Number(policy?.rotation_length_months ?? 24);
+  const theatre = useMemo(
+    () => payload?.theatres.find((row) => row.id === selected) ?? payload?.theatres[0],
+    [payload, selected],
+  );
+
+  async function project() {
+    setBusy(true);
+    try {
+      const result = await engineClient().hqSimulate({
+        leave_approval_rate: leave,
+        rotation_length_months: months,
+      });
+      setStatus(String(result.projected ?? "Projected."));
+      reload();
+    } catch (caught: unknown) {
+      setStatus(caught instanceof Error ? caught.message : "Could not project.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const theatreId = (sectorId: string) =>
+    sectorId.startsWith("N") ? "north" : sectorId.startsWith("E") ? "east" : "central";
 
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!payload}>
       {payload ? (
-        <div className="mb-home-stack">
-          <p className="mb-desk-intro">
-            Force HQ compares theatres, not people. Hidden cells stay hatched when a group is too
-            small. Use the simulator before you change leave policy.
-            {profile.data ? " Policy lens: rotation length." : ""}
-          </p>
-          <table className="mb-formation" aria-label="Theatre comparison">
-            <thead>
-              <tr>
-                <th scope="col">Theatre</th>
-                <th scope="col">Posture</th>
-                <th scope="col">Workload</th>
-                <th scope="col">Leave</th>
-                <th scope="col">Incidents</th>
-                <th scope="col">Grievances</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payload.theatres.map((theatre) => (
-                <tr key={theatre.id}>
-                  <th scope="row">{theatre.label}</th>
-                  <td>{theatre.posture}</td>
-                  <td>{theatre.workload}</td>
-                  <td>{theatre.leave}</td>
-                  <td>{theatre.incidents}</td>
-                  <td>{theatre.grievances}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="mb-hq-board" aria-label="Schematic sector board">
-            {payload.sectors.map((sector) => (
-              <span
-                className="mb-hq-sector"
-                data-band={sector.band}
-                key={sector.id}
-                style={{ left: `${sector.x}%`, top: `${sector.y}%` }}
+        <div className="mb-desk mb-desk-fill">
+          <div className="mb-theatre-grid">
+            {payload.theatres.map((row) => (
+              <button
+                aria-pressed={row.id === selected}
+                className="mb-theatre"
+                key={row.id}
+                onClick={() => setSelected(row.id)}
+                type="button"
               >
-                {sector.id} {sector.band}
-              </span>
+                <strong>{row.label}</strong>
+                <span>{row.workload}</span>
+                <em>{row.posture}</em>
+              </button>
             ))}
           </div>
-          <div className="mb-grid-12">
-            <div className="mb-span-4">
-              <KpiTile hint="18-month view" label="Leave backlog" value="High in sector N" />
+          <div className="mb-hq-split">
+            <div className="mb-hq-board" aria-label="Schematic sector board">
+              {payload.sectors.map((sector) => (
+                <button
+                  aria-pressed={theatreId(sector.id) === selected}
+                  className="mb-hq-sector"
+                  data-band={sector.band}
+                  key={sector.id}
+                  onClick={() => setSelected(theatreId(sector.id))}
+                  style={{ left: `${sector.x}%`, top: `${sector.y}%` }}
+                  type="button"
+                >
+                  {sector.id}
+                </button>
+              ))}
             </div>
-            <div className="mb-span-4">
-              <KpiTile hint={payload.capacity.recommend} label="Welfare capacity" value={payload.capacity.demand} />
-            </div>
-            <div className="mb-span-4">
-              <KpiTile
-                hint="k-anonymous"
-                label="Retention pressure"
-                value={payload.retention.transfer_requests}
-              />
-            </div>
+            {theatre ? (
+              <aside className="mb-sheet">
+                <h2>{theatre.label}</h2>
+                <p className="mb-sheet-metric">{theatre.workload} weekly load</p>
+                <p>
+                  Leave {theatre.leave}. Incidents {theatre.incidents}.
+                </p>
+                <label>
+                  Leave approval {Math.round(leave * 100)} percent
+                  <input
+                    max={0.95}
+                    min={0.4}
+                    onChange={(event) => setLeaveRate(Number(event.target.value))}
+                    step={0.01}
+                    type="range"
+                    value={leave}
+                  />
+                </label>
+                <label>
+                  Rotation {months} months
+                  <input
+                    max={36}
+                    min={12}
+                    onChange={(event) => setRotation(Number(event.target.value))}
+                    type="range"
+                    value={months}
+                  />
+                </label>
+                <button className="mb-primary" disabled={busy} onClick={() => void project()} type="button">
+                  Project this policy
+                </button>
+                {status ? <p role="status">{status}</p> : null}
+                <div className="mb-action-row">
+                  <button
+                    className="mb-secondary"
+                    onClick={() => {
+                      void engineClient()
+                        .hqSaveBrief(body)
+                        .then(() => {
+                          setStatus("Brief saved.");
+                          reload();
+                        });
+                    }}
+                    type="button"
+                  >
+                    Save brief
+                  </button>
+                  <button
+                    className="mb-ghost"
+                    onClick={() => {
+                      void engineClient()
+                        .hqBriefPdf()
+                        .then((blob) => {
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = "monthly-brief.pdf";
+                          link.click();
+                          URL.revokeObjectURL(url);
+                          setStatus("Brief exported.");
+                        });
+                    }}
+                    type="button"
+                  >
+                    Export PDF
+                  </button>
+                </div>
+                <label>
+                  Monthly brief
+                  <textarea onChange={(event) => setBrief(event.target.value)} rows={4} value={body} />
+                </label>
+              </aside>
+            ) : null}
           </div>
-          <FairnessBar label="Posture share across theatres" ratio={1.04} />
-          <section>
-            <h2>Lever effectiveness</h2>
-            <p>{payload.levers.note}</p>
-            {payload.levers.items.map((item) => (
-              <p key={item.code}>
-                {item.code}: later easing {item.later_easing}. n {item.n}.
-              </p>
-            ))}
-          </section>
-          <section>
-            <h2>Policy simulator</h2>
-            <p>Leave approval {payload.policy.leave_approval_rate}. Rotation {payload.policy.rotation_length_months} months.</p>
-            <button
-              className="mb-secondary"
-              onClick={() => {
-                void engineClient()
-                  .hqSimulate({ leave_approval_rate: 0.8 })
-                  .then((result) => setStatus(String(result.projected ?? "Projected.")));
-              }}
-              type="button"
-            >
-              Project leave approval at 80 percent
-            </button>
-          </section>
-          <section>
-            <h2>{payload.brief.title}</h2>
-            <label>
-              Monthly brief
-              <textarea onChange={(event) => setBrief(event.target.value)} rows={6} value={body} />
-            </label>
-            <button
-              className="mb-secondary"
-              onClick={() => {
-                void engineClient()
-                  .hqSaveBrief(body)
-                  .then(() => {
-                    setStatus("Brief saved.");
-                    reload();
-                  });
-              }}
-              type="button"
-            >
-              Save brief
-            </button>
-            <button
-              className="mb-primary"
-              onClick={() => {
-                void engineClient()
-                  .hqBriefPdf()
-                  .then((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.download = "monthly-brief.pdf";
-                    link.click();
-                    URL.revokeObjectURL(url);
-                    setStatus("Brief exported.");
-                  });
-              }}
-              type="button"
-            >
-              Export PDF
-            </button>
-            {status ? <p role="status">{status}</p> : null}
-          </section>
         </div>
       ) : null}
     </ScreenState>

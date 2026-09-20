@@ -1,6 +1,5 @@
 "use client";
 
-import { t } from "@manobal/i18n";
 import { mePrivacy } from "@manobal/contracts";
 import { SceneOnboardingPhone } from "@manobal/illustrations";
 import {
@@ -66,7 +65,6 @@ export default function MePage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
       {data || offline ? (
         <div className="mb-home-stack">
-          <h2 className="mb-type-title">Me</h2>
           <div className="mb-me-points">
             {mePrivacy.statements.map((line, index) => {
               const Icon = ICONS[index] ?? IconVaultKey;
@@ -78,7 +76,6 @@ export default function MePage() {
               );
             })}
           </div>
-          <p>{t("privacy.commander", lang === "hi" || lang === "ta" ? lang : "en")}</p>
           {lang !== "en" && lang !== "hi" && lang !== "ta" ? <MachineTranslatedBadge /> : null}
 
           <h2 className="mb-section-label">My trends</h2>
@@ -134,20 +131,16 @@ export default function MePage() {
           )}
           <ReceiptCard hash={receipt.hash} time={receipt.time} />
 
-          <h2 className="mb-section-label">Rights centre</h2>
-          {data ? (
-            <p>
-              Notice {data.rights.notice.version}. Hash {data.rights.notice.hash}.
-            </p>
-          ) : (
-            <p>Rights stay on this phone.</p>
-          )}
-          <nav aria-label="Rights" className="mb-rights">
-            {(data?.rights.actions ?? []).map((action) => (
-              <span key={action}>
-                {action} <span aria-hidden="true">›</span>
-              </span>
-            ))}
+          <nav aria-label="Your choices" className="mb-rights">
+            <Link href="/trust">
+              Privacy notice <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/talk">
+              Talk to a person <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/concerns">
+              Raise a concern <span aria-hidden="true">›</span>
+            </Link>
             <button
               className="mb-ghost"
               onClick={() => {
@@ -166,20 +159,14 @@ export default function MePage() {
             </button>
           </nav>
 
-          <h2 className="mb-section-label">Requests</h2>
-          <Link href="/app/talk">Counselling bookings and welfare requests</Link>
-
-          <h2 className="mb-section-label">Concerns</h2>
-          <Link href="/app/concerns">Raise a grievance and track the SLA</Link>
-
-          <h2 className="mb-section-label">Unit pulse</h2>
-          <p>One anonymous question this week. Results are never shown individually.</p>
+          <h2 className="mb-section-label">This week</h2>
+          <p>Your name is not attached.</p>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("unit", 1)
-                .then(() => setPulseNote("Saved. Command sees a company share, never your name."));
+                .then(() => setPulseNote("Saved."));
             }}
             type="button"
           >
@@ -190,31 +177,30 @@ export default function MePage() {
             onClick={() => {
               void engineClient()
                 .savePulse("unit", 0)
-                .then(() => setPulseNote("Saved. Command sees a company share, never your name."));
+                .then(() => setPulseNote("Saved."));
             }}
             type="button"
           >
             This week felt steady
           </button>
-          <h2 className="mb-section-label">Trust pulse</h2>
-          <p>I believe this system exists to support me.</p>
+          <p>I believe this app is here to support me.</p>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("trust", 1)
-                .then(() => setPulseNote("Saved. Trust pulse stays anonymous."));
+                .then(() => setPulseNote("Saved."));
             }}
             type="button"
           >
-            Yes, I believe this system exists to support me
+            Yes
           </button>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("trust", 0)
-                .then(() => setPulseNote("Saved. Trust pulse stays anonymous."));
+                .then(() => setPulseNote("Saved."));
             }}
             type="button"
           >
@@ -222,8 +208,8 @@ export default function MePage() {
           </button>
           {pulseNote ? <p>{pulseNote}</p> : null}
 
-          <h2 className="mb-section-label">Things Saathi remembers</h2>
-          <p>Off by default. Saved items stay with you, never scoring, never officers.</p>
+          <h2 className="mb-section-label">What Saathi remembers</h2>
+          <p>Off unless you turn it on. Officers never see this.</p>
           <button
             className="mb-secondary"
             onClick={() => {
@@ -236,9 +222,7 @@ export default function MePage() {
             {(data?.remembers.opt_in ?? false) ? "Turn off remembering" : "Turn on remembering"}
           </button>
           {(data?.remembers.items ?? []).map((item) => (
-            <p key={item.text}>
-              {item.group}: {item.text}
-            </p>
+            <p key={item.text}>{item.text}</p>
           ))}
           <button
             className="mb-ghost"
@@ -251,7 +235,7 @@ export default function MePage() {
           </button>
 
           <h2 className="mb-section-label">Settings</h2>
-          <label>
+          <label className="mb-field">
             Language
             <select
               onChange={(event) => {
@@ -278,12 +262,26 @@ export default function MePage() {
             />
             Simple mode, larger buttons
           </label>
-          <Link href="/app/plan">My safety plan</Link>
-          <Link href="/app/buddy">Buddy</Link>
-          <Link href="/app/family">Family connect</Link>
-          <Link href="/app/rest">Plan my rest</Link>
-          <Link href="/app/assessments">Assessments</Link>
-          <Link href="/app/onboarding">Review consent</Link>
+          <nav aria-label="More on this phone" className="mb-rights">
+            <Link href="/app/plan">
+              My safety plan <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/buddy">
+              Buddy <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/family">
+              Family connect <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/rest">
+              Plan my rest <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/assessments">
+              Assessments <span aria-hidden="true">›</span>
+            </Link>
+            <Link href="/app/onboarding">
+              Review consent <span aria-hidden="true">›</span>
+            </Link>
+          </nav>
         </div>
       ) : null}
     </ScreenState>

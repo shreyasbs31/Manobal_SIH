@@ -22,6 +22,7 @@ type Lab = {
 export default function LabPage() {
   const [world, setWorld] = useState("primary");
   const [bench, setBench] = useState<string | null>(null);
+  const [picked, setPicked] = useState("");
   const { data, error, loading, offline } = useEngine(`lab-${world}`, (client, signal) =>
     client.labMetrics(world, signal) as Promise<Lab>,
   );
@@ -31,12 +32,7 @@ export default function LabPage() {
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
-        <div className="mb-lab">
-          <p>
-            Primary and shifted synthetic worlds sit side by side. Numbers belong here, not on
-            command screens.
-          </p>
-          <p>Source: {data.source ?? "core or demo cases"}.</p>
+        <div className="mb-lab mb-desk">
           <div className="mb-action-row">
             <button
               aria-pressed={world === "primary"}
@@ -55,7 +51,7 @@ export default function LabPage() {
               Shifted world
             </button>
             <button
-              className="mb-secondary"
+              className="mb-primary"
               onClick={() => {
                 void engineClient()
                   .labBenchmark()
@@ -65,11 +61,11 @@ export default function LabPage() {
               }}
               type="button"
             >
-              Run 80,000 in-memory benchmark
+              Run the large check
             </button>
           </div>
           {bench ? <p role="status">{bench}</p> : null}
-          <div className="mb-kpi-row">
+          <div className="mb-kpi-row mb-kpi-row-wide">
             <KpiTile
               hint="T2+"
               label="Precision"
@@ -86,38 +82,55 @@ export default function LabPage() {
               value={typeof metrics.brier === "number" ? metrics.brier.toFixed(2) : "n/a"}
             />
           </div>
-          <section className="mb-card">
+          <section className="mb-sheet">
             <h2>Reliability, {data.world} world</h2>
             <ReliabilityChart points={data.calibration} />
           </section>
-          <section className="mb-card">
+          <section className="mb-sheet">
             <h2>Confusion</h2>
-            <p>
-              True high {data.confusion.tp}. False high {data.confusion.fp}. True steady{" "}
-              {data.confusion.tn}. Missed {data.confusion.fn}.
-            </p>
+            <div className="mb-conf-grid">
+              <span>True high {data.confusion.tp}</span>
+              <span>False high {data.confusion.fp}</span>
+              <span>True steady {data.confusion.tn}</span>
+              <span>Missed {data.confusion.fn}</span>
+            </div>
           </section>
-          <section className="mb-card">
+          <section className="mb-sheet">
             <h2>Ablations</h2>
-            <ul>
-              {data.ablations.map((row) => (
-                <li key={row.name}>
-                  {row.name}: {row.delta}. {row.note}
-                </li>
-              ))}
-            </ul>
+            {data.ablations.map((row) => (
+              <button
+                aria-pressed={picked === row.name}
+                className="mb-compare-band"
+                key={row.name}
+                onClick={() => setPicked(row.name)}
+                type="button"
+              >
+                <span>{row.name}</span>
+                <strong>{row.delta}</strong>
+                {picked === row.name ? <em>{row.note}</em> : null}
+              </button>
+            ))}
+            <button
+              aria-pressed={picked === "imran"}
+              className="mb-compare-band"
+              onClick={() => setPicked("imran")}
+              type="button"
+            >
+              <span>Imran</span>
+              <strong>held out</strong>
+              {picked === "imran" ? <em>{data.personas.imran}</em> : null}
+            </button>
+            <button
+              aria-pressed={picked === "thomas"}
+              className="mb-compare-band"
+              onClick={() => setPicked("thomas")}
+              type="button"
+            >
+              <span>Thomas</span>
+              <strong>held out</strong>
+              {picked === "thomas" ? <em>{data.personas.thomas}</em> : null}
+            </button>
           </section>
-          <section className="mb-card">
-            <h2>Zero penalty</h2>
-            <p>{data.zero_penalty.note}</p>
-            <p>Present in the model: {data.zero_penalty.present_in_model ? "yes" : "no"}.</p>
-          </section>
-          <section className="mb-card">
-            <h2>Two people who stayed steady</h2>
-            <p>{data.personas.imran}</p>
-            <p>{data.personas.thomas}</p>
-          </section>
-          <p>{data.honest}</p>
         </div>
       ) : null}
     </ScreenState>

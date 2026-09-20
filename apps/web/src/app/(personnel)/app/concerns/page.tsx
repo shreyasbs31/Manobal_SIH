@@ -17,11 +17,7 @@ export default function ConcernsPage() {
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={false}>
       <div className="mb-home-stack">
-        <h1 className="mb-type-title">Raise a concern</h1>
-        <p>
-          Leave, land, family, or colleagues. Welfare sees the category and your words, not a score.
-          You can send it without your name.
-        </p>
+        <p>Leave, land, family, or colleagues. You can send this without your name.</p>
         <label>
           Category
           <select onChange={(event) => setCategory(event.target.value)} value={category}>
@@ -69,7 +65,8 @@ export default function ConcernsPage() {
             <article className="mb-card" key={String(row.id)}>
               <h2>{String(row.category)}</h2>
               <p>
-                {String(row.status)} · SLA {String(row.sla)}
+                {String(row.status)}
+                {row.sla ? ` · due ${String(row.sla)}` : ""}
                 {row.anonymous ? " · sent without your name" : ""}
               </p>
             </article>

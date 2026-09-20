@@ -332,9 +332,18 @@ _chain: list[dict[str, str | int]] = []
 _chain_mode = "intact"
 _dpo_requests: list[dict[str, Any]] = []
 _dpo_breaches: list[dict[str, str]] = []
+_dpo_notices: list[dict[str, str]] = []
 _jobs: list[dict[str, Any]] = []
 _quarantine: list[dict[str, str]] = []
+_schedules: list[dict[str, Any]] = []
+_assignments: list[dict[str, str]] = []
 _flags: dict[str, bool] = {"simple_mode_default": False, "machine_translate": True}
+_corpus_state: dict[str, Any] = {
+    "reviewed_en": 32,
+    "reviewed_hi": 32,
+    "pending": 0,
+    "embedded_at": "2026-09-16 02:00 IST",
+}
 _clock = {
     "sim_now": "2026-09-16T10:00:00+05:30",
     "running": True,
@@ -419,6 +428,15 @@ def _seed_dpo() -> None:
     if not _jobs:
         _jobs.append(
             {
+                "id": "job-103",
+                "source": "wearable.json",
+                "status": "accepted",
+                "accepted": 124,
+                "held": 0,
+            }
+        )
+        _jobs.append(
+            {
                 "id": "job-104",
                 "source": "hrms.csv",
                 "status": "quarantined",
@@ -433,6 +451,14 @@ def _seed_dpo() -> None:
                 "field": "full_name",
             }
         )
+    if not _dpo_notices:
+        _dpo_notices.append(
+            {
+                "id": "notice-hi",
+                "title": "Hindi privacy notice",
+                "status": "published",
+            }
+        )
 
 
 def reset_demo_state() -> dict[str, Any]:
@@ -440,7 +466,7 @@ def reset_demo_state() -> dict[str, Any]:
     from . import personnel
     from .cases import ALERTS, CASES, ESCALATIONS, LEDGER, ensure_demo_cases
     from .incident import INCIDENT_CARDS
-    from .officers import COUNSEL_NOTES, OFFICER_PROFILES
+    from .officers import COUNSEL_NOTES, COUNSEL_REQUESTS, COUNSEL_SLOTS, HQ_POLICY, OFFICER_PROFILES
     from .providers.router import RESILIENCE_CACHE
 
     CASES.clear()
@@ -449,20 +475,46 @@ def reset_demo_state() -> dict[str, Any]:
     LEDGER.clear()
     COUNSEL_NOTES.clear()
     OFFICER_PROFILES.clear()
+    for req in COUNSEL_REQUESTS:
+        req["status"] = "queued"
+    COUNSEL_SLOTS[0]["request_id"] = "req-hi-1"
+    COUNSEL_SLOTS[0]["label"] = "Named Hindi"
+    COUNSEL_SLOTS[1]["request_id"] = "req-anon-1"
+    COUNSEL_SLOTS[1]["label"] = "Anonymous English"
+    COUNSEL_SLOTS[2]["request_id"] = None
+    COUNSEL_SLOTS[2]["label"] = "Free"
+    HQ_POLICY.update(
+        {
+            "leave_approval_rate": 0.62,
+            "max_consecutive_duty": 10,
+            "rotation_length_months": 24,
+            "quick_return_cap": 2,
+        }
+    )
     INCIDENT_CARDS.clear()
     personnel.CHECKINS.clear()
     personnel.EDGE_QUEUE.clear()
     personnel.EDGE_LINK_UP = True
     for name in list(KILLSWITCHES):
         KILLSWITCHES[name] = False
-    global _chain, _chain_mode, _dpo_requests, _dpo_breaches, _jobs, _quarantine
-    global _scenario, _transparency, _clock
+    global _chain, _chain_mode, _dpo_requests, _dpo_breaches, _dpo_notices, _jobs, _quarantine
+    global _scenario, _transparency, _clock, _flags, _schedules, _assignments, _corpus_state
     _chain = _build_chain()
     _chain_mode = "intact"
     _dpo_requests = []
     _dpo_breaches = []
+    _dpo_notices = []
     _jobs = []
     _quarantine = []
+    _schedules = []
+    _assignments = []
+    _flags = {"simple_mode_default": False, "machine_translate": True}
+    _corpus_state = {
+        "reviewed_en": 32,
+        "reviewed_hi": 32,
+        "pending": 0,
+        "embedded_at": "2026-09-16 02:00 IST",
+    }
     _scenario = "arjun_drift"
     _transparency = None
     _clock = {
@@ -712,13 +764,7 @@ def dpo_payload() -> dict[str, Any]:
     return {
         "requests": list(_dpo_requests),
         "breaches": list(_dpo_breaches),
-        "notices": [
-            {
-                "id": "notice-hi",
-                "title": "Hindi privacy notice",
-                "status": "published",
-            }
-        ],
+        "notices": list(_dpo_notices),
     }
 
 
@@ -731,8 +777,98 @@ def dpo_decide(request_id: str, decision: str) -> dict[str, Any]:
     raise ApiError("not_found", "Request not found", hint="Use a listed id", status_code=404)
 
 
+def dpo_notice(notice_id: str, status: str) -> dict[str, str]:
+    _seed_dpo()
+    for row in _dpo_notices:
+        if row["id"] == notice_id:
+            row["status"] = status
+            return dict(row)
+    raise ApiError("not_found", "Notice not found", hint="Use a listed id", status_code=404)
+
+
+def _default_schedules() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": "hrms-roster",
+            "source": "HRMS roster",
+            "cadence": "Nightly 02:00",
+            "enabled": True,
+            "last_run": "2026-09-16 02:04",
+            "feed": "hrms.csv",
+        },
+        {
+            "id": "hrms-leave",
+            "source": "HRMS leave",
+            "cadence": "Nightly 02:10",
+            "enabled": True,
+            "last_run": "2026-09-16 02:12",
+            "feed": "leave.csv",
+        },
+        {
+            "id": "wearable",
+            "source": "Wearable daily",
+            "cadence": "Hourly",
+            "enabled": True,
+            "last_run": "2026-09-16 09:00",
+            "feed": "wearable.json",
+        },
+    ]
+
+
+def _default_assignments() -> list[dict[str, str]]:
+    return [
+        {"officer": "uwo-sunita", "unit": "force.central.c02.charlie", "valid_until": "2027-03-31"},
+        {"officer": "counsellor-anjali", "unit": "force.central.c02", "valid_until": "2027-03-31"},
+        {"officer": "mo-farah", "unit": "force.central.c02", "valid_until": "2026-12-31"},
+        {"officer": "co-menon", "unit": "force.central.c02", "valid_until": "2027-06-30"},
+    ]
+
+
+ORG_TREE: list[dict[str, Any]] = [
+    {"id": "force", "label": "Force", "n": 412, "depth": 0},
+    {"id": "force.central", "label": "Central theatre", "n": 180, "depth": 1},
+    {"id": "force.central.c02", "label": "Bn C-02", "n": 124, "depth": 2},
+    {"id": "force.central.c02.alpha", "label": "Alpha Coy", "n": 42, "depth": 3},
+    {"id": "force.central.c02.bravo", "label": "Bravo Coy", "n": 40, "depth": 3},
+    {"id": "force.central.c02.charlie", "label": "Charlie Coy", "n": 42, "depth": 3},
+]
+
+
+def _ensure_admin() -> None:
+    if not _schedules:
+        _schedules.extend(_default_schedules())
+    if not _assignments:
+        _assignments.extend(_default_assignments())
+
+
+def _next_job_id() -> str:
+    nums = [100]
+    for job in _jobs:
+        raw = str(job.get("id", "")).rsplit("-", 1)[-1]
+        if raw.isdigit():
+            nums.append(int(raw))
+    return f"job-{max(nums) + 1}"
+
+
+def _quality_report() -> dict[str, Any]:
+    accepted = sum(int(job.get("accepted") or 0) for job in _jobs)
+    held = sum(int(job.get("held") or 0) for job in _jobs)
+    total = max(1, accepted + held)
+    name_columns = 1 if any(row.get("field") in {"full_name", "identity", "name"} for row in _quarantine) else 0
+    return {
+        "completeness": round(accepted / total, 2),
+        "tokenised": name_columns == 0,
+        "name_columns": name_columns,
+        "missingness": round(held / total, 2),
+        "stale": 0.01,
+        "psi": 0.22 if _quarantine else 0.08,
+        "rows": accepted + held,
+    }
+
+
 def integrations_payload() -> dict[str, Any]:
     _seed_dpo()
+    _ensure_admin()
     return {
         "contracts": [
             {
@@ -748,10 +884,21 @@ def integrations_payload() -> dict[str, Any]:
         ],
         "jobs": list(_jobs),
         "quarantine": list(_quarantine),
-        "quality": {
-            "completeness": 0.97,
-            "tokenised": True,
-            "name_columns": 0,
+        "schedules": list(_schedules),
+        "quality": _quality_report(),
+        "preview": {
+            "before": {
+                "person": "held",
+                "service": "held",
+                "duty_date": "2026-09-16",
+                "shift_hours": "12",
+            },
+            "after": {
+                "token": "st_****19",
+                "unit_path": "force.central.c02.charlie",
+                "duty_date": "2026-09-16",
+                "shift_hours": "12",
+            },
         },
     }
 
@@ -772,21 +919,110 @@ def integrations_upload(filename: str, rows: list[dict[str, Any]]) -> dict[str, 
         else:
             accepted += 1
     job = {
-        "id": f"job-{len(_jobs) + 1}",
+        "id": _next_job_id(),
         "source": filename,
         "status": "quarantined" if held else "accepted",
         "accepted": accepted,
         "held": held,
     }
-    _jobs.append(job)
+    _jobs.insert(0, job)
     return job
 
 
+def integrations_retry(job_id: str) -> dict[str, Any]:
+    _seed_dpo()
+    for job in _jobs:
+        if job["id"] == job_id:
+            held = int(job.get("held") or 0)
+            job["accepted"] = int(job.get("accepted") or 0) + held
+            job["held"] = 0
+            job["status"] = "accepted"
+            _quarantine.clear()
+            return dict(job)
+    raise ApiError("not_found", "Job not found", hint="Use a listed id", status_code=404)
+
+
+def integrations_release(row_id: str) -> dict[str, Any]:
+    _seed_dpo()
+    kept = [item for item in _quarantine if item["row"] != row_id]
+    if len(kept) == len(_quarantine):
+        raise ApiError("not_found", "Quarantine row not found", hint="Use a listed row", status_code=404)
+    _quarantine.clear()
+    _quarantine.extend(kept)
+    for job in _jobs:
+        held = int(job.get("held") or 0)
+        if held:
+            job["held"] = max(0, held - 1)
+            job["accepted"] = int(job.get("accepted") or 0) + 1
+            if job["held"] == 0:
+                job["status"] = "accepted"
+    return integrations_payload()
+
+
+def integrations_run(source: str) -> dict[str, Any]:
+    _seed_dpo()
+    _ensure_admin()
+    feed = source or "hrms.csv"
+    accepted = 118
+    for row in _schedules:
+        if source in {row["id"], row["feed"], row["source"]}:
+            feed = str(row["feed"])
+            label = str(row["source"])
+            accepted = 124 if "wear" in feed else 118
+            row["last_run"] = "2026-09-16 10:04"
+            break
+    job = {
+        "id": _next_job_id(),
+        "source": feed,
+        "status": "accepted",
+        "accepted": accepted,
+        "held": 0,
+    }
+    _jobs.insert(0, job)
+    return job
+
+
+def integrations_set_schedule(schedule_id: str, enabled: bool) -> dict[str, Any]:
+    _ensure_admin()
+    for row in _schedules:
+        if row["id"] == schedule_id:
+            row["enabled"] = enabled
+            return dict(row)
+    raise ApiError("not_found", "Schedule not found", hint="Use a listed schedule", status_code=404)
+
+
+def integrations_webhook_test() -> dict[str, Any]:
+    import secrets
+
+    from .incident import IncidentWebhook, open_incident
+
+    now = datetime.now(UTC)
+    payload = IncidentWebhook(
+        unit_path="force.central.c02.charlie",
+        type="ied",
+        occurred_at=now,
+        severity=3,
+        nonce=secrets.token_hex(8),
+        timestamp=int(now.timestamp()),
+    )
+    window = open_incident(payload)
+    return {
+        "status": "accepted",
+        "window_id": window.id,
+        "unit_path": window.unit_path,
+        "closes_at": window.closes_at.isoformat(),
+    }
+
+
 def admin_payload() -> dict[str, Any]:
+    from .audio import manifest
     from .i18n import catalog_for
 
+    _ensure_admin()
     en = catalog_for("en")
     hi = catalog_for("hi")
+    settings = get_settings()
+    files = list(manifest().get("files", []))
     return {
         "languages": [
             {"code": "en", "reviewed": True, "strings": len(en.get("strings", {}))},
@@ -797,7 +1033,12 @@ def admin_payload() -> dict[str, Any]:
         "acute_listed": False,
         "units": ["force.central.c02.alpha", "force.central.c02.bravo", "force.central.c02.charlie"],
         "officers": ["uwo-sunita", "counsellor-anjali", "mo-farah", "co-menon"],
-        "corpus": {"reviewed_en": 32, "reviewed_hi": 32, "pending": 0},
+        "corpus": dict(_corpus_state),
+        "tree": list(ORG_TREE),
+        "assignments": list(_assignments),
+        "entra": [{"group": group, "role": role} for group, role in settings.entra_role_map.items()],
+        "audio": {"files": files, "reviewed": True, "live_tts": False},
+        "lexicon": {"version": "2026.09", "phrases": 86, "languages": ["en", "hi", "ta"]},
     }
 
 
@@ -811,6 +1052,28 @@ def set_admin_flag(name: str, enabled: bool) -> dict[str, Any]:
         )
     _flags[name] = enabled
     return {"name": name, "enabled": enabled}
+
+
+def admin_assign(officer: str, unit: str, valid_until: str) -> dict[str, str]:
+    _ensure_admin()
+    known = {"uwo-sunita", "counsellor-anjali", "mo-farah", "co-menon"}
+    units = {row["id"] for row in ORG_TREE}
+    if officer not in known:
+        raise ApiError("not_found", "Officer not found", hint="Pick a listed officer", status_code=404)
+    if unit not in units:
+        raise ApiError("not_found", "Unit not found", hint="Pick a listed unit", status_code=404)
+    row = {"officer": officer, "unit": unit, "valid_until": valid_until or "2027-03-31"}
+    kept = [item for item in _assignments if item["officer"] != officer]
+    _assignments.clear()
+    _assignments.extend(kept)
+    _assignments.append(row)
+    return dict(row)
+
+
+def admin_reembed() -> dict[str, Any]:
+    _corpus_state["pending"] = 0
+    _corpus_state["embedded_at"] = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    return dict(_corpus_state)
 
 
 def lab_payload(world: str = "primary") -> dict[str, Any]:

@@ -30,13 +30,12 @@ export default function RestPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
         <div className="mb-home-stack">
-          <h1 className="mb-type-title">Plan my rest</h1>
           <article className="mb-context-card">
             <SceneLeaveWindow />
             <div>
               <h2>Leave planner</h2>
               <p>
-                EL {data.el_days} days. CL {data.cl_days} days.
+                Earned leave {data.el_days} days. Casual leave {data.cl_days} days.
               </p>
               <p>{data.copy}</p>
             </div>
@@ -44,8 +43,7 @@ export default function RestPage() {
           {data.window ? (
             <>
               <p>
-                Suggested window {start} to {end}. Travel days you can edit. MANOBAL does not
-                submit leave.
+                Suggested dates {start} to {end}. You send this yourself.
               </p>
               <LeaveWindowPicker
                 end={end}
@@ -67,7 +65,7 @@ export default function RestPage() {
               <button
                 className="mb-primary"
                 onClick={() => {
-                  const text = `Leave request ${start} to ${end}, travel ${travel} days. Synthetic. MANOBAL does not submit this.`;
+                  const text = `Leave request ${start} to ${end}, travel ${travel} days.`;
                   setDraft(text);
                   void navigator.clipboard?.writeText(text).then(() => setCopied(true));
                 }}
@@ -82,7 +80,7 @@ export default function RestPage() {
             <p>No feasible window in the current roster. Ask a welfare officer about rest days.</p>
           )}
           <h2 className="mb-section-label">Shift and sleep</h2>
-          <p>Next seven days. Sleep windows are a suggestion, not an order.</p>
+          <p>A suggestion for the next seven days.</p>
           <ShiftTimeline days={data.days.map((day) => ({ label: day.label, start: day.start, end: day.end }))} />
           <ul>
             {data.days.map((day) => (

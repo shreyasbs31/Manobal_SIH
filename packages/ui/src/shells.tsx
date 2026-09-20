@@ -2,7 +2,6 @@
 
 import { Command } from "cmdk";
 import {
-  Bell,
   CalendarRange,
   Clapperboard,
   FlaskConical,
@@ -35,6 +34,7 @@ import {
 import { ModeChip, SimClock, StatusChip } from "./badges";
 import { RibbonMark, SyntheticMarker } from "./brand";
 import { SOSButton } from "./companion";
+import { goHref, requestScreenBack, ScreenNav, usePathStack } from "./screen-nav";
 import { setSoundEnabled, soundEnabled } from "./sound";
 import { ContourTexture, MapGrid } from "./texture-view";
 import type { ManobalMode, ThemeName } from "./types";
@@ -65,6 +65,10 @@ export function SaathiShell({
   mode = "demo",
   chrome = "full",
   simple = false,
+  flowLabel,
+  flowMeta,
+  homeHref = "/app",
+  onNavigate,
 }: {
   children: ReactNode;
   pathname: string;
@@ -76,17 +80,60 @@ export function SaathiShell({
   mode?: ManobalMode | undefined;
   chrome?: "full" | "flow" | "none" | undefined;
   simple?: boolean | undefined;
+  flowLabel?: string | undefined;
+  flowMeta?: string | undefined;
+  homeHref?: string | undefined;
+  onNavigate?: ((href: string) => void) | undefined;
 }) {
+  const isHome = pathname === homeHref;
+  const nav = usePathStack("manobal.nav.saathi", pathname, homeHref);
+  const showTabs = chrome === "full";
+  const showInnerNav = chrome !== "none" && !isHome;
+
+  const goBack = useCallback(() => {
+    if (requestScreenBack()) {
+      return;
+    }
+    goHref(nav.back(), onNavigate);
+  }, [nav, onNavigate]);
+
+  const goClose = useCallback(() => {
+    goHref(nav.close(), onNavigate);
+  }, [nav, onNavigate]);
+
+  useEffect(() => {
+    if (chrome === "none") {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.metaKey || event.ctrlKey) {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (showInnerNav) {
+        event.preventDefault();
+        goBack();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [chrome, goBack, showInnerNav]);
+
   if (chrome === "none") {
     return <>{children}</>;
   }
 
-  const showTabs = chrome === "full";
-  const showGreeting = chrome === "full";
-
   return (
     <div
       className="mb-theme mb-saathi"
+      data-chrome={chrome}
+      data-home={isHome ? "true" : "false"}
       data-simple={simple ? "true" : "false"}
       data-skin="saathi"
       data-theme="light"
@@ -95,21 +142,28 @@ export function SaathiShell({
         Skip to content
       </a>
       <header className="mb-saathi-top" aria-label="Saathi">
-        {showGreeting ? (
-          <div className="mb-saathi-greet">
-            <h1 className="mb-type-hero">{greeting}</h1>
-            {shiftLine ? <p className="mb-saathi-shift">{shiftLine}</p> : null}
-          </div>
+        {isHome && chrome === "full" ? (
+          <>
+            <div className="mb-saathi-greet">
+              <h1 className="mb-type-hero">{greeting}</h1>
+              {shiftLine ? <p className="mb-saathi-shift">{shiftLine}</p> : null}
+            </div>
+            <SOSButton href="/app/safety" />
+          </>
         ) : (
           <>
-            <h1 className="mb-sr-only">Saathi</h1>
-            <a aria-label="Close" className="mb-ghost mb-flow-close" href="/app">
-              x
-            </a>
+            <h1 className="mb-sr-only">{flowLabel || "Saathi"}</h1>
+            <ScreenNav
+              meta={flowMeta}
+              onBack={goBack}
+              onClose={goClose}
+              showBack
+              showClose
+              title={flowLabel}
+            />
           </>
         )}
-        {chrome === "full" ? <SOSButton href="/app/safety" /> : null}
-        {showTabs ? (
+        {showTabs && isHome ? (
           <div className="mb-saathi-status">
             {offline ? <StatusChip kind="offline" queued={queued} /> : null}
             {syncing ? <StatusChip kind="syncing" /> : null}
@@ -141,9 +195,6 @@ export function SaathiShell({
           })}
         </nav>
       ) : null}
-      <footer>
-        <p className="mb-chip mb-chip--synthetic mb-saathi-synthetic">Synthetic data</p>
-      </footer>
     </div>
   );
 }
@@ -169,7 +220,7 @@ const RAIL_ICONS: Record<string, typeof LayoutGrid> = {
   "/governance": Scale,
   "/dpo": Shield,
   "/integrations": Settings,
-  "/admin": Settings,
+  "/admin": Wrench,
   "/lab": FlaskConical,
   "/architecture": Layers,
   "/director": Clapperboard,
@@ -184,7 +235,9 @@ export function CommandShell({
   mode = "demo",
   clock = "2026-09-16 10:00 IST",
   theme = "dark",
+  deskLabel,
   onNavigate,
+  homeHref = "/command",
 }: {
   children: ReactNode;
   pathname: string;
@@ -194,16 +247,29 @@ export function CommandShell({
   mode?: ManobalMode | undefined;
   clock?: string | undefined;
   theme?: Extract<ThemeName, "dark" | "light"> | undefined;
+  deskLabel?: string | undefined;
   onNavigate?: ((href: string) => void) | undefined;
+  homeHref?: string | undefined;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [unit, setUnit] = useState(units[0] ?? "Bn C-02");
-  const [language, setLanguage] = useState("English");
   const [skinTheme, setSkinTheme] = useState<"dark" | "light">(theme);
   const [soundOn, setSoundOn] = useState(false);
   const paletteId = useId();
   const items = useMemo(() => navItems, [navItems]);
+  const nav = usePathStack("manobal.nav.command", pathname, homeHref);
+  const goBack = useCallback(() => {
+    if (requestScreenBack()) {
+      return;
+    }
+    goHref(nav.back(), onNavigate);
+  }, [nav, onNavigate]);
+  const goClose = useCallback(() => {
+    goHref(nav.close(), onNavigate);
+  }, [nav, onNavigate]);
+  const showBack = nav.canBack || pathname !== homeHref;
+  const showClose = pathname !== homeHref;
 
   useEffect(() => {
     setSoundOn(soundEnabled());
@@ -215,9 +281,16 @@ export function CommandShell({
       setPaletteOpen((open) => !open);
     }
     if (event.key === "Escape") {
-      setPaletteOpen(false);
+      if (paletteOpen) {
+        setPaletteOpen(false);
+        return;
+      }
+      if (showBack) {
+        event.preventDefault();
+        goBack();
+      }
     }
-  }, []);
+  }, [goBack, paletteOpen, showBack]);
 
   useEffect(() => {
     window.addEventListener("keydown", onKey);
@@ -253,6 +326,7 @@ export function CommandShell({
             {collapsed ? "Expand menu" : "Collapse menu"}
           </span>
         </button>
+        <div className="mb-rail-scroll">
         {items.map((item) => {
           const current =
             item.href === pathname ||
@@ -276,26 +350,37 @@ export function CommandShell({
             </a>
           );
         })}
+        </div>
       </nav>
       <div className="mb-command-main">
         <header className="mb-topbar" aria-label="Console">
-          <label className="mb-unit">
-            <span className="mb-sr">Unit</span>
-            <select
-              aria-label="Scoped unit"
-              className="mb-unit"
-              onChange={(event) => setUnit(event.target.value)}
-              value={unit}
-            >
-              {units.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          <h1 className="mb-type-title">{title}</h1>
+          <div className="mb-topbar-start">
+            <ScreenNav
+              compact
+              onBack={goBack}
+              onClose={goClose}
+              showBack={showBack}
+              showClose={showClose}
+            />
+            <label className="mb-unit">
+              <span className="mb-sr">Unit</span>
+              <select
+                aria-label="Scoped unit"
+                className="mb-unit"
+                onChange={(event) => setUnit(event.target.value)}
+                value={unit}
+              >
+                {units.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <h1 className="mb-type-title">{title}</h1>
+          </div>
           <div className="mb-topbar-end">
+            {deskLabel ? <span className="mb-chip">{deskLabel} desk</span> : null}
             <SimClock value={clock} />
             <ModeChip mode={mode} />
             <button
@@ -327,22 +412,6 @@ export function CommandShell({
                 <option value="light">Survey paper</option>
               </select>
             </label>
-            <label>
-              <span className="mb-sr">Language</span>
-              <select
-                aria-label="Language"
-                onChange={(event) => setLanguage(event.target.value)}
-                value={language}
-              >
-                <option>English</option>
-                <option>Hindi</option>
-                <option>Tamil</option>
-                <option>Urdu</option>
-              </select>
-            </label>
-            <button aria-label="Notifications" className="mb-ghost" type="button">
-              <Bell size={16} strokeWidth={ICON_STROKE} />
-            </button>
             <button
               aria-expanded={paletteOpen}
               aria-controls={paletteId}
@@ -389,14 +458,61 @@ export function CommandShell({
   );
 }
 
-export function PublicHeader({ mode = "demo" }: { mode?: ManobalMode | undefined }) {
+export function PublicHeader({
+  mode = "demo",
+  home = false,
+}: {
+  mode?: ManobalMode | undefined;
+  home?: boolean | undefined;
+}) {
+  const [path, setPath] = useState<string | null>(null);
+  useEffect(() => {
+    setPath(window.location.pathname);
+  }, []);
+  const nav = usePathStack("manobal.nav.public", home ? "/" : path, "/");
+  const atHome = home || path === "/" || path === null;
+  const goPublicBack = () => goHref(nav.back());
+
+  useEffect(() => {
+    if (atHome) {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.metaKey || event.ctrlKey) {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      goPublicBack();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [atHome, path]);
+
   return (
     <header className="mb-public-header" aria-label="Site">
-      <a className="mb-brand" href="/">
-        <RibbonMark />
-        MANOBAL
-      </a>
-      <div className="mb-topbar-end">
+      <div className="mb-public-start">
+        {atHome ? null : (
+          <ScreenNav
+            compact
+            onBack={() => goHref(nav.back())}
+            onClose={() => goHref(nav.close())}
+            showBack
+            showClose
+          />
+        )}
+        <a className="mb-brand" href="/">
+          <RibbonMark />
+          MANOBAL
+        </a>
+      </div>
+      <div className="mb-public-end">
         <SyntheticMarker />
         <ModeChip mode={mode} />
         <a className="mb-ghost" href="/trust">

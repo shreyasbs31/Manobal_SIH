@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { LiveObserver } from "@/components/live-observer";
+import { NavBridge } from "@/components/nav-bridge";
 import { OfflineObserver } from "@/components/offline-observer";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { fontClassName } from "@/lib/fonts";
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <OfflineObserver />
         <LiveObserver />
+        <NavBridge />
         <ServiceWorkerRegister />
         {children}
       </body>

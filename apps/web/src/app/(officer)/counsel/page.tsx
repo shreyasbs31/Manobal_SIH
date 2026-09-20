@@ -1,107 +1,172 @@
 "use client";
 
 import { CallPanel, EmptyState } from "@manobal/ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
+type Slot = { id: string; when: string; label: string; request_id: string | null };
+
 export default function CounselPage() {
-  const { data, error, loading, offline } = useEngine("counsel-desk", (client, signal) =>
+  const { data, error, loading, offline, reload } = useEngine("counsel-desk", (client, signal) =>
     client.counselDesk(signal),
   );
-  const profile = useEngine("officer-profile", (client, signal) => client.officerProfile(signal));
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("");
   const [picked, setPicked] = useState("");
+  const [slotId, setSlotId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const slots: Slot[] = useMemo(() => {
+    if (data?.slots?.length) {
+      return data.slots;
+    }
+    return (data?.calendar ?? []).map((label, index) => ({
+      id: `slot-${index}`,
+      when: label.slice(0, 5),
+      label: label.slice(6) || "Free",
+      request_id: null,
+    }));
+  }, [data]);
   const active =
     data?.requests.find((item) => String(item.id) === picked) ?? data?.requests[0];
+
+  async function run(work: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await work();
+      reload();
+    } catch (caught: unknown) {
+      setStatus(caught instanceof Error ? caught.message : "Could not complete that action.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
-        <div className="mb-home-stack">
-          <p className="mb-desk-intro">
-            Counsellors take named or anonymous sessions. Notes stay on this desk. Welfare sees a
-            suggested rest lever, not your notes.
-            {profile.data ? " Languages Hindi, Marathi, English." : ""}
-          </p>
-          <section>
+        <div className="mb-desk mb-counsel">
+          <section className="mb-sheet">
             <h2>Today</h2>
-            <ul>
-              {data.calendar.map((slot) => (
-                <li key={slot}>{slot}</li>
+            <div className="mb-slot-grid">
+              {slots.map((slot) => (
+                <button
+                  aria-pressed={slotId === slot.id}
+                  className="mb-slot"
+                  data-state={slot.request_id ? "held" : "free"}
+                  key={slot.id}
+                  onClick={() => {
+                    setSlotId(slot.id);
+                    if (slot.request_id) {
+                      setPicked(slot.request_id);
+                    }
+                  }}
+                  type="button"
+                >
+                  <strong>{slot.when}</strong>
+                  <span>{slot.label}</span>
+                </button>
               ))}
-            </ul>
+            </div>
           </section>
-          <section>
+          <section className="mb-sheet">
             <h2>Requests</h2>
-            {data.requests.map((item) => (
-              <button
-                className={String(item.id) === String(active?.id) ? "mb-primary" : "mb-secondary"}
-                key={String(item.id)}
-                onClick={() => setPicked(String(item.id))}
-                type="button"
-              >
-                {String(item.kind) === "named" ? "Named" : "Anonymous"}{" "}
-                {String(item.language) === "hi" ? "Hindi" : "English"}
-                {item.handle ? `, handle ${String(item.handle)}` : ""}. {String(item.summary)} Routed
-                to Anjali.
-              </button>
-            ))}
+            <div className="mb-work-list">
+              {data.requests.map((item) => (
+                <button
+                  aria-pressed={String(item.id) === String(active?.id)}
+                  className="mb-request"
+                  key={String(item.id)}
+                  onClick={() => setPicked(String(item.id))}
+                  type="button"
+                >
+                  <strong>
+                    {String(item.kind) === "named" ? "Named" : "Anonymous"}{" "}
+                    {String(item.language) === "hi" ? "Hindi" : "English"}
+                  </strong>
+                  <span>
+                    {item.handle ? String(item.handle) : String(item.summary)}
+                  </span>
+                </button>
+              ))}
+            </div>
           </section>
           {active ? (
-            <CallPanel
-              joinLabel={data.acs.label}
-              onJoin={() => {
-                void engineClient()
-                  .callsToken()
-                  .then((result) => {
-                    setStatus(
-                      result.configured
-                        ? "Call token issued. Join from two browsers on different networks."
-                        : data.acs.label,
-                    );
-                  });
-              }}
-              peer={active.handle ? String(active.handle) : "Named session"}
-              status="Notes stay on this desk. They are not sent to welfare."
-            />
+            <section className="mb-counsel-session">
+              <CallPanel
+                joinLabel="Join call"
+                onJoin={() => {
+                  void engineClient()
+                    .callsToken()
+                    .then((result) => {
+                      setStatus(result.configured ? "Call is ready." : "Call is not available right now.");
+                    });
+                }}
+                peer={active.handle ? String(active.handle) : "Named session"}
+                status={status || String(active.summary ?? "")}
+              />
+              <div className="mb-sheet">
+                <label>
+                  Private note
+                  <textarea onChange={(event) => setNote(event.target.value)} value={note} />
+                </label>
+                <div className="mb-action-row">
+                  {slotId ? (
+                    <button
+                      className="mb-secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        void run(async () => {
+                          await engineClient().counselBook(slotId, String(active.id));
+                          setStatus(`Booked ${slotId.replace("slot-", "")}.`);
+                        })
+                      }
+                      type="button"
+                    >
+                      Book this slot
+                    </button>
+                  ) : null}
+                  <button
+                    className="mb-secondary"
+                    disabled={busy || !note.trim()}
+                    onClick={() =>
+                      void run(async () => {
+                        const result = await engineClient().counselNotes(
+                          String(active.id),
+                          note,
+                        );
+                        setStatus("Note saved.");
+                      })
+                    }
+                    type="button"
+                  >
+                    Save note
+                  </button>
+                  <button
+                    className="mb-primary"
+                    disabled={busy}
+                    onClick={() =>
+                      void run(async () => {
+                        const result = await engineClient().counselSuggest(
+                          "MB-4091",
+                          "REST_48H",
+                          "A rest cycle may help.",
+                        );
+                        setStatus("Suggested 48-hour rest.");
+                      })
+                    }
+                    type="button"
+                  >
+                    Suggest 48-hour rest
+                  </button>
+                </div>
+              </div>
+            </section>
           ) : (
-            <EmptyState message="The calendar fills when bookings arrive." title="No other sessions today" />
+            <EmptyState message="Pick a request to join or book." title="No session selected" />
           )}
-          <label>
-            Private note
-            <textarea onChange={(event) => setNote(event.target.value)} value={note} />
-          </label>
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              void engineClient()
-                .counselNotes(String(active?.id ?? "req-hi-1"), note)
-                .then((result) => setStatus(`Saved, ${result.scope} scope.`));
-            }}
-            type="button"
-          >
-            Save private note
-          </button>
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              void engineClient()
-                .counselSuggest("MB-4091", "REST_48H", "A rest cycle may help.")
-                .then((result) =>
-                  setStatus(
-                    `Suggested ${result.lever}. Notes shared: ${result.notes_shared ? "yes" : "no"}.`,
-                  ),
-                );
-            }}
-            type="button"
-          >
-            Suggest 48-hour rest
-          </button>
-          {status ? <p role="status">{status}</p> : null}
         </div>
       ) : null}
     </ScreenState>

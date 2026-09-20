@@ -19,8 +19,7 @@ export default function SafetyPlanPage() {
 
   return (
     <div className="mb-home-stack">
-      <h1 className="mb-type-title">My safety plan</h1>
-      <p>Stored on this phone. Optional backup is encrypted. Officers never see this.</p>
+      <p>Stored on this phone. Officers never see this.</p>
       <SafetyPlanEditor onChange={setPlan} value={plan} />
       <button
         className="mb-primary"

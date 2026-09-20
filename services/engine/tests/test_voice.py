@@ -30,9 +30,26 @@ def test_language_routes_match_spec() -> None:
     assert stt_route("hi")["language"] == "hi"
     assert stt_route("hi-Latn")["language"] == "multi"
     assert stt_route("ta")["provider"] == "azure"
-    assert tts_route("en")["provider"] == "deepgram"
+    assert tts_route("en")["provider"] == "azure"
+    assert tts_route("en")["voice"] == "hi-IN-SwaraNeural"
     assert tts_route("hi")["voice"] == "hi-IN-SwaraNeural"
+    assert tts_route("hi-Latn")["voice"] == "hi-IN-SwaraNeural"
     assert tts_route("ta")["voice"] == "ta-IN-PallaviNeural"
+
+
+def test_tts_routes_stay_female() -> None:
+    from app.voice.routing import load_voices
+    from app.voice.tts import MALE_VOICES, _voice_candidates
+
+    male = {name.lower() for name in MALE_VOICES}
+    table = load_voices()["tts"]
+    for lang, route in table.items():
+        blob = " ".join(str(route.get(key) or "") for key in ("voice", "fallback")).lower()
+        assert route.get("gender") == "female", lang
+        assert not any(name.lower() in blob for name in MALE_VOICES), lang
+        for voice_name, _provider, _style in _voice_candidates(dict(route)):
+            assert voice_name.lower() not in male
+    assert "madhur" not in str(table).lower()
 
 
 def test_buffer_is_zeros_after_audio_cleared() -> None:
@@ -158,7 +175,7 @@ def test_saathi_page_wires_contour_captions_and_hosting_caption() -> None:
     page = Path("apps/web/src/app/(personnel)/app/saathi/page.tsx").read_text(encoding="utf-8")
     assert "VoiceContour amplitude={amplitude}" in page
     assert "CaptionStream" in page
-    assert "Prototype: open-weight model hosted on Azure. Deployable on force servers." in page
+    assert "mb-hosting-caption" not in page
     assert "Talk it through" not in page
     assert "Hands-free" not in page
     assert 'aria-label="Conversation mode"' not in page

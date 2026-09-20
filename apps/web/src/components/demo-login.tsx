@@ -65,7 +65,7 @@ export function DemoLogin({
   );
   const [personaId, setPersonaId] = useState("arjun");
   const [pending, setPending] = useState(false);
-  const [status, setStatus] = useState("Choose a role and continue.");
+  const [status, setStatus] = useState("Choose who you are, then continue.");
   const [pin, setPin] = useState("");
   const client = useMemo(() => new ManobalClient(engineBaseUrl()), []);
 
@@ -112,7 +112,7 @@ export function DemoLogin({
 
       {role === "personnel" ? (
         <fieldset className="persona-grid">
-          <legend>Persona</legend>
+          <legend>Person</legend>
           {personas.map((persona) => (
             <button
               aria-pressed={personaId === persona.id}
@@ -164,7 +164,7 @@ export function DemoLogin({
               Use passkey
             </button>
             <label>
-              Device PIN fallback
+              Device PIN
               <input
                 autoComplete="off"
                 inputMode="numeric"

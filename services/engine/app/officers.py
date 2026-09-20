@@ -81,6 +81,17 @@ COUNSEL_REQUESTS: list[dict[str, Any]] = [
 ]
 COUNSEL_SUGGESTIONS: list[dict[str, str]] = []
 CASE_ACTIONS: list[dict[str, str]] = []
+COUNSEL_SLOTS: list[dict[str, Any]] = [
+    {"id": "slot-0930", "when": "09:30", "label": "Named Hindi", "request_id": "req-hi-1"},
+    {"id": "slot-1100", "when": "11:00", "label": "Anonymous English", "request_id": "req-anon-1"},
+    {"id": "slot-1600", "when": "16:00", "label": "Free", "request_id": None},
+]
+HQ_POLICY: dict[str, Any] = {
+    "leave_approval_rate": 0.62,
+    "max_consecutive_duty": 10,
+    "rotation_length_months": 24,
+    "quick_return_cap": 2,
+}
 HQ_BRIEF = {
     "title": "Monthly welfare brief, Sector Central",
     "body": (
@@ -133,10 +144,15 @@ def welfare_tabs(scope_path: str) -> dict[str, Any]:
     t3 = [case.case_id for case in open_cases if case.tier == "T3"]
     digest = [case.case_id for case in digest_items()]
     followups = [
-        {"case_id": "MB-4091", "due": "D+2", "reason": "REST_48H check"},
+        {
+            "case_id": "MB-4091",
+            "due": "D+2",
+            "reason": "REST_48H check",
+            "status": "due",
+        },
     ]
     self_referrals = [
-        {"case_id": "MB-5120", "channel": "I want to talk", "status": "open"},
+        {"case_id": "MB-4091", "channel": "I want to talk", "status": "open"},
     ]
     closed = [case.case_id for case in CASES.values() if case.status == "closed"]
     return {
@@ -563,12 +579,7 @@ def hq_payload() -> dict[str, Any]:
             "transfer_requests": "banded",
             "exit_intent_tags": "suppressed under k",
         },
-        "policy": {
-            "leave_approval_rate": 0.62,
-            "max_consecutive_duty": 10,
-            "rotation_length_months": 24,
-            "quick_return_cap": 2,
-        },
+        "policy": dict(HQ_POLICY),
         "brief": dict(HQ_BRIEF),
     }
 
@@ -580,14 +591,18 @@ def save_hq_brief(body: str) -> dict[str, Any]:
 
 
 def hq_simulate(policy: dict[str, Any]) -> dict[str, Any]:
-    current = dict(hq_payload()["policy"])
     for key, value in policy.items():
-        if key in current:
-            current[key] = value
+        if key in HQ_POLICY and value is not None:
+            HQ_POLICY[key] = value
+    current = dict(HQ_POLICY)
+    leave = float(current["leave_approval_rate"])
+    rotation = int(current["rotation_length_months"])
     return {
         "ok": True,
         "note": "Observational, not causal",
         "policy": current,
+        "leave_band": "easing" if leave >= 0.75 else "held" if leave >= 0.6 else "backlog",
+        "rotation_band": "shorter" if rotation <= 18 else "held",
         "projected": (
             "Leave pressure eases if approval rate rises. "
             "Night load holds if the quick-return cap stays at two."
@@ -676,16 +691,34 @@ def counsel_desk(language: str = "hi") -> dict[str, Any]:
     from .calls import acs_configured
 
     acs = acs_configured()
+    slots = [dict(slot) for slot in COUNSEL_SLOTS]
     return {
-        "calendar": ["09:30 named Hindi", "11:00 anonymous English", "16:00 free"],
+        "calendar": [f"{slot['when']} {slot['label']}" for slot in slots],
+        "slots": slots,
         "requests": requests,
         "routing": match_counsellor(language),
         "acs": {
             "demo_join": not acs,
-            "label": "Join call" if acs else "Demo join. Azure Communication Services is unset.",
+            "label": "Join call",
         },
         "notes_scope": "counsellor",
     }
+
+
+def book_counsel(slot_id: str, request_id: str) -> dict[str, Any]:
+    found: dict[str, Any] | None = None
+    for slot in COUNSEL_SLOTS:
+        if slot["id"] == slot_id:
+            slot["request_id"] = request_id
+            slot["label"] = "Booked"
+            found = dict(slot)
+            break
+    if found is None:
+        raise KeyError(slot_id)
+    for req in COUNSEL_REQUESTS:
+        if str(req["id"]) == request_id:
+            req["status"] = "booked"
+    return found
 
 
 def save_counsel_note(session_id: str, note: str) -> dict[str, str]:

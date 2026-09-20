@@ -100,11 +100,11 @@ export function PhoneFrame({
 
 export function ZoneDiagram() {
   const zones = [
-    { id: "0", title: "Zone 0", detail: "On the phone", blocked: false },
-    { id: "1", title: "Zone 1", detail: "Engine", blocked: false },
-    { id: "2", title: "Zone 2", detail: "Vault", blocked: false },
-    { id: "3", title: "Zone 3", detail: "Audit", blocked: false },
-    { id: "X", title: "Zone X", detail: "Blocked path", blocked: true },
+    { id: "0", title: "Phone", detail: "Stays with you", blocked: false },
+    { id: "1", title: "Unit", detail: "Care and alerts", blocked: false },
+    { id: "2", title: "Names", detail: "Locked until needed", blocked: false },
+    { id: "3", title: "Record", detail: "Who looked, and why", blocked: false },
+    { id: "X", title: "Never connected", detail: "Posting and appraisal stay out", blocked: true },
   ] as const;
   return (
     <div className="mb-zone">

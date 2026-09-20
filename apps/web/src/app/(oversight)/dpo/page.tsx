@@ -14,9 +14,22 @@ type DpoPayload = {
 
 export default function DpoPage() {
   const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const { data, error, loading, offline, reload } = useEngine("dpo", (client, signal) =>
     client.dpoRequests(signal) as Promise<DpoPayload>,
   );
+
+  async function run(id: string, work: () => Promise<void>) {
+    setBusy(id);
+    try {
+      await work();
+      reload();
+    } catch (caught: unknown) {
+      setNotice(caught instanceof Error ? caught.message : "Could not complete that action.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <ScreenState
@@ -27,55 +40,73 @@ export default function DpoPage() {
       offline={offline}
     >
       {data ? (
-        <div className="mb-dpo">
-          <p>Access, correction, erasure, nomination, and grievance. Due dates are visible. Tokens stay masked.</p>
+        <div className="mb-dpo mb-desk">
           {notice ? <p role="status">{notice}</p> : null}
-          <table className="mb-compare">
-            <caption>Open requests</caption>
-            <thead>
-              <tr>
-                <th scope="col">Kind</th>
-                <th scope="col">Due</th>
-                <th scope="col">Hint</th>
-                <th scope="col">Status</th>
-                <th scope="col">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.requests.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.kind}</td>
-                  <td>{row.due}</td>
-                  <td>{row.token_hint}</td>
-                  <td>{row.status}</td>
-                  <td>
+          <div className="mb-work-list">
+            {data.requests.map((row) => (
+              <article className="mb-sheet" key={row.id}>
+                <div className="mb-sheet-head">
+                  <h2>{row.kind}</h2>
+                  <span>Due {row.due}</span>
+                </div>
+                <p>{row.status}</p>
+                {row.status === "open" ? (
+                  <div className="mb-action-row">
                     <button
-                      className="mb-secondary"
-                      onClick={() => {
-                        void engineClient()
-                          .dpoDecide(row.id, "closed")
-                          .then(() => {
-                            setNotice("Request closed with a receipt path.");
-                            reload();
-                          });
-                      }}
+                      className="mb-primary"
+                      disabled={busy !== null}
+                      onClick={() =>
+                        void run(row.id, async () => {
+                          await engineClient().dpoDecide(row.id, "closed");
+                          setNotice("Request closed.");
+                        })
+                      }
                       type="button"
                     >
                       Close
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <h2>Notices</h2>
-          <ul>
-            {data.notices.map((row) => (
-              <li key={row.id}>
-                {row.title}: {row.status}
-              </li>
+                    <button
+                      className="mb-secondary"
+                      disabled={busy !== null}
+                      onClick={() =>
+                        void run(`${row.id}-hold`, async () => {
+                          await engineClient().dpoDecide(row.id, "held");
+                          setNotice("Request held.");
+                        })
+                      }
+                      type="button"
+                    >
+                      Hold
+                    </button>
+                  </div>
+                ) : null}
+              </article>
             ))}
-          </ul>
+          </div>
+          <section className="mb-sheet">
+            <h2>Notices</h2>
+            {data.notices.map((row) => (
+              <div className="mb-kill" key={row.id}>
+                <span>
+                  {row.title}: {row.status}
+                </span>
+                <button
+                  className="mb-toggle"
+                  disabled={busy !== null}
+                  onClick={() =>
+                    void run(row.id, async () => {
+                      const next = row.status === "published" ? "draft" : "published";
+                      await engineClient().dpoNotice(row.id, next);
+                      setNotice(`Notice ${next}.`);
+                    })
+                  }
+                  type="button"
+                >
+                  {row.status === "published" ? "Unpublish" : "Publish"}
+                </button>
+              </div>
+            ))}
+          </section>
           <p>
             Breach log: {data.breaches.length === 0 ? "none open." : `${data.breaches.length} open.`}
           </p>

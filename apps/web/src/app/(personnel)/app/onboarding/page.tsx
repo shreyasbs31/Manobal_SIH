@@ -8,9 +8,10 @@ import {
   ReceiptCard,
 } from "@manobal/ui";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { engineClient } from "@/lib/engine";
+import { useFlowMeta } from "@/lib/flow-meta";
 
 const PROMISE = [
   {
@@ -38,6 +39,8 @@ const HELPERS = [
   "sleep",
 ] as const;
 
+const STEP_ORDER = [0, 1, 2, 3, 4, 6, 8] as const;
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -58,6 +61,21 @@ export default function OnboardingPage() {
   const [skipBuddy, setSkipBuddy] = useState(true);
   const [skipPlan, setSkipPlan] = useState(true);
   const [skipWearable, setSkipWearable] = useState(true);
+  const stepIndex = STEP_ORDER.indexOf(step as (typeof STEP_ORDER)[number]);
+  useFlowMeta(stepIndex >= 0 ? `${stepIndex + 1} of ${STEP_ORDER.length}` : undefined);
+
+  useEffect(() => {
+    const onBack = (event: Event) => {
+      const index = STEP_ORDER.indexOf(step as (typeof STEP_ORDER)[number]);
+      if (index <= 0) {
+        return;
+      }
+      event.preventDefault();
+      setStep(STEP_ORDER[index - 1] ?? 0);
+    };
+    window.addEventListener("manobal-screen-back", onBack);
+    return () => window.removeEventListener("manobal-screen-back", onBack);
+  }, [step]);
   const tier = useMemo(() => {
               const memory =
                 typeof navigator !== "undefined"
@@ -81,8 +99,8 @@ export default function OnboardingPage() {
     },
     {
       id: "wearable",
-      title: "Wearable rest signals",
-      leavesPhone: "Rest and heart-rate summaries, not a live stream",
+      title: "Rest from a watch or band",
+      leavesPhone: "Rest summaries, not a live stream",
       whoCanSee: "Only you, and a welfare officer if you later share a trend",
     },
     {
@@ -129,7 +147,7 @@ export default function OnboardingPage() {
       {step === 0 ? (
         <>
           <h1 className="mb-type-title">Choose your language</h1>
-          <p>Audio greetings play when speech is available on this phone.</p>
+          <p>Pick the language you want to use.</p>
           <LanguageGrid
             languages={languages.map((item) => ({
               tag: item.tag,
@@ -148,7 +166,6 @@ export default function OnboardingPage() {
       {step === 1 ? (
         <>
           <h1 className="mb-type-title">Before we start</h1>
-          <p>Demo sign-in is already done. OTP for this demo is 000000. You can add a passkey later.</p>
           {PROMISE.map((card) => (
             <article className="mb-context-card" key={card.title}>
               <SceneOnboardingPhone />
@@ -247,33 +264,13 @@ export default function OnboardingPage() {
               onChange={(event) => setSkipWearable(!event.target.checked)}
               type="checkbox"
             />
-            Connect a wearable now
+            Connect a watch or band now
           </label>
-          <button className="mb-primary" onClick={() => setStep(5)} type="button">
-            Continue
-          </button>
-          <button className="mb-ghost" onClick={() => setStep(5)} type="button">
-            Skip extras
-          </button>
-        </>
-      ) : null}
-
-      {step === 5 ? (
-        <>
-          <h1 className="mb-type-title">This phone</h1>
-          <article className="mb-context-card">
-            <SceneOnboardingPhone />
-            <div>
-              <h2>Tier {tier}</h2>
-              <p>
-                {tier === "A"
-                  ? "This phone can keep richer audio cached."
-                  : "This phone uses smaller audio and a simpler layout so it stays quick."}
-              </p>
-            </div>
-          </article>
           <button className="mb-primary" onClick={() => setStep(6)} type="button">
             Continue
+          </button>
+          <button className="mb-ghost" onClick={() => setStep(6)} type="button">
+            Skip extras
           </button>
         </>
       ) : null}

@@ -78,7 +78,7 @@ _DEFAULTS: dict[str, dict[str, Any]] = {
         "simple_mode": False,
         "helpers": ["walking", "writing"],
         "family_context": "bereavement_return",
-        "voice_preference": "male",
+        "voice_preference": "female",
         "theatre": "east",
         "lifecycle_state": "return_from_leave",
         "rank_band": "constable",

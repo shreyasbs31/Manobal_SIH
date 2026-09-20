@@ -87,7 +87,7 @@ export default function SafetyPage() {
               return;
             }
             if (!token) {
-              setStatus("Sign in as personnel to ask for a call.");
+              setStatus("Sign in to ask for a call.");
               return;
             }
             void engineClient()
@@ -99,7 +99,7 @@ export default function SafetyPage() {
               })
               .then((result) => {
                 announceWorld("acute");
-                setStatus(`A person is being asked to reach you. Case ${result.case_id}.`);
+                setStatus("A person is being asked to reach you.");
               })
               .catch(() => {
                 void enqueue("acute", body);

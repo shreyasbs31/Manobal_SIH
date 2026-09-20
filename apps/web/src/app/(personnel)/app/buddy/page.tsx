@@ -18,7 +18,6 @@ export default function BuddyPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
       {data ? (
         <div className="mb-home-stack">
-          <h1 className="mb-type-title">Buddy</h1>
           <article className="mb-context-card">
             <SceneBuddyTea />
             <div>

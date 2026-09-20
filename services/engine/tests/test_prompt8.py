@@ -80,9 +80,28 @@ def test_dpo_trust_integrations_admin() -> None:
         json={"filename": "probe.csv", "rows": [{"full_name": "blocked"}]},
     )
     assert probe.json()["held"] == 1
+    ran = client.post(
+        "/api/v1/integrations/jobs/run",
+        headers=integrator,
+        json={"source": "wearable"},
+    )
+    assert ran.status_code == 200
+    assert ran.json()["held"] == 0
+    ping = client.post("/api/v1/integrations/incident/test", headers=integrator)
+    assert ping.status_code == 200
+    assert ping.json()["status"] == "accepted"
     admin = _auth("admin")
     console = client.get("/api/v1/admin/console", headers=admin).json()
     assert console["acute_listed"] is False
+    assert console["tree"]
+    assert console["assignments"]
+    assigned = client.post(
+        "/api/v1/admin/assign",
+        headers=admin,
+        json={"officer": "uwo-sunita", "unit": "force.central.c02.alpha", "valid_until": "2027-09-30"},
+    )
+    assert assigned.status_code == 200
+    assert assigned.json()["unit"] == "force.central.c02.alpha"
     banned = client.post(
         "/api/v1/admin/flags",
         headers=admin,

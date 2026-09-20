@@ -19,10 +19,7 @@ export default async function LoginPage({
       <PublicHeader mode={manobalMode()} />
       <main className="mb-login">
         <h1>Sign in</h1>
-        <p>
-          Production personnel use a passkey or PIN. Officers use Entra ID.
-          This demonstration mints the same scopes as those roles.
-        </p>
+        <p>Choose who you are. This demonstration uses saved accounts.</p>
         <DemoLogin initialRole={params.role} />
       </main>
     </div>

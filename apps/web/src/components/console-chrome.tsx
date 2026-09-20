@@ -1,10 +1,11 @@
 "use client";
 
 import { CommandShell, type NavItem } from "@manobal/ui";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { currentPrincipal } from "@/lib/engine";
 import { manobalMode } from "@/lib/mode";
 import { allowedConsolePath } from "@/lib/stage-role";
 
@@ -47,6 +48,30 @@ function titleFor(pathname: string): string {
   return TITLES[pathname] ?? "Console";
 }
 
+function homeHrefFor(pathname: string): string {
+  if (pathname.startsWith("/welfare")) {
+    return "/welfare";
+  }
+  if (pathname.startsWith("/command")) {
+    return "/command";
+  }
+  const root = `/${pathname.split("/").filter(Boolean)[0] ?? "command"}`;
+  return TITLES[root] ? root : "/command";
+}
+
+const DESK_LABEL: Record<string, string> = {
+  commander: "Command",
+  hq: "HQ",
+  uwo: "Welfare",
+  counsellor: "Counsellor",
+  mo: "Medical",
+  wdec: "Governance",
+  dpo: "DPO",
+  hrms_integrator: "Integrations",
+  admin: "Admin",
+  director: "Director",
+};
+
 function goViaStage(href: string) {
   window.parent.postMessage(
     { type: "manobal.stage.console-go", path: href, frame: window.name },
@@ -56,6 +81,18 @@ function goViaStage(href: string) {
 
 export function ConsoleChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [deskLabel, setDeskLabel] = useState("");
+
+  useEffect(() => {
+    const sync = () => {
+      const role = currentPrincipal()?.role;
+      setDeskLabel(role ? (DESK_LABEL[role] ?? role) : "");
+    };
+    sync();
+    window.addEventListener("manobal-session", sync);
+    return () => window.removeEventListener("manobal-session", sync);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) {
@@ -92,6 +129,7 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
   return (
     <CommandShell
       clock="2026-09-16 10:00 IST"
+      homeHref={homeHrefFor(pathname)}
       mode={manobalMode()}
       navItems={NAV}
       onNavigate={(href) => {
@@ -99,9 +137,10 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
           goViaStage(href);
           return;
         }
-        window.location.assign(href);
+        router.push(href);
       }}
       pathname={pathname}
+      deskLabel={deskLabel}
       title={titleFor(pathname)}
     >
       {children}

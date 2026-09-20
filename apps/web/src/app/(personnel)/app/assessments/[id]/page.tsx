@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { assessmentTitle } from "@/lib/assessment-titles";
 import { engineClient } from "@/lib/engine";
+import { useFlowMeta } from "@/lib/flow-meta";
 import { enqueue } from "@/lib/offline";
 import { useEngine } from "@/lib/use-engine";
 
@@ -122,6 +124,19 @@ export default function AssessmentItemPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [conversational, setConversational] = useState(false);
   const [done, setDone] = useState(false);
+  useFlowMeta(done || !view.prompts.length ? undefined : `${step + 1} of ${view.prompts.length}`);
+
+  useEffect(() => {
+    const onBack = (event: Event) => {
+      if (done || step <= 0) {
+        return;
+      }
+      event.preventDefault();
+      setStep((current) => current - 1);
+    };
+    window.addEventListener("manobal-screen-back", onBack);
+    return () => window.removeEventListener("manobal-screen-back", onBack);
+  }, [done, step]);
 
   async function answer(value: number) {
     const item = step + 1;
@@ -163,7 +178,7 @@ export default function AssessmentItemPage() {
     <ScreenState error={error && !view ? error : null} loading={loading && !view} offline={offline} empty={false}>
       {done ? (
         <div className="mb-home-stack">
-          <h1 className="mb-type-title">{view.title} saved</h1>
+          <h1 className="mb-type-title">{assessmentTitle(view.id, view.title)} saved</h1>
           <p>
             {view.self_only
               ? "This stays on this phone. Officers never see it."
@@ -185,11 +200,8 @@ export default function AssessmentItemPage() {
         </div>
       ) : prompt ? (
         <div className="mb-checkin">
-          <p>
-            {step + 1} of {view.prompts.length}
-          </p>
-          {view.self_only ? <p className="mb-self-only">Self-only. Stays on this phone.</p> : null}
-          <h1>{conversational ? `Saathi: ${prompt}` : prompt}</h1>
+          {view.self_only ? <p className="mb-self-only">Stays on this phone.</p> : null}
+          <h1>{prompt}</h1>
           <audio controls preload="auto" src="/audio/grounding.en.wav">
             Read aloud
           </audio>
@@ -201,13 +213,8 @@ export default function AssessmentItemPage() {
             ))}
           </div>
           <button className="mb-ghost" onClick={() => setConversational(true)} type="button">
-            Conversational mode
+            Have Saathi ask this
           </button>
-          {step > 0 ? (
-            <button className="mb-ghost" onClick={() => setStep((current) => current - 1)} type="button">
-              Back
-            </button>
-          ) : null}
         </div>
       ) : null}
     </ScreenState>

@@ -73,8 +73,8 @@ async function runSpine(page: import("@playwright/test").Page) {
   await expect(page.getByText(/quarantine/i).first()).toBeVisible();
 
   await page.goto("/architecture");
-  await expect(page.getByRole("heading", { name: "Separated by design" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Zone X" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Phone" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Never connected" })).toBeVisible();
 
   await page.goto("/trust");
   await expect(page.getByRole("button", { name: "Read this page aloud" })).toBeVisible();

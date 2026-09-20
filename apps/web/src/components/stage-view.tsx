@@ -1,6 +1,6 @@
 "use client";
 
-import { PhoneFrame, RibbonMark, SimClock, StatusChip, SyntheticMarker } from "@manobal/ui";
+import { PhoneFrame, RibbonMark, ScreenNav, SimClock, StatusChip, SyntheticMarker } from "@manobal/ui";
 import { ManobalClient, type ManobalRole, type Principal } from "@manobal/contracts";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -353,6 +353,19 @@ export function StageView({
         <span>{label}</span>
         <StatusChip kind="demo" />
         <SyntheticMarker />
+        <div className="mb-stage-bar-end">
+          <ScreenNav
+            compact
+            onBack={() => {
+              window.location.assign("/director");
+            }}
+            onClose={() => {
+              window.location.assign("/director");
+            }}
+            showBack
+            showClose
+          />
+        </div>
       </header>
       <p className="mb-hosting-caption" role="status">
         {note}

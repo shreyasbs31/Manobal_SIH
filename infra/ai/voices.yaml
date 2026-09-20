@@ -1,4 +1,6 @@
 # Voice names and STT models. Verify against provider docs at setup.
+# Saathi speaks as one woman. Every TTS voice and fallback is female.
+# Deepgram flux-meena-en returns 400, so English uses the same Azure voice as Hindi.
 stt:
   en:
     provider: deepgram
@@ -52,20 +54,32 @@ stt:
 
 tts:
   en:
-    provider: deepgram
-    voice: flux-meena-en
+    provider: azure
+    voice: hi-IN-SwaraNeural
+    style: empathetic
+    gender: female
     fallback: en-IN-NeerjaNeural
+    fallback_provider: azure
   hi:
     provider: azure
     voice: hi-IN-SwaraNeural
     style: empathetic
-    fallback: hi-IN-MadhurNeural
+    gender: female
+    fallback: hi-IN-AnanyaNeural
+    fallback_provider: azure
   hi-Latn:
     provider: azure
-    voice: hi-IN-AnanyaNeural
+    voice: hi-IN-SwaraNeural
+    style: empathetic
+    gender: female
+    fallback: hi-IN-AnanyaNeural
+    fallback_provider: azure
   ta:
     provider: azure
     voice: ta-IN-PallaviNeural
+    gender: female
+    fallback: hi-IN-SwaraNeural
+    fallback_provider: azure
 
 keyterms:
   - MANOBAL

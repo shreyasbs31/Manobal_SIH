@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { IconHiddenLock } from "./icons";
 import { usePrefersReducedMotion } from "./motion";
@@ -317,7 +317,7 @@ export function FormationGrid({
 }) {
   const reduced = usePrefersReducedMotion();
   const [selected, setSelected] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(units.length);
+  const [revealedCount, setRevealedCount] = useState(units.length);
   const lookup = new Map(
     cells.map((cell) => [`${cell.unit}-${cell.week}`, cell]),
   );
@@ -328,13 +328,13 @@ export function FormationGrid({
   const letters = ["A", "B", "C", "D", "E", "F"];
 
   useEffect(() => {
-    if (reduced || revealed >= units.length) {
+    if (reduced || revealedCount >= units.length) {
       return;
     }
     let row = 0;
     const timer = window.setInterval(() => {
       row += 1;
-      setRevealed(row);
+      setRevealedCount(row);
       if (row >= units.length) {
         window.clearInterval(timer);
       }
@@ -343,86 +343,93 @@ export function FormationGrid({
   }, [reduced, units.length]);
 
   return (
-    <div className="mb-formation-wrap">
+    <div
+      className="mb-formation-wrap"
+      style={
+        {
+          "--mb-units": units.length,
+          "--mb-weeks": weeks,
+        } as CSSProperties
+      }
+    >
       <p className="mb-lay-takeaway">{takeaway}</p>
-      <table className="mb-formation" aria-label="Unit posture by week">
-        <thead>
-          <tr>
-            <th scope="col">Unit</th>
-            {weekLabels.map((label) => (
-              <th key={label} scope="col">
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {units.map((unit, unitIndex) => (
-            <tr
-              data-revealed={unitIndex < revealed ? "true" : "false"}
-              key={unit}
+      <div className="mb-formation" role="grid" aria-label="Unit posture by week">
+        <span className="mb-formation-head" role="columnheader">
+          Unit
+        </span>
+        {weekLabels.map((label) => (
+          <span className="mb-formation-head" key={label} role="columnheader">
+            {label}
+          </span>
+        ))}
+        {units.flatMap((unit, unitIndex) => {
+          const shown = unitIndex < revealedCount;
+          const letter = letters[unitIndex] ?? unit[0] ?? "A";
+          const cells = Array.from({ length: weeks }, (_, index) => {
+            const week = index + 1;
+            const cell = lookup.get(`${unit}-${week}`);
+            const key = `${unit}-${week}`;
+            const weekLabel = weekLabels[index] ?? `W${week}`;
+            if (!cell || cell.band === "hidden") {
+              return (
+                <button
+                  aria-pressed={selected === key}
+                  className="mb-hidden-select"
+                  data-revealed={shown ? "true" : "false"}
+                  key={key}
+                  onClick={() => {
+                    setSelected(key);
+                    onSelect?.({
+                      unit,
+                      week,
+                      band: "hidden",
+                      weekLabel,
+                    });
+                  }}
+                  title="Hidden to protect individuals. Fewer than 10 people or recent large changes."
+                  type="button"
+                >
+                  <HiddenTile
+                    compact
+                    reason="Hidden to protect individuals. Fewer than 10 people or recent large changes."
+                  />
+                </button>
+              );
+            }
+            return (
+              <button
+                aria-pressed={selected === key}
+                className="mb-tile"
+                data-band={cell.band}
+                data-revealed={shown ? "true" : "false"}
+                data-step={bandStep(cell.band)}
+                key={key}
+                onClick={() => {
+                  setSelected(key);
+                  onSelect?.({ ...cell, weekLabel });
+                }}
+                title={cell.shareLabel ?? `${unit} ${weekLabel}`}
+                type="button"
+              >
+                <span className="mb-sr">{cell.shareLabel ?? cell.band}</span>
+              </button>
+            );
+          });
+          return [
+            <div
+              className="mb-formation-unit"
+              data-revealed={shown ? "true" : "false"}
+              key={`${unit}-label`}
+              role="rowheader"
             >
-              <th scope="row">
-                <span className="mb-formation-ref">{letters[unitIndex] ?? unit[0]}</span>
-                {unit}
-                {sparks?.[unit] ? <Spark values={sparks[unit] ?? []} /> : null}
-              </th>
-              {Array.from({ length: weeks }, (_, index) => {
-                const week = index + 1;
-                const cell = lookup.get(`${unit}-${week}`);
-                const key = `${unit}-${week}`;
-                const weekLabel = weekLabels[index] ?? `W${week}`;
-                if (!cell || cell.band === "hidden") {
-                  return (
-                    <td key={key}>
-                      <button
-                        aria-pressed={selected === key}
-                        className="mb-hidden-select"
-                        onClick={() => {
-                          setSelected(key);
-                          onSelect?.({
-                            unit,
-                            week,
-                            band: "hidden",
-                            weekLabel,
-                          });
-                        }}
-                        title="Hidden to protect individuals. Fewer than 10 people or recent large changes."
-                        type="button"
-                      >
-                        <HiddenTile
-                          compact
-                          reason="Hidden to protect individuals. Fewer than 10 people or recent large changes."
-                        />
-                      </button>
-                    </td>
-                  );
-                }
-                return (
-                  <td key={key}>
-                    <button
-                      aria-pressed={selected === key}
-                      className="mb-tile"
-                      data-band={cell.band}
-                      data-step={bandStep(cell.band)}
-                      onClick={() => {
-                        setSelected(key);
-                        onSelect?.({ ...cell, weekLabel });
-                      }}
-                      title={cell.shareLabel ?? `${unit} ${weekLabel}`}
-                      type="button"
-                    >
-                      <span className="mb-sr">
-                        {cell.shareLabel ?? cell.band}
-                      </span>
-                    </button>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              <span className="mb-formation-ref">{letter}</span>
+              {unit}
+              {sparks?.[unit] ? <Spark values={sparks[unit] ?? []} /> : null}
+            </div>,
+            ...cells,
+          ];
+        })}
+      </div>
     </div>
   );
 }

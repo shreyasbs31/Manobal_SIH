@@ -4,6 +4,7 @@ import { ValidatedBadge } from "@manobal/ui";
 import Link from "next/link";
 
 import { ScreenState } from "@/components/screen-state";
+import { assessmentTitle } from "@/lib/assessment-titles";
 import { useEngine } from "@/lib/use-engine";
 
 export default function AssessmentsPage() {
@@ -15,15 +16,11 @@ export default function AssessmentsPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
       {data || offline ? (
         <div className="mb-home-stack">
-          <h1 className="mb-type-title">Assessments</h1>
-          <p>
-            Short questionnaires on this phone. AUDIT-C never leaves the device. PHQ-9 item 9 opens
-            safety if you need it.
-          </p>
+          <p>A few short questions. Answers stay with you unless you ask for help.</p>
           {(data?.items ?? [
             {
               id: "pss10",
-              title: "PSS-10",
+              title: "How you've been feeling",
               badge: "self",
               badge_label: "Self-only",
               self_only: true,
@@ -32,8 +29,8 @@ export default function AssessmentsPage() {
           ]).map((item) => (
             <article className="mb-instrument" key={item.id}>
               <div>
-                <h2>{item.title}</h2>
-                <p>Due {item.badge_label === "Self-only" ? "anytime, on this phone" : "optional"}</p>
+                <h2>{assessmentTitle(item.id, item.title)}</h2>
+                <p>{item.self_only ? "Stays on this phone" : "Optional"}</p>
                 {item.self_only ? (
                   <span className="mb-self-only">Self-only</span>
                 ) : (

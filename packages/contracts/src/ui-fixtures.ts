@@ -146,7 +146,7 @@ export const mePrivacy = {
   consents: [
     {
       title: "Daily check-in",
-      leavesPhone: "Encrypted check-in summary only",
+      leavesPhone: "A short summary of your check-in",
       whoCanSee: "You. A welfare officer only after you agree.",
       on: true,
     },

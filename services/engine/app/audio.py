@@ -60,7 +60,7 @@ def _run(coro: object) -> object:
 
 
 async def _synth_all(out_dir: Path, files: list[str]) -> str:
-    from .voice.tts import _provider_audio
+    from .voice.tts import _provider_audio, _voice_candidates
     from .voice.routing import tts_route
     from .config import get_settings as _settings
 
@@ -72,8 +72,17 @@ async def _synth_all(out_dir: Path, files: list[str]) -> str:
         lang = parts[1]
         text = SCRIPT_TEXT.get(script, {}).get(lang) or SCRIPT_TEXT["safety"]["en"]
         route = tts_route(lang)
-        voice_name = str(route.get("voice") or "silent")
-        audio = await _provider_audio(text, route, settings, voice_name)
+        audio = None
+        for voice_name, provider_name, style in _voice_candidates(route):
+            audio = await _provider_audio(
+                text,
+                {**route, "provider": provider_name},
+                settings,
+                voice_name,
+                style,
+            )
+            if audio:
+                break
         if audio:
             (out_dir / name).write_bytes(audio)
             provider = "live-tts"

@@ -118,14 +118,6 @@ export default function SaathiHomePage() {
               );
             })}
           </nav>
-          <p className="mb-status-strip">
-            Wearable {data?.status?.wearable ?? "off"}
-            {data?.status?.last_sync ? ` · Last sync saved` : null}
-          </p>
-          <p>
-            Home is your rhythm and what to do next. Check in, then pick Talk, Breathe, a counsellor,
-            or leave. Assessments and concerns live under Me.
-          </p>
         </div>
       ) : null}
     </ScreenState>

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ScreenExit } from "@/components/screen-exit";
 import { engineClient } from "@/lib/engine";
 import { browserLexiconHit } from "@/lib/lexicon";
 
@@ -282,11 +282,9 @@ export function ToolkitPractice({
   audio?: string | undefined;
 }) {
   return (
-    <main className="mb-home-stack" style={{ padding: 16 }}>
-      <Link className="mb-ghost" href="/app/toolkit">
-        Close
-      </Link>
-      <h1 className="mb-type-title">{title}</h1>
+    <main className="mb-overlay-page">
+      <h1 className="mb-sr-only">{title}</h1>
+      <ScreenExit backHref="/app/toolkit" title={title} />
       <p>{body}</p>
       {id === "grounding" ? <GroundingPractice /> : null}
       {id === "sleep_wind_down" ? (

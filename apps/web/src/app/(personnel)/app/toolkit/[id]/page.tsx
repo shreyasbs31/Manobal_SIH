@@ -1,10 +1,10 @@
 "use client";
 
 import { BreathGuide, FOUR_SEVEN_EIGHT_PATTERN } from "@manobal/ui";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 
+import { ScreenExit } from "@/components/screen-exit";
 import { ToolkitPractice } from "../toolkit-practice";
 
 const COPY: Record<string, { title: string; audio?: string; body: string }> = {
@@ -46,10 +46,10 @@ export default function ToolkitItemPage() {
   if (id === "four_seven_eight") {
     return (
       <main className="mb-breathe">
-        <h1>4-7-8 breathing</h1>
-        <Link className="mb-ghost mb-breathe-exit" href="/app/toolkit">
-          Close
-        </Link>
+        <h1 className="mb-sr-only">4-7-8 breathing</h1>
+        <div className="mb-breathe-nav">
+          <ScreenExit backHref="/app/toolkit" />
+        </div>
         <BreathGuide pattern={FOUR_SEVEN_EIGHT_PATTERN} title="4-7-8 breathing" />
       </main>
     );
