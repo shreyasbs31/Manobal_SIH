@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
@@ -24,6 +25,7 @@ interface Sector {
 }
 
 export default function HqPage() {
+  const { tx } = useConsoleLang();
   const { data, error, loading, offline, reload } = useEngine("hq-overview", (client, signal) =>
     client.hqOverview(signal),
   );
@@ -109,12 +111,14 @@ export default function HqPage() {
             {theatre ? (
               <aside className="mb-sheet">
                 <h2>{theatre.label}</h2>
-                <p className="mb-sheet-metric">{theatre.workload} weekly load</p>
+                <p className="mb-sheet-metric">
+                  {theatre.workload} {tx.weeklyLoad}
+                </p>
                 <p>
-                  Leave {theatre.leave}. Incidents {theatre.incidents}.
+                  {tx.leave} {theatre.leave}. {tx.incidentShort} {theatre.incidents}.
                 </p>
                 <label>
-                  Leave approval {Math.round(leave * 100)} percent
+                  {tx.leaveApproval} {Math.round(leave * 100)} {tx.percent}
                   <input
                     max={0.95}
                     min={0.4}
@@ -125,7 +129,7 @@ export default function HqPage() {
                   />
                 </label>
                 <label>
-                  Rotation {months} months
+                  {tx.rotation} {months} {tx.months}
                   <input
                     max={36}
                     min={12}
@@ -135,7 +139,7 @@ export default function HqPage() {
                   />
                 </label>
                 <button className="mb-primary" disabled={busy} onClick={() => void project()} type="button">
-                  Project this policy
+                  {tx.projectPolicy}
                 </button>
                 {status ? <p role="status">{status}</p> : null}
                 <div className="mb-action-row">
@@ -151,7 +155,7 @@ export default function HqPage() {
                     }}
                     type="button"
                   >
-                    Save brief
+                    {tx.saveBrief}
                   </button>
                   <button
                     className="mb-ghost"
@@ -170,11 +174,11 @@ export default function HqPage() {
                     }}
                     type="button"
                   >
-                    Export PDF
+                    {tx.exportPdf}
                   </button>
                 </div>
                 <label>
-                  Monthly brief
+                  {tx.monthlyBrief}
                   <textarea onChange={(event) => setBrief(event.target.value)} rows={4} value={body} />
                 </label>
               </aside>

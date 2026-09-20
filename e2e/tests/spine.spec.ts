@@ -148,6 +148,7 @@ test.describe("demo spine", () => {
     page.on("request", (item) => network.push(item));
     await signIn(page, "uwo");
     await page.goto("/welfare/cases/MB-4091");
+    await page.getByRole("button", { name: "Hindi" }).click();
     await expect(page.locator(".mb-brief-ref").first()).toBeVisible({ timeout: 45_000 });
     await expect(page.getByTitle(/T3|workload|REST|onset|tier/i).or(page.locator(".mb-brief-ref")).first()).toBeVisible();
     await capture(page, "hindi-case-brief", network);
@@ -158,9 +159,10 @@ test.describe("demo spine", () => {
     page.on("request", (item) => network.push(item));
     await signIn(page, "commander");
     await page.goto("/command");
-    await page.getByRole("button", { name: "Open copilot" }).click();
-    await page.getByRole("button", { name: /चार्ली कॉय की ड्यूटी/ }).click();
-    await page.getByRole("button", { name: "Ask" }).click();
+    await page.getByRole("button", { name: "Hindi" }).click();
+    await page.getByRole("button", { name: "सहायक से पूछें" }).click();
+    await page.getByRole("button", { name: "रात की पाली" }).click();
+    await page.getByRole("button", { name: "पूछें" }).click();
     await expect(page.locator(".mb-copilot p").first()).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText(/Answer source main/i)).toBeVisible();
     await expect(page.getByText(/naam nahi|kaun pareshan/i)).toHaveCount(0);

@@ -12,7 +12,7 @@ from .privacy.kanon import complementary_suppress, commander_incident_card, simu
 from .privacy.rights import contact_note_due, write_contact_note
 
 INDIVIDUAL_RE = re.compile(
-    r"who is|named|token|mb-\d|this person|jawan|constable|kaun|pareshan|naam|vyakti",
+    r"who is|named|token|mb-\d|this person|jawan|constable|kaun|pareshan|naam|vyakti|कौन|दबाव में|नाम",
     re.I,
 )
 
@@ -483,11 +483,19 @@ def copilot_answer(question: str, lang: str = "en") -> dict[str, Any]:
     tools = copilot_tools()
     metrics = tools["get_unit_metrics"]
     if INDIVIDUAL_RE.search(question or ""):
-        if lang.startswith("hi") or "kaun" in question.lower() or "pareshan" in question.lower():
+        q = (question or "").lower()
+        roman_refuse = "kaun" in q or "pareshan" in q
+        if roman_refuse:
             answer = (
                 "Main kisi jawan ka naam nahi de sakta. "
                 "Charlie Coy mein T2 ya usse upar hissa 20 se 30 pratishat hai, "
                 "aur duty hours teen hafte se upar hain."
+            )
+        elif lang.startswith("hi"):
+            answer = (
+                "मैं किसी जवान का नाम नहीं बता सकता। "
+                "Charlie Coy में टी2 या उससे ऊपर हिस्सा 20 से 30 प्रतिशत है, "
+                "और ड्यूटी घंटे तीन सप्ताह से ऊपर हैं।"
             )
         else:
             answer = (
@@ -505,8 +513,8 @@ def copilot_answer(question: str, lang: str = "en") -> dict[str, Any]:
         "refuse": False,
         "answer": (
             (
-                f"Charlie Coy में T2 या उससे ऊपर हिस्सा {metrics['share_t2']} है. "
-                f"ड्यूटी घंटे {metrics['duty_hours']}, रात का भार {metrics['night_load']}."
+                f"Charlie Coy में टी2 या उससे ऊपर हिस्सा {metrics['share_t2']} है। "
+                f"ड्यूटी घंटे {metrics['duty_hours']}, रात का भार {metrics['night_load']}।"
             )
             if lang.startswith("hi")
             else (

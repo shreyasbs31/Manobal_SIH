@@ -5,27 +5,27 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
 export default function CommandPage() {
   const router = useRouter();
+  const { lang, tx } = useConsoleLang();
   const { data, error, loading, offline } = useEngine("command-posture", (client, signal) =>
     client.commandPosture(signal),
   );
-  const profile = useEngine("officer-profile", (client, signal) => client.officerProfile(signal));
   const [copilot, setCopilot] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [refused, setRefused] = useState(false);
   const [chart, setChart] = useState("40%");
   const [asking, setAsking] = useState(false);
-  const [copilotLang, setCopilotLang] = useState("hi");
   const [panel, setPanel] = useState({
     title: "Charlie Coy, W0",
     unit: "Charlie Coy",
     share: "20 to 30%",
-    note: "Roster overtime and night load have sat high for three weeks.",
+    note: "",
     hidden: false,
   });
 
@@ -33,30 +33,28 @@ export default function CommandPage() {
     () =>
       data
         ? [
-            { label: "Duty hrs", value: data.duty_hours },
-            { label: "Rest denials", value: data.rest_denials },
-            { label: "Night load", value: data.night_load },
-            { label: "Leave backlog", value: data.leave_backlog },
+            { label: tx.dutyHrs, value: data.duty_hours },
+            { label: tx.restDenials, value: data.rest_denials },
+            { label: tx.nightLoad, value: data.night_load },
+            { label: tx.leaveBacklog, value: data.leave_backlog },
           ]
         : [],
-    [data],
+    [data, tx],
   );
-
-  const language = String(profile.data?.copilot_language ?? copilotLang);
 
   function openRoster(unit: string) {
     window.sessionStorage.setItem("manobal.roster.unit", unit);
     router.push("/command/roster");
   }
 
-  async function ask(nextQuestion: string, lang?: string) {
+  async function ask(nextQuestion: string) {
     const text = nextQuestion.trim();
     if (!text || asking) {
       return;
     }
     setQuestion(text);
     setAsking(true);
-    const used = lang ?? (/[ऀ-ॿ]|kaun|pareshan/i.test(text) ? "hi" : "en");
+    const used = /[ऀ-ॿ]|kaun|pareshan/i.test(text) ? "hi" : lang;
     try {
       const result = await engineClient().commandCopilot(text, used);
       setAnswer(result.answer);
@@ -87,53 +85,43 @@ export default function CommandPage() {
                   unit: cell.unit,
                   share:
                     cell.band === "hidden"
-                      ? "Hidden to protect individuals"
+                      ? tx.hiddenPeople
                       : (cell.shareLabel ?? "under 10%"),
                   note:
                     cell.band === "hidden"
-                      ? "Fewer than 10 people or a recent large change."
+                      ? tx.hiddenNote
                       : cell.unit === "Charlie Coy"
-                        ? "Roster overtime and night load have sat high for three weeks."
-                        : "Share at T2 or above.",
+                        ? tx.charlieNote
+                        : tx.shareT2Note,
                   hidden: cell.band === "hidden",
                 });
               }}
               sparks={data.sparks}
-              takeaway={data.takeaway}
+              takeaway={tx.takeaway}
               units={[...data.companies]}
               weeks={12}
             />
             <aside className="mb-sheet">
               <h2>{panel.title}</h2>
-              <p className="mb-sheet-metric">Share at T2 or above: {panel.share}</p>
-              {panel.hidden ? <p>{panel.note}</p> : <DriverList items={["Roster overtime", "Night load"]} />}
+              <p className="mb-sheet-metric">
+                {tx.shareT2}: {panel.share || "20 to 30%"}
+              </p>
+              {panel.hidden ? (
+                <p>{panel.note || tx.hiddenNote}</p>
+              ) : (
+                <DriverList items={[...tx.drivers]} />
+              )}
               {copilot ? null : (
                 <div className="mb-chip-row">
                   <button
                     className="mb-secondary"
                     onClick={() => {
                       setCopilot(true);
-                      void ask(
-                        "चार्ली कॉय की ड्यूटी तीन सप्ताह से ऊपर है। क्या रात की पाली घटाई जा सकती है?",
-                        "hi",
-                      );
+                      void ask(tx.promptNight);
                     }}
                     type="button"
                   >
-                    रात की पाली
-                  </button>
-                  <button
-                    className="mb-secondary"
-                    onClick={() => {
-                      setCopilot(true);
-                      void ask(
-                        "Charlie Coy duty hours have been high for three weeks. Can night share come down?",
-                        "en",
-                      );
-                    }}
-                    type="button"
-                  >
-                    Night share
+                    {tx.promptNightLabel}
                   </button>
                 </div>
               )}
@@ -144,72 +132,34 @@ export default function CommandPage() {
                   onClick={() => openRoster(panel.unit)}
                   type="button"
                 >
-                  Open roster balancer
+                  {tx.openRoster}
                 </button>
                 <button
                   className="mb-secondary"
                   onClick={() => setCopilot((value) => !value)}
                   type="button"
                 >
-                  {copilot ? "Close copilot" : "Ask copilot"}
+                  {copilot ? tx.closeCopilot : tx.askCopilot}
                 </button>
               </div>
             </aside>
             {copilot ? (
               <aside className="mb-copilot">
-                <h2>Copilot</h2>
-                <div className="mb-chip-row" role="group" aria-label="Copilot language">
-                  {(["hi", "en"] as const).map((code) => (
-                    <button
-                      aria-pressed={language === code}
-                      className="mb-ghost"
-                      key={code}
-                      onClick={() => {
-                        setCopilotLang(code);
-                        void engineClient().patchOfficerProfile({ copilot_language: code });
-                        profile.reload();
-                      }}
-                      type="button"
-                    >
-                      {code === "hi" ? "Hindi" : "English"}
-                    </button>
-                  ))}
-                </div>
+                <h2>{tx.copilot}</h2>
                 <div className="mb-chip-row">
                   <button
                     className="mb-secondary"
-                    onClick={() =>
-                      void ask(
-                        "चार्ली कॉय की ड्यूटी तीन सप्ताह से ऊपर है। क्या रात की पाली घटाई जा सकती है?",
-                        "hi",
-                      )
-                    }
+                    onClick={() => void ask(tx.promptNight)}
                     type="button"
                   >
-                    रात की पाली
+                    {tx.promptNightLabel}
                   </button>
-                  <button
-                    className="mb-secondary"
-                    onClick={() =>
-                      void ask(
-                        "Charlie Coy duty hours have been high for three weeks. Can night share come down?",
-                        "en",
-                      )
-                    }
-                    type="button"
-                  >
-                    Night share
-                  </button>
-                  <button
-                    className="mb-ghost"
-                    onClick={() => void ask("Charlie Coy mein kaun pareshan hai?", "hi")}
-                    type="button"
-                  >
-                    Kaun pareshan hai?
+                  <button className="mb-ghost" onClick={() => void ask(tx.promptRefuse)} type="button">
+                    {tx.promptRefuseLabel}
                   </button>
                 </div>
                 <label>
-                  Question
+                  {tx.question}
                   <textarea
                     onChange={(event) => setQuestion(event.target.value)}
                     onKeyDown={(event) => {
@@ -227,12 +177,12 @@ export default function CommandPage() {
                   onClick={() => void ask(question)}
                   type="button"
                 >
-                  {asking ? "Asking" : "Ask"}
+                  {asking ? tx.asking : tx.ask}
                 </button>
                 {answer ? (
                   <>
-                    <p lang={refused && /kaun|pareshan|[ऀ-ॿ]/i.test(question) ? "hi" : "en"}>{answer}</p>
-                    <p className="mb-hosting-caption">Written by Saathi AI, check before use.</p>
+                    <p lang={lang}>{answer}</p>
+                    <p className="mb-hosting-caption">{tx.writtenBy}</p>
                   </>
                 ) : null}
                 {answer && !refused ? (

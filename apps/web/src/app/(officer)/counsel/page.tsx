@@ -4,12 +4,14 @@ import { CallPanel, EmptyState } from "@manobal/ui";
 import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
 type Slot = { id: string; when: string; label: string; request_id: string | null };
 
 export default function CounselPage() {
+  const { tx } = useConsoleLang();
   const { data, error, loading, offline, reload } = useEngine("counsel-desk", (client, signal) =>
     client.counselDesk(signal),
   );
@@ -49,7 +51,7 @@ export default function CounselPage() {
       {data ? (
         <div className="mb-desk mb-counsel">
           <section className="mb-sheet">
-            <h2>Today</h2>
+            <h2>{tx.today}</h2>
             <div className="mb-slot-grid">
               {slots.map((slot) => (
                 <button
@@ -72,7 +74,7 @@ export default function CounselPage() {
             </div>
           </section>
           <section className="mb-sheet">
-            <h2>Requests</h2>
+            <h2>{tx.requests}</h2>
             <div className="mb-work-list">
               {data.requests.map((item) => (
                 <button
@@ -83,8 +85,8 @@ export default function CounselPage() {
                   type="button"
                 >
                   <strong>
-                    {String(item.kind) === "named" ? "Named" : "Anonymous"}{" "}
-                    {String(item.language) === "hi" ? "Hindi" : "English"}
+                    {String(item.kind) === "named" ? tx.named : tx.anonymous}{" "}
+                    {String(item.language) === "hi" ? tx.langHi : tx.langEn}
                   </strong>
                   <span>
                     {item.handle ? String(item.handle) : String(item.summary)}
@@ -96,7 +98,7 @@ export default function CounselPage() {
           {active ? (
             <section className="mb-counsel-session">
               <CallPanel
-                joinLabel="Join call"
+                joinLabel={tx.joinCall}
                 onJoin={() => {
                   void engineClient()
                     .callsToken()
@@ -109,7 +111,7 @@ export default function CounselPage() {
               />
               <div className="mb-sheet">
                 <label>
-                  Private note
+                  {tx.privateNote}
                   <textarea onChange={(event) => setNote(event.target.value)} value={note} />
                 </label>
                 <div className="mb-action-row">
@@ -125,7 +127,7 @@ export default function CounselPage() {
                       }
                       type="button"
                     >
-                      Book this slot
+                      {tx.bookSlot}
                     </button>
                   ) : null}
                   <button
@@ -133,7 +135,7 @@ export default function CounselPage() {
                     disabled={busy || !note.trim()}
                     onClick={() =>
                       void run(async () => {
-                        const result = await engineClient().counselNotes(
+                        await engineClient().counselNotes(
                           String(active.id),
                           note,
                         );
@@ -142,14 +144,14 @@ export default function CounselPage() {
                     }
                     type="button"
                   >
-                    Save note
+                    {tx.saveNote}
                   </button>
                   <button
                     className="mb-primary"
                     disabled={busy}
                     onClick={() =>
                       void run(async () => {
-                        const result = await engineClient().counselSuggest(
+                        await engineClient().counselSuggest(
                           "MB-4091",
                           "REST_48H",
                           "A rest cycle may help.",
@@ -159,13 +161,13 @@ export default function CounselPage() {
                     }
                     type="button"
                   >
-                    Suggest 48-hour rest
+                    {tx.suggestRest}
                   </button>
                 </div>
               </div>
             </section>
           ) : (
-            <EmptyState message="Pick a request to join or book." title="No session selected" />
+            <EmptyState message={tx.pickRequest} title={tx.noSession} />
           )}
         </div>
       ) : null}

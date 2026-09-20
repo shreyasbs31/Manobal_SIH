@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
@@ -33,6 +34,7 @@ function clampWidth(value: number, min: number, max: number) {
 }
 
 export default function RosterPage() {
+  const { tx } = useConsoleLang();
   const { data, error, loading, offline } = useEngine("command-roster", (client, signal) =>
     client.commandRoster(signal),
   );
@@ -101,7 +103,7 @@ export default function RosterPage() {
                   ) : (
                     <>
                       <label>
-                        Weekly duty hours {row.duty_hours}
+                        {tx.weeklyDuty} {row.duty_hours}
                         <input
                           max={72}
                           min={40}
@@ -114,7 +116,7 @@ export default function RosterPage() {
                         </span>
                       </label>
                       <label>
-                        Rest days {row.rest_days}
+                        {tx.restDays} {row.rest_days}
                         <input
                           max={3}
                           min={0}
@@ -125,7 +127,7 @@ export default function RosterPage() {
                         />
                       </label>
                       <label>
-                        Night share {row.night_share}
+                        {tx.nightShare} {row.night_share}
                         <input
                           max={50}
                           min={10}
@@ -138,7 +140,7 @@ export default function RosterPage() {
                         </span>
                       </label>
                       <label>
-                        Leave release a week {row.leave_release}
+                        {tx.leaveRelease} {row.leave_release}
                         <input
                           max={8}
                           min={0}
@@ -155,12 +157,14 @@ export default function RosterPage() {
               ))}
             </section>
             <section className="mb-sheet">
-              <h2>14-day hold</h2>
+              <h2>{tx.hold14}</h2>
               <div className="mb-hold-list">
                 {preview.map((row) => (
                   <p key={row.label}>
                     <span>{row.label}</span>
-                    <strong>{row.locked ? "locked" : `${row.duty}h · ${row.night}% night`}</strong>
+                    <strong>
+                      {row.locked ? tx.locked : `${row.duty}h · ${row.night}% ${tx.night}`}
+                    </strong>
                   </p>
                 ))}
               </div>
@@ -183,7 +187,7 @@ export default function RosterPage() {
                   }}
                   type="button"
                 >
-                  Ease night share
+                  {tx.easeNight}
                 </button>
                 <button
                   className="mb-secondary"
@@ -208,7 +212,7 @@ export default function RosterPage() {
                   }}
                   type="button"
                 >
-                  Project 14 days
+                  {tx.project14}
                 </button>
                 <button
                   className="mb-primary"
@@ -225,12 +229,12 @@ export default function RosterPage() {
                   }}
                   type="button"
                 >
-                  Create draft order
+                  {tx.draftOrder}
                 </button>
               </div>
               {projection.length ? (
                 <div className="mb-projection">
-                  <h2>Projected posture in 14 days</h2>
+                  <h2>{tx.projectedPosture}</h2>
                   {projection.map((row) => (
                     <div className="mb-compare-band" data-tone={row.posture} key={`p-${row.label}`}>
                       <span>{row.label}</span>
@@ -238,7 +242,7 @@ export default function RosterPage() {
                       <em>{row.coverage}</em>
                     </div>
                   ))}
-                  <h2>Operational coverage</h2>
+                  <h2>{tx.coverage}</h2>
                   {coverage.map((row) => (
                     <div className="mb-compare-band" key={`c-${row.label}`}>
                       <span>{row.label}</span>
@@ -259,7 +263,7 @@ export default function RosterPage() {
                     }}
                     type="button"
                   >
-                    Copy draft
+                    {tx.copyDraft}
                   </button>
                 </>
               ) : null}
@@ -268,7 +272,7 @@ export default function RosterPage() {
           </div>
           <div className="mb-split">
             <section className="mb-sheet">
-              <h2>Leave pressure</h2>
+              <h2>{tx.leavePressure}</h2>
               {leave.data?.companies.map((row) => (
                 <button
                   aria-pressed={focus === row.label}
@@ -287,7 +291,7 @@ export default function RosterPage() {
               ))}
             </section>
             <section className="mb-sheet">
-              <h2>Unit climate</h2>
+              <h2>{tx.unitClimate}</h2>
               <div className="mb-pulse-row">
                 {climate.data?.pulse.map((row) => (
                   <button

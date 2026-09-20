@@ -1,54 +1,23 @@
 "use client";
 
-import { CommandShell, type NavItem } from "@manobal/ui";
+import { CommandShell } from "@manobal/ui";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { currentPrincipal } from "@/lib/engine";
+import { readConsoleTheme, useConsoleLang } from "@/lib/console-i18n";
 import { manobalMode } from "@/lib/mode";
 import { allowedConsolePath } from "@/lib/stage-role";
 
-const NAV: readonly NavItem[] = [
-  { href: "/command", label: "Unit posture" },
-  { href: "/command/roster", label: "Roster balancer" },
-  { href: "/welfare", label: "Welfare queue" },
-  { href: "/counsel", label: "Counsellor desk" },
-  { href: "/medical", label: "Acute board" },
-  { href: "/hq", label: "Force HQ" },
-  { href: "/governance", label: "Governance" },
-  { href: "/dpo", label: "DPO centre" },
-  { href: "/integrations", label: "Integrations" },
-  { href: "/admin", label: "Admin" },
-  { href: "/lab", label: "Validation lab" },
-  { href: "/architecture", label: "Architecture" },
-  { href: "/director", label: "Director" },
-];
-
-const TITLES: Record<string, string> = {
-  "/command": "Bn C-02",
-  "/command/roster": "Roster balancer",
-  "/welfare": "Bn C-02 welfare",
-  "/counsel": "Counsellor desk",
-  "/medical": "Acute response",
-  "/hq": "Force HQ",
-  "/governance": "Governance",
-  "/dpo": "DPO centre",
-  "/integrations": "Integration console",
-  "/admin": "Administration",
-  "/lab": "Validation lab",
-  "/architecture": "Architecture",
-  "/director": "Demo director",
-};
-
-function titleFor(pathname: string): string {
+function titleFor(pathname: string, titles: Record<string, string>): string {
   if (pathname.startsWith("/welfare/cases/")) {
     return pathname.slice("/welfare/cases/".length);
   }
-  return TITLES[pathname] ?? "Console";
+  return titles[pathname] ?? "Console";
 }
 
-function homeHrefFor(pathname: string): string {
+function homeHrefFor(pathname: string, titles: Record<string, string>): string {
   if (pathname.startsWith("/welfare")) {
     return "/welfare";
   }
@@ -56,21 +25,8 @@ function homeHrefFor(pathname: string): string {
     return "/command";
   }
   const root = `/${pathname.split("/").filter(Boolean)[0] ?? "command"}`;
-  return TITLES[root] ? root : "/command";
+  return titles[root] ? root : "/command";
 }
-
-const DESK_LABEL: Record<string, string> = {
-  commander: "Command",
-  hq: "HQ",
-  uwo: "Welfare",
-  counsellor: "Counsellor",
-  mo: "Medical",
-  wdec: "Governance",
-  dpo: "DPO",
-  hrms_integrator: "Integrations",
-  admin: "Admin",
-  director: "Director",
-};
 
 function goViaStage(href: string) {
   window.parent.postMessage(
@@ -82,12 +38,13 @@ function goViaStage(href: string) {
 export function ConsoleChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [deskLabel, setDeskLabel] = useState("");
+  const { lang, setLang, tx } = useConsoleLang();
+  const [deskRole, setDeskRole] = useState("");
 
   useEffect(() => {
     const sync = () => {
       const role = currentPrincipal()?.role;
-      setDeskLabel(role ? (DESK_LABEL[role] ?? role) : "");
+      setDeskRole(role ?? "");
     };
     sync();
     window.addEventListener("manobal-session", sync);
@@ -126,12 +83,16 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("click", onClick, true);
   }, []);
 
+  const deskLabel = deskRole ? (tx.desks[deskRole] ?? deskRole) : "";
+
   return (
     <CommandShell
       clock="2026-09-16 10:00 IST"
-      homeHref={homeHrefFor(pathname)}
+      homeHref={homeHrefFor(pathname, tx.titles)}
+      language={lang}
       mode={manobalMode()}
-      navItems={NAV}
+      navItems={[...tx.nav]}
+      onLanguageChange={setLang}
       onNavigate={(href) => {
         if (typeof window !== "undefined" && window.parent !== window) {
           goViaStage(href);
@@ -141,7 +102,19 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
       }}
       pathname={pathname}
       deskLabel={deskLabel}
-      title={titleFor(pathname)}
+      theme={readConsoleTheme()}
+      title={titleFor(pathname, tx.titles)}
+      chromeCopy={{
+        expand: tx.expand,
+        collapse: tx.collapse,
+        search: tx.search,
+        themeLight: tx.themeLight,
+        themeDark: tx.themeDark,
+        langEn: tx.langEn,
+        langHi: tx.langHi,
+        langGroup: tx.langGroup,
+        deskSuffix: tx.deskSuffix,
+      }}
     >
       {children}
     </CommandShell>

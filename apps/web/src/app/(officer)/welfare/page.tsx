@@ -6,20 +6,20 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { type ConsoleCopy, useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
-const TABS = [
-  "Queue",
-  "Incident check-ins",
-  "Self-referrals",
-  "Follow-ups due",
-  "Closed",
-  "Digest",
-] as const;
+const TAB_IDS = ["queue", "incidents", "selfRef", "followUps", "closed", "digest"] as const;
+type TabId = (typeof TAB_IDS)[number];
+
+function tabLabel(tx: ConsoleCopy, id: TabId): string {
+  return tx[id];
+}
 
 export default function WelfarePage() {
   const router = useRouter();
+  const { tx } = useConsoleLang();
   const { data, error, loading, offline, reload } = useEngine("welfare-queue", (client, signal) =>
     client.welfareQueue(signal),
   );
@@ -27,7 +27,7 @@ export default function WelfarePage() {
   const profile = useEngine("officer-profile", (client, signal) => client.officerProfile(signal));
   const queue = data ?? [];
   const [selected, setSelected] = useState("");
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Queue");
+  const [tab, setTab] = useState<TabId>("queue");
   const [done, setDone] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -80,9 +80,9 @@ export default function WelfarePage() {
   }, [queue, router, selected]);
 
   const groups = [
-    { label: "Urgent", items: t4 },
-    { label: "High", items: t3 },
-    { label: "Elevated", items: t2 },
+    { label: tx.urgent, items: t4 },
+    { label: tx.high, items: t3 },
+    { label: tx.elevated, items: t2 },
   ] as const;
 
   async function act(caseId: string, outcome: string, label: string) {
@@ -105,8 +105,8 @@ export default function WelfarePage() {
 
   return (
     <ScreenState
-      empty={queue.length === 0 && tab === "Queue"}
-      emptyText="No open cases in this unit."
+      empty={queue.length === 0 && tab === "queue"}
+      emptyText={tx.emptyQueue}
       error={error ?? tabs.error}
       loading={loading}
       offline={offline}
@@ -114,33 +114,33 @@ export default function WelfarePage() {
       <div className="mb-desk">
         {t4[0] ? (
           <div className="mb-t4-banner" role="status">
-            Acute case {t4[0].case_id}. Acknowledge within {t4[0].sla_label}.
+            {tx.acuteCase} {t4[0].case_id}. {tx.acknowledgeWithin} {t4[0].sla_label}.
           </div>
         ) : null}
         <p className="mb-queue-meta">
-          <span>Open {String(meta.open ?? queue.length)}</span>
-          <span>Overdue {String(meta.overdue ?? 0)}</span>
+          <span>{tx.open} {String(meta.open ?? queue.length)}</span>
+          <span>{tx.overdue} {String(meta.overdue ?? 0)}</span>
           <span>
-            My load {String(meta.load ?? queue.length)} of {String(meta.capacity ?? 25)}
+            {tx.myLoad} {String(meta.load ?? queue.length)} {tx.of} {String(meta.capacity ?? 25)}
           </span>
-          {profile.data ? <span>Digest at {String(profile.data.digest_time)}</span> : null}
+          {profile.data ? <span>{tx.digestAt} {String(profile.data.digest_time)}</span> : null}
         </p>
         {notice ? <p role="status">{notice}</p> : null}
         <div className="mb-tabs" role="tablist" aria-label="Welfare views">
-          {TABS.map((name) => (
+          {TAB_IDS.map((id) => (
             <button
-              aria-selected={tab === name}
+              aria-selected={tab === id}
               className="mb-ghost"
-              key={name}
-              onClick={() => setTab(name)}
+              key={id}
+              onClick={() => setTab(id)}
               role="tab"
               type="button"
             >
-              {name}
+              {tabLabel(tx, id)}
             </button>
           ))}
         </div>
-        {tab === "Queue" ? (
+        {tab === "queue" ? (
           <div className="mb-queue">
             <div>
               {groups.map((group) => (
@@ -181,54 +181,88 @@ export default function WelfarePage() {
             {current ? (
               <QueueAside
                 current={current}
-                onRest={() => void act(current.case_id, "open", "48-hour rest logged.")}
-                onRefer={() => void act(current.case_id, "referred", "Referred to counsellor.")}
+                openLabel={tx.openCase}
+                restLabel={tx.logRest}
+                referLabel={tx.refer}
+                recommendedLabel={tx.recommended}
+                onRest={() => void act(current.case_id, "open", tx.restLogged)}
+                onRefer={() => void act(current.case_id, "referred", tx.referredCounsellor)}
               />
             ) : null}
           </div>
         ) : null}
-        {tab === "Incident check-ins" ? (
+        {tab === "incidents" ? (
           <TabCards
+            actionLabel={tx.pickUp}
+            closedLabel={tx.closedLabel}
+            digestLabel={tx.digestItem}
             done={done}
-            empty="No one in this unit has asked to talk after an incident."
+            dueLabel={tx.due}
+            empty={tx.emptyIncidents}
             items={asObjects(meta.incidents)}
             kind="incident"
-            onAction={(caseId) => void act(caseId, "open", "Picked up after the incident.")}
+            openLabel={tx.open}
+            talkLabel={tx.askedTalk}
+            onAction={(caseId) => void act(caseId, "open", tx.pickUp)}
           />
         ) : null}
-        {tab === "Self-referrals" ? (
+        {tab === "selfRef" ? (
           <TabCards
+            actionLabel={tx.pickUp}
+            closedLabel={tx.closedLabel}
+            digestLabel={tx.digestItem}
             done={done}
-            empty="No self-referrals."
+            dueLabel={tx.due}
+            empty={tx.emptySelf}
             items={asObjects(meta.self_referrals)}
             kind="referral"
-            onAction={(caseId) => void act(caseId, "open", "Self-referral picked up.")}
+            openLabel={tx.open}
+            talkLabel={tx.askedTalk}
+            onAction={(caseId) => void act(caseId, "open", tx.pickUp)}
           />
         ) : null}
-        {tab === "Follow-ups due" ? (
+        {tab === "followUps" ? (
           <TabCards
+            actionLabel={tx.markDone}
+            closedLabel={tx.closedLabel}
+            digestLabel={tx.digestItem}
             done={done}
-            empty="No follow-ups due."
+            dueLabel={tx.due}
+            empty={tx.emptyFollow}
             items={asObjects(meta.followups)}
             kind="followup"
-            onAction={(caseId) => void act(caseId, "done", "Follow-up closed.")}
+            openLabel={tx.open}
+            talkLabel={tx.askedTalk}
+            onAction={(caseId) => void act(caseId, "done", tx.markDone)}
           />
         ) : null}
-        {tab === "Closed" ? (
+        {tab === "closed" ? (
           <TabCards
+            actionLabel={tx.pickUp}
+            closedLabel={tx.closedLabel}
+            digestLabel={tx.digestItem}
             done={done}
-            empty="No closed cases."
+            dueLabel={tx.due}
+            empty={tx.emptyClosed}
             items={asIdObjects(meta.closed)}
             kind="closed"
+            openLabel={tx.open}
+            talkLabel={tx.askedTalk}
           />
         ) : null}
-        {tab === "Digest" ? (
+        {tab === "digest" ? (
           <TabCards
+            actionLabel={tx.pickUp}
+            closedLabel={tx.closedLabel}
+            digestLabel={tx.digestItem}
             done={done}
-            empty="No digest items today."
+            dueLabel={tx.due}
+            empty={tx.emptyDigest}
             items={asIdObjects(meta.digest)}
             kind="digest"
-            onAction={(caseId) => void act(caseId, "open", "Digest item opened.")}
+            openLabel={tx.open}
+            talkLabel={tx.askedTalk}
+            onAction={(caseId) => void act(caseId, "open", tx.pickUp)}
           />
         ) : null}
         <p className="mb-workload" aria-label="Workload this week">
@@ -245,10 +279,18 @@ function QueueAside({
   current,
   onRest,
   onRefer,
+  openLabel,
+  restLabel,
+  referLabel,
+  recommendedLabel,
 }: {
   current: WelfareCase;
   onRest: () => void;
   onRefer: () => void;
+  openLabel: string;
+  restLabel: string;
+  referLabel: string;
+  recommendedLabel: string;
 }) {
   return (
     <aside className="mb-sheet">
@@ -265,7 +307,9 @@ function QueueAside({
         incidents={[118]}
         onsetDay={100}
       />
-      <p>Recommended: {current.lever_title}</p>
+      <p>
+        {recommendedLabel}: {current.lever_title}
+      </p>
       <SlaTimer
         label="SLA"
         remainingLabel={current.sla_label}
@@ -274,13 +318,13 @@ function QueueAside({
       />
       <div className="mb-action-row">
         <a className="mb-primary" href={`/welfare/cases/${current.case_id}`}>
-          Open case
+          {openLabel}
         </a>
         <button className="mb-secondary" onClick={onRest} type="button">
-          Log 48-hour rest
+          {restLabel}
         </button>
         <button className="mb-ghost" onClick={onRefer} type="button">
-          Refer
+          {referLabel}
         </button>
       </div>
     </aside>
@@ -319,12 +363,24 @@ function TabCards({
   kind,
   done,
   onAction,
+  openLabel,
+  actionLabel,
+  closedLabel,
+  digestLabel,
+  dueLabel,
+  talkLabel,
 }: {
   items: Record<string, unknown>[];
   empty: string;
   kind: "incident" | "referral" | "followup" | "closed" | "digest";
   done: Record<string, string>;
   onAction?: (caseId: string) => void;
+  openLabel: string;
+  actionLabel: string;
+  closedLabel: string;
+  digestLabel: string;
+  dueLabel: string;
+  talkLabel: string;
 }) {
   if (items.length === 0) {
     return <p>{empty}</p>;
@@ -336,14 +392,14 @@ function TabCards({
         const href = item.case_id ? `/welfare/cases/${String(item.case_id)}` : "/welfare";
         const detail =
           kind === "incident"
-            ? String(item.window_id ?? "Asked to talk")
+            ? String(item.window_id ?? talkLabel)
             : kind === "referral"
-              ? `${String(item.channel ?? "I want to talk")} · ${String(item.status ?? "open")}`
+              ? `${String(item.channel ?? talkLabel)} · ${String(item.status ?? "open")}`
               : kind === "followup"
-                ? `Due ${String(item.due ?? "soon")}`
+                ? `${dueLabel} ${String(item.due ?? "soon")}`
                 : kind === "closed"
-                  ? "Closed"
-                  : "In today's digest";
+                  ? closedLabel
+                  : digestLabel;
         const marked = done[caseId];
         return (
           <li className="mb-sheet" key={`${caseId}-${index}`}>
@@ -353,11 +409,11 @@ function TabCards({
             </div>
             <div className="mb-action-row">
               <a className="mb-secondary" href={href}>
-                Open
+                {openLabel}
               </a>
               {onAction && !marked ? (
                 <button className="mb-primary" onClick={() => onAction(caseId)} type="button">
-                  {kind === "followup" ? "Mark done" : "Pick up"}
+                  {actionLabel}
                 </button>
               ) : null}
             </div>

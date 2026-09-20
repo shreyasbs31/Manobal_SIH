@@ -9,20 +9,12 @@ import {
 import { useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
-const SWITCH_LABELS: Record<string, string> = {
-  agent: "Companion",
-  voice: "Voice",
-  copilot: "Copilot",
-  briefs: "Case briefs",
-  alerts_t2_t3: "T2 and T3 alerts",
-  forecast: "Forecast",
-  jitai: "Nudges",
-};
-
 export default function GovernancePage() {
+  const { tx } = useConsoleLang();
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { data, error, loading, offline, reload } = useEngine("governance", async (client, signal) => {
@@ -77,7 +69,7 @@ export default function GovernancePage() {
             ))}
           </div>
           <section className="mb-sheet">
-            <h2>Audit chain</h2>
+            <h2>{tx.auditChain}</h2>
             <ChainStatus mode={chainMode ?? "intact"} />
             <p>
               {data.audit.valid
@@ -96,7 +88,7 @@ export default function GovernancePage() {
                 }
                 type="button"
               >
-                Verify
+                {tx.verify}
               </button>
               <button
                 className="mb-secondary"
@@ -109,7 +101,7 @@ export default function GovernancePage() {
                 }
                 type="button"
               >
-                Tamper
+                {tx.tamper}
               </button>
               <button
                 className="mb-primary"
@@ -122,16 +114,32 @@ export default function GovernancePage() {
                 }
                 type="button"
               >
-                Restore
+                {tx.restore}
               </button>
             </div>
             <AuditRow action="Daily seal" token="intact" when="06:00" />
           </section>
           <section className="mb-sheet">
-            <h2>Kill switches</h2>
+            <h2>{tx.killSwitches}</h2>
             {Object.entries(data.switches).map(([name, enabled]) => (
               <div className="mb-kill" key={name}>
-                <span>{SWITCH_LABELS[name] ?? name}</span>
+                <span>
+                  {name === "agent"
+                    ? tx.companion
+                    : name === "voice"
+                      ? tx.voice
+                      : name === "copilot"
+                        ? tx.copilot
+                        : name === "briefs"
+                          ? tx.caseBriefs
+                          : name === "alerts_t2_t3"
+                            ? tx.alertsT2
+                            : name === "forecast"
+                              ? tx.forecast
+                              : name === "jitai"
+                                ? tx.nudges
+                                : name}
+                </span>
                 <button
                   aria-pressed={enabled}
                   className="mb-toggle"
@@ -143,19 +151,19 @@ export default function GovernancePage() {
                   }
                   type="button"
                 >
-                  {enabled ? "On" : "Off"}
+                  {enabled ? tx.on : tx.off}
                 </button>
               </div>
             ))}
             <div className="mb-kill" data-locked="true">
-              <span>Acute path</span>
+              <span>{tx.acutePath}</span>
               <button className="mb-toggle" disabled type="button">
-                Always on
+                {tx.alwaysOn}
               </button>
             </div>
           </section>
           <section className="mb-sheet">
-            <h2>Reveal reviews</h2>
+            <h2>{tx.revealReviews}</h2>
             {(data.reviews.items ?? []).length === 0 ? (
               <p>No open reviews.</p>
             ) : (

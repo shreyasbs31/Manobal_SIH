@@ -110,6 +110,28 @@ html[lang="sd"] {
   font-family: var(--mb-font-ur);
 }
 
+html[lang="hi"],
+.mb-command[lang="hi"] {
+  --mb-font-head: var(--font-anek-deva), var(--font-anek), var(--font-mukta),
+    var(--font-noto), "Noto Sans", system-ui, sans-serif;
+  --mb-font-body: var(--font-mukta), var(--font-anek-deva), var(--font-noto),
+    "Noto Sans", system-ui, sans-serif;
+  --mb-line: 1.7;
+}
+
+.mb-command[lang="hi"] {
+  --mb-body-size: 15px;
+}
+
+.mb-command[lang="hi"] h1,
+.mb-command[lang="hi"] h2,
+.mb-command[lang="hi"] h3,
+.mb-command[lang="hi"] .mb-type-title,
+.mb-command[lang="hi"] .mb-rail-label {
+  letter-spacing: 0;
+  line-height: 1.7;
+}
+
 html {
   --mb-bg: var(--mist);
   --mb-surface: #ffffff;
@@ -275,7 +297,7 @@ html {
   color-scheme: light;
   --mb-bg: var(--survey-bg);
   --mb-surface: var(--survey-panel);
-  --mb-surface-2: var(--survey-map);
+  --mb-surface-2: #e7ebe3;
   --mb-text: var(--dusk-ink);
   --mb-muted: #3e4a3f;
   --mb-primary: var(--survey-brass);
@@ -297,7 +319,7 @@ html {
   --mb-radius-card: var(--mb-radius-command-panel);
   --mb-radius-control: var(--mb-radius-command-control);
   --mb-shadow: var(--mb-shadow-0);
-  --mb-shadow-float: var(--mb-shadow-2-command);
+  --mb-shadow-float: 0 16px 40px rgb(27 36 39 / 0.08);
 }
 
 .mb-theme {
@@ -354,9 +376,9 @@ html {
   box-sizing: border-box;
 }
 
-html,
-body {
-  margin: 0;
+html:has(.mb-stage),
+html:has(.mb-stage) body {
+  background: var(--monsoon);
   min-height: 100%;
 }
 
@@ -1238,27 +1260,104 @@ button.mb-toggle[aria-pressed="true"] {
 }
 
 .mb-phone {
+  position: relative;
   width: min(100%, 390px);
   margin-inline: auto;
-  padding: 14px 12px 18px;
-  border: 3px solid color-mix(in srgb, var(--mb-text) 80%, transparent);
-  border-radius: 36px;
-  background: #0b1014;
-  box-shadow: inset 0 0 0 2px #2a333b, 0 24px 50px rgb(0 0 0 / 28%);
+  padding: 12px 11px 14px;
+  border-radius: 42px;
+  background:
+    linear-gradient(165deg, #3a3f45 0%, #14181d 38%, #0b0d10 100%);
+  box-shadow:
+    0 0 0 1px #5a6168,
+    0 28px 60px rgb(0 0 0 / 38%),
+    inset 0 1px 0 rgb(255 255 255 / 18%);
 }
 
-.mb-phone-ear {
-  width: 88px;
-  height: 8px;
-  margin: 4px auto 10px;
+.mb-phone-btn {
+  position: absolute;
+  display: block;
+  background: #2a2f34;
+  box-shadow: inset 0 0 0 1px #111;
+}
+
+.mb-phone-btn-silent {
+  inset-block-start: 88px;
+  inset-inline-start: -3px;
+  width: 3px;
+  height: 18px;
+  border-radius: 2px 0 0 2px;
+}
+
+.mb-phone-btn-vol-up,
+.mb-phone-btn-vol-down {
+  inset-inline-start: -3px;
+  width: 3px;
+  height: 36px;
+  border-radius: 2px 0 0 2px;
+}
+
+.mb-phone-btn-vol-up {
+  inset-block-start: 128px;
+}
+
+.mb-phone-btn-vol-down {
+  inset-block-start: 172px;
+}
+
+.mb-phone-btn-power {
+  inset-block-start: 148px;
+  inset-inline-end: -3px;
+  width: 3px;
+  height: 52px;
+  border-radius: 0 2px 2px 0;
+}
+
+.mb-phone-bezel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  background: #000;
+}
+
+.mb-phone-island {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 10px;
+  inset-inline-start: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 92px;
+  height: 26px;
+  padding-inline: 8px;
   border-radius: 999px;
-  background: #1a2228;
+  background: #0a0c0e;
+  transform: translateX(-50%);
+}
+
+.mb-phone-cam {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #3d5a73, #111 70%);
+}
+
+.mb-phone-home {
+  position: absolute;
+  z-index: 2;
+  inset-block-end: 8px;
+  inset-inline-start: 50%;
+  width: 108px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 42%);
+  transform: translateX(-50%);
 }
 
 .mb-phone-screen {
   overflow: hidden;
   height: 680px;
-  border-radius: 24px;
+  border-radius: 32px;
   background: var(--mb-bg);
 }
 
@@ -1734,12 +1833,50 @@ textarea {
   overflow-y: auto;
 }
 
+.mb-rail-foot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  padding: 8px 4px 4px;
+}
+
+.mb-rail-foot .mb-lang-toggle {
+  width: 100%;
+}
+
+.mb-rail-foot .mb-lang-toggle button {
+  flex: 1;
+}
+
+.mb-rail-theme,
+.mb-rail-theme select {
+  width: 100%;
+}
+
 .mb-command[data-collapsed="true"] .mb-rail-label {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+}
+
+.mb-command[data-collapsed="true"] .mb-rail-theme {
+  display: none;
+}
+
+[data-skin="command"][data-theme="light"] .mb-rail {
+  background: #e6e9e2;
+}
+
+[data-skin="command"][data-theme="light"] .mb-topbar,
+[data-skin="command"][data-theme="light"] .mb-kpi-strip,
+[data-skin="command"][data-theme="light"] .mb-sheet,
+[data-skin="command"][data-theme="light"] .mb-copilot,
+[data-skin="command"][data-theme="light"] .mb-card {
+  background: #fffcf7;
+  box-shadow: none;
 }
 
 .mb-command-main {
@@ -1771,6 +1908,40 @@ textarea {
 
 .mb-topbar-end {
   justify-content: flex-end;
+}
+
+.mb-lang-toggle {
+  display: inline-flex;
+  overflow: hidden;
+  border: var(--mb-hairline) solid var(--mb-border);
+  border-radius: 6px;
+  background: var(--mb-surface-2);
+}
+
+.mb-lang-toggle button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  color: var(--mb-text);
+  background: transparent;
+  font-size: var(--mb-fs-13);
+}
+
+.mb-lang-toggle button[aria-pressed="true"] {
+  color: var(--mb-on-primary);
+  background: var(--mb-primary);
+}
+
+.mb-search-btn {
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.mb-topbar-end select {
+  max-width: 148px;
 }
 
 .mb-topbar-start .mb-type-title {
@@ -1983,33 +2154,21 @@ textarea {
   max-width: 100%;
   margin-inline: auto;
   overflow: hidden;
-  color: #f3f1ea;
-  background: var(--monsoon);
+  color: #e8ece9;
+  background:
+    radial-gradient(1200px 640px at 28% 18%, rgb(200 162 74 / 0.08), transparent 58%),
+    var(--monsoon);
 }
 
 .mb-stage-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   height: 44px;
-  padding: 0 16px;
-  border-block-end: 1px solid #3a4a57;
-  background: #1e2a35;
+  padding: 0 20px;
+  border-block-end: 1px solid #2a3945;
+  background: rgb(19 28 36 / 0.92);
   font-size: var(--mb-fs-13);
-}
-
-.mb-stage-bar-end {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-inline-start: auto;
-}
-
-.mb-stage-bar .mb-screen-nav-btn {
-  width: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  color: inherit;
 }
 
 .mb-stage-bar .mb-brand {
@@ -2017,25 +2176,43 @@ textarea {
   margin: 0;
 }
 
+.mb-stage-beat {
+  color: var(--khaki);
+}
+
 .mb-stage-split {
   display: grid;
   grid-template-columns: 420px 1fr;
-  gap: 16px;
+  gap: 20px;
+  align-items: stretch;
   height: calc(1080px - 44px);
-  padding: 16px;
+  padding: 20px 24px 24px;
+}
+
+.mb-stage-phone {
+  display: grid;
+  place-items: center;
 }
 
 .mb-stage-console {
   overflow: hidden;
-  border: 1px solid #3a4a57;
+  border: 1px solid #cbd3c8;
   border-radius: 10px;
-  background: var(--slate-panel);
+  background: var(--survey-bg);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.35);
 }
 
 .mb-stage-console iframe {
   width: 100%;
   height: 100%;
   border: 0;
+  background: var(--survey-bg);
+}
+
+.mb-stage-wait {
+  margin: 0;
+  padding: 24px;
+  color: var(--khaki);
 }
 
 .mb-stage-drawer {
@@ -2051,14 +2228,6 @@ textarea {
   padding: 16px;
   border-inline-start: 1px solid #3a4a57;
   background: #1e2a35;
-}
-
-.mb-stage-bar .mb-chip,
-.mb-stage-bar .mb-status-chip,
-.mb-stage-bar .mb-sim {
-  color: #e8ece9;
-  border-color: #3a4a57;
-  background: transparent;
 }
 
 .mb-stage-drawer[data-open="false"] {
@@ -2729,10 +2898,11 @@ textarea {
 .mb-kpi-strip strong {
   color: var(--mb-text);
   font-family: var(--mb-font-head);
-  font-size: var(--mb-fs-31);
+  font-size: var(--mb-fs-25);
   font-weight: 600;
   font-variation-settings: "wdth" var(--mb-wdth-condensed);
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .mb-posture {
@@ -2994,7 +3164,7 @@ textarea {
 }
 
 .mb-stage .mb-phone {
-  width: calc(24px + 390px * 0.88);
+  width: 372px;
 }
 
 .mb-stage .mb-phone-screen {

@@ -4,10 +4,12 @@ import { CaseCard, EscalationLadder, SlaTimer, chimeKindForQueue, playConsoleChi
 import { useEffect, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
 export default function MedicalPage() {
+  const { tx } = useConsoleLang();
   const { data, error, loading, offline, reload } = useEngine("medical-acute", (client, signal) =>
     client.medicalAcute(signal),
   );
@@ -34,7 +36,7 @@ export default function MedicalPage() {
   return (
     <ScreenState
       empty={items.length === 0}
-      emptyText="No acute cases."
+      emptyText={tx.emptyAcute}
       error={error}
       loading={loading}
       offline={offline}
@@ -46,7 +48,7 @@ export default function MedicalPage() {
               <article data-focus={item.case_id === current?.case_id ? "true" : "false"} key={item.case_id}>
                 <button className="mb-sheet-head" onClick={() => setPicked(item.case_id)} type="button">
                   <SlaTimer
-                    label="Acknowledge"
+                    label={tx.acknowledge}
                     remainingLabel={item.sla_label}
                     remainingRatio={item.remaining_ratio}
                     tier="T4"
@@ -72,7 +74,7 @@ export default function MedicalPage() {
             <aside className="mb-sheet">
               <h2>{current.case_id}</h2>
               <SlaTimer
-                label="Acknowledge"
+                label={tx.acknowledge}
                 remainingLabel={current.sla_label}
                 remainingRatio={current.remaining_ratio}
                 tier="T4"
@@ -99,7 +101,7 @@ export default function MedicalPage() {
                 }}
                 type="button"
               >
-                {current.status === "ack" ? "Acknowledged" : "Acknowledge"}
+                {current.status === "ack" ? tx.closedLabel : tx.acknowledge}
               </button>
               {extra.data?.items.length ? (
                 <div className="mb-work-list">

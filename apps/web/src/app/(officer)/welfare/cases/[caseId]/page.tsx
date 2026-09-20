@@ -14,6 +14,7 @@ import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 import { announceWorld } from "@/lib/world";
@@ -47,11 +48,11 @@ interface RevealCard {
 export default function CaseWorkspacePage() {
   const params = useParams<{ caseId: string }>();
   const caseId = params.caseId;
-  const [briefLang, setBriefLang] = useState("hi");
+  const { lang, tx } = useConsoleLang();
   const { data, error, loading, offline, reload } = useEngine(
-    `case-${caseId}-${briefLang}`,
+    `case-${caseId}-${lang}`,
     (client, signal) =>
-      client.welfareCase(caseId, briefLang, signal) as unknown as Promise<CasePayload>,
+      client.welfareCase(caseId, lang, signal) as unknown as Promise<CasePayload>,
   );
   const [purpose, setPurpose] = useState("care_contact");
   const [justification, setJustification] = useState("");
@@ -61,7 +62,7 @@ export default function CaseWorkspacePage() {
   const [lever, setLever] = useState("REST_48H");
   const [followUp, setFollowUp] = useState("D+2");
   const [refer, setRefer] = useState("");
-  const [trend, setTrend] = useState("Sleep, not yet requested");
+  const [trend, setTrend] = useState("");
   const [message, setMessage] = useState("");
 
   const nodes = useMemo(() => (data ? briefNodes(data.brief, data.brief_fields) : []), [data]);
@@ -89,7 +90,7 @@ export default function CaseWorkspacePage() {
           />
           <div className="mb-case-cols">
             <section>
-              <h2>What changed</h2>
+              <h2>{tx.whatChanged}</h2>
               {data.what_changed.map((row) => (
                 <p key={row.title}>
                   <strong>{row.title}</strong>
@@ -97,22 +98,22 @@ export default function CaseWorkspacePage() {
                   {row.detail}
                 </p>
               ))}
-              <h2>Trend sharing</h2>
-              <p>{trend}</p>
+              <h2>{tx.trendSharing}</h2>
+              <p>{trend || tx.trendSleep}</p>
               <button
                 className="mb-secondary"
                 onClick={() => {
                   void engineClient()
                     .welfareTrendRequest(caseId, "sleep")
-                    .then(() => setTrend("Sleep, request pending"));
+                    .then(() => setTrend(tx.trendPending));
                 }}
                 type="button"
               >
-                Request sleep trend
+                {tx.requestSleep}
               </button>
             </section>
             <section>
-              <h2>Recommended actions</h2>
+              <h2>{tx.recommendedActions}</h2>
               {data.levers.map((item, index) => (
                 <LeverOption
                   hint={item.hint}
@@ -122,16 +123,9 @@ export default function CaseWorkspacePage() {
                   title={item.title}
                 />
               ))}
-              <label>
-                Brief language
-                <select onChange={(event) => setBriefLang(event.target.value)} value={briefLang}>
-                  <option value="hi">Hindi</option>
-                  <option value="en">English</option>
-                </select>
-              </label>
               <BriefPanel>
-                <p lang={briefLang}>{nodes}</p>
-                <p>Ways to open the conversation</p>
+                <p lang={lang}>{nodes}</p>
+                <p>{tx.waysToOpen}</p>
                 <ol>
                   {(data.openers ?? []).map((line) => (
                     <li key={line}>{line}</li>
@@ -140,7 +134,7 @@ export default function CaseWorkspacePage() {
               </BriefPanel>
             </section>
             <section>
-              <h2>Identity</h2>
+              <h2>{tx.identity}</h2>
               {reveal ? (
                 <div className="mb-identity-card">
                   <p>{reveal.notice}</p>
@@ -149,7 +143,7 @@ export default function CaseWorkspacePage() {
                   </p>
                   <p>Contact {String(reveal.card.contact)}. Note due {reveal.contact_note_due}.</p>
                   <label>
-                    Contact note
+                    {tx.contactNote}
                     <textarea onChange={(event) => setNote(event.target.value)} value={note} />
                   </label>
                   <button
@@ -161,22 +155,22 @@ export default function CaseWorkspacePage() {
                     }}
                     type="button"
                   >
-                    Save contact note
+                    {tx.saveNote}
                   </button>
                 </div>
               ) : (
                 <>
-                  <p>Locked</p>
+                  <p>{tx.identityLocked}</p>
                   <label>
-                    Purpose
+                    {tx.purpose}
                     <select onChange={(event) => setPurpose(event.target.value)} value={purpose}>
-                      <option value="care_contact">Care contact</option>
-                      <option value="urgent_welfare">Urgent welfare</option>
-                      <option value="follow_up">Follow up</option>
+                      <option value="care_contact">{tx.careContact}</option>
+                      <option value="urgent_welfare">{tx.urgentWelfare}</option>
+                      <option value="follow_up">{tx.followUp}</option>
                     </select>
                   </label>
                   <label>
-                    Why you need to reach them
+                    {tx.whyReach}
                     <textarea
                       onChange={(event) => setJustification(event.target.value)}
                       value={justification}
@@ -208,12 +202,12 @@ export default function CaseWorkspacePage() {
                     }}
                     type="button"
                   >
-                    Reveal to contact
+                    {tx.revealContact}
                   </button>
-                  <p>This person will see that you viewed it.</p>
+                  <p>{tx.viewedNotice}</p>
                 </>
               )}
-              <h2>Log</h2>
+              <h2>{tx.log}</h2>
               <EscalationLadder
                 current="waiting"
                 steps={[
@@ -224,31 +218,31 @@ export default function CaseWorkspacePage() {
                 ]}
               />
               <label>
-                Contacted
+                {tx.contacted}
                 <select onChange={(event) => setMode(event.target.value)} value={mode}>
-                  <option value="call">Call</option>
-                  <option value="visit">Visit</option>
-                  <option value="message">Message</option>
+                  <option value="call">{tx.call}</option>
+                  <option value="visit">{tx.visit}</option>
+                  <option value="message">{tx.message}</option>
                 </select>
               </label>
               <label>
-                Decision
+                {tx.decision}
                 <select onChange={(event) => setLever(event.target.value)} value={lever}>
-                  <option value="REST_48H">48-hour rest</option>
-                  <option value="NO_ACTION">No action needed</option>
-                  <option value="COUNSELLOR_REFERRAL">Refer to counsellor</option>
+                  <option value="REST_48H">{tx.rest48}</option>
+                  <option value="NO_ACTION">{tx.noAction}</option>
+                  <option value="COUNSELLOR_REFERRAL">{tx.referCounsellor}</option>
                 </select>
               </label>
               <label>
-                Follow-up
+                {tx.followUpField}
                 <input onChange={(event) => setFollowUp(event.target.value)} value={followUp} />
               </label>
               <label>
-                Refer
+                {tx.refer}
                 <select onChange={(event) => setRefer(event.target.value)} value={refer}>
-                  <option value="">None</option>
-                  <option value="counsellor">Counsellor</option>
-                  <option value="mo">Medical officer</option>
+                  <option value="">{tx.none}</option>
+                  <option value="counsellor">{tx.counsellor}</option>
+                  <option value="mo">{tx.medicalOfficer}</option>
                 </select>
               </label>
               <button
@@ -269,7 +263,7 @@ export default function CaseWorkspacePage() {
                 }}
                 type="button"
               >
-                Record action
+                {tx.recordAction}
               </button>
               <button
                 className="mb-secondary"
@@ -286,7 +280,7 @@ export default function CaseWorkspacePage() {
                 }}
                 type="button"
               >
-                Close case
+                {tx.closeCase}
               </button>
               {message ? <p role="status">{message}</p> : null}
             </section>

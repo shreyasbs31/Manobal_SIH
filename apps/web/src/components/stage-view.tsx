@@ -1,6 +1,6 @@
 "use client";
 
-import { PhoneFrame, RibbonMark, ScreenNav, SimClock, StatusChip, SyntheticMarker } from "@manobal/ui";
+import { PhoneFrame, RibbonMark, SimClock } from "@manobal/ui";
 import { ManobalClient, type ManobalRole, type Principal } from "@manobal/contracts";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,9 +18,9 @@ const SHOT_INSTRUCTIONS: Record<string, string> = {
   karthik: "Sign in as Karthik. Click Play recorded check-in. Tamil reply, then audio-cleared.",
   deepak: "Sign in as Deepak. Click Play recorded check-in. Safety screen. T4 on Welfare and Medical within 5 seconds.",
   "deepak-typed": "Sign in as Deepak. Keyboard. Type main jeena nahi chahta. Send. Safety screen, no model reply.",
-  copilot: "Open copilot. Ask Charlie Coy mein kaun pareshan hai? Refusal, no names.",
-  "copilot-aggregate": "Open copilot. Click the Hindi duty-hours chip. Press Ask. Live answer plus chart.",
-  "hindi-brief": "Open MB-4091. Hindi brief with [tier] [domain] [onset] [lever] marks.",
+  copilot: "Open copilot. Ask who is under strain in Charlie Coy. Refusal, no names.",
+  "copilot-aggregate": "Switch console language if needed. Open copilot. Use the night share prompt. Live answer plus chart.",
+  "hindi-brief": "Switch the console to Hindi. Open MB-4091. Brief with [tier] [domain] [onset] [lever] marks.",
   "deepgram-outage": "Director: Deepgram outage. Sign in as Meena. Play recorded check-in. Turn still completes.",
   lab: "Read precision, recall, Brier and the source line. Imran T1, Thomas T0.",
   governance: "Read the source line under the KPIs. Figures come from core or demo cases.",
@@ -36,8 +36,8 @@ const SHOT_LABELS: Record<string, string> = {
   workspace: "Case workspace reveal",
   "imran-thomas": "Imran and Thomas",
   formation: "Formation and hidden tile",
-  copilot: "Copilot Hindi refusal",
-  "copilot-aggregate": "Copilot Hindi aggregate",
+  copilot: "Copilot refusal",
+  "copilot-aggregate": "Copilot aggregate",
   roster: "Roster balancer",
   deepak: "Deepak spoken distress and T4",
   "deepak-typed": "Deepak typed distress",
@@ -134,7 +134,7 @@ export function StageView({
   const phone = safePath(phonePath, allowedPhonePath, "/app");
   const consoleSafe = safePath(consolePath, allowedConsolePath, "/command");
   const [drawer, setDrawer] = useState(false);
-  const [note, setNote] = useState("Preparing phone and console sessions.");
+  const [note, setNote] = useState("");
   const [armed, setArmed] = useState(false);
   const [liveConsole, setLiveConsole] = useState(consoleSafe);
   const phoneToken = useRef<string | null>(null);
@@ -146,7 +146,7 @@ export function StageView({
   const minting = useRef(false);
   const pendingConsole = useRef<string | null>(null);
   const consoleGen = useRef(0);
-  const label = (shot && SHOT_LABELS[shot]) || "Arjun home";
+  const label = (shot && SHOT_LABELS[shot]) || "Home";
   const persona = phonePersona(phone, shot);
   const officerRole = consoleRole(consoleSafe);
 
@@ -218,9 +218,6 @@ export function StageView({
             storeStageSession(STAGE_CONSOLE_FRAME, login.access_token, login.principal);
             postAuth(consoleFrame.current?.contentWindow, login.access_token, login.principal);
             setArmed(true);
-            setNote(
-              `Phone is ${persona}. Console is ${ROLE_LABEL[needed]}. Different sessions, one demo world.`,
-            );
           } catch (caught: unknown) {
             setNote(caught instanceof Error ? caught.message : "Could not prepare the console session.");
           }
@@ -232,7 +229,7 @@ export function StageView({
         }
       }
     },
-    [persona, postAuth],
+    [postAuth],
   );
 
   useEffect(() => {
@@ -255,9 +252,7 @@ export function StageView({
         consolePrincipal.current = consoleLogin.principal;
         storeStageSession(STAGE_PHONE_FRAME, phoneLogin.access_token, phoneLogin.principal);
         storeStageSession(STAGE_CONSOLE_FRAME, consoleLogin.access_token, consoleLogin.principal);
-        setNote(
-          `Phone is ${persona}. Console is ${ROLE_LABEL[officerRole]}. Different sessions, one demo world.`,
-        );
+        setNote("");
         setArmed(true);
       } catch (caught: unknown) {
         if (!cancelled) {
@@ -350,47 +345,28 @@ export function StageView({
           MANOBAL
         </h1>
         <SimClock value="2026-09-16 10:00 IST" />
-        <span>{label}</span>
-        <StatusChip kind="demo" />
-        <SyntheticMarker />
-        <div className="mb-stage-bar-end">
-          <ScreenNav
-            compact
-            onBack={() => {
-              window.location.assign("/director");
-            }}
-            onClose={() => {
-              window.location.assign("/director");
-            }}
-            showBack
-            showClose
-          />
-        </div>
+        <span className="mb-stage-beat">{label}</span>
       </header>
-      <p className="mb-hosting-caption" role="status">
-        {note}
-      </p>
-      {shot ? (
-        <p className="mb-hosting-caption" role="note">
-          {SHOT_INSTRUCTIONS[shot] ?? label}
-        </p>
-      ) : null}
       <main className="mb-stage-split" aria-label="Phone and console">
-        <PhoneFrame title="Saathi phone">
-          {armed && phoneToken.current ? (
-            <iframe
-              allow="microphone; autoplay"
-              name={STAGE_PHONE_FRAME}
-              onLoad={pushSessions}
-              ref={phoneFrame}
-              src={phone}
-              title="Saathi"
-              loading="eager"
-            />
-          ) : (
-            <p role="status">Preparing the phone session.</p>
-          )}
-        </PhoneFrame>
+        <div className="mb-stage-phone">
+          <PhoneFrame title="Saathi phone">
+            {armed && phoneToken.current ? (
+              <iframe
+                allow="microphone; autoplay"
+                name={STAGE_PHONE_FRAME}
+                onLoad={pushSessions}
+                ref={phoneFrame}
+                src={phone}
+                title="Saathi"
+                loading="eager"
+              />
+            ) : (
+              <p className="mb-stage-wait" role="status">
+                Preparing
+              </p>
+            )}
+          </PhoneFrame>
+        </div>
         <div className="mb-stage-console">
           {armed && consoleToken.current ? (
             <iframe
@@ -404,19 +380,26 @@ export function StageView({
               loading="eager"
             />
           ) : (
-            <p role="status">Preparing the console session.</p>
+            <p className="mb-stage-wait" role="status">
+              Preparing
+            </p>
           )}
         </div>
       </main>
       <aside className="mb-stage-drawer" data-open={drawer ? "true" : "false"}>
-        <p>Director drawer. Hidden during recording unless toggled with D.</p>
-        <span>Phone {phone}</span>
-        <span>Console {liveConsole}</span>
+        <p>Director. Press D to hide.</p>
+        {note ? <p role="status">{note}</p> : null}
+        {shot ? <p>{SHOT_INSTRUCTIONS[shot] ?? label}</p> : null}
+        <span>
+          Phone session {persona}. Console {ROLE_LABEL[officerRole]}.
+        </span>
+        <span>{phone}</span>
+        <span>{liveConsole}</span>
         <Link className="mb-secondary" href="/director">
           Open director
         </Link>
         <Link className="mb-secondary" href="/stage?phone=/app/me&console=/welfare/cases/MB-4091&shot=workspace">
-          Arjun reveal plus ledger
+          Case reveal
         </Link>
         <Link className="mb-secondary" href="/stage?phone=/app/saathi&console=/welfare&shot=voice">
           Companion plus queue
@@ -425,13 +408,13 @@ export function StageView({
           Safety plus acute
         </Link>
         <Link className="mb-secondary" href="/stage?phone=/app&console=/command&shot=formation">
-          Formation plus hidden tile
+          Formation
         </Link>
         <Link className="mb-secondary" href="/stage?phone=/app&console=/governance&shot=governance">
-          Governance chain
+          Governance
         </Link>
         <Link className="mb-secondary" href="/stage?phone=/app/check-in&console=/architecture&shot=offline">
-          Offline plus architecture
+          Offline
         </Link>
       </aside>
     </div>

@@ -90,9 +90,18 @@ export function PhoneFrame({
 }) {
   return (
     <div className="mb-phone">
-      <div className="mb-phone-ear" aria-hidden="true" />
-      <div className="mb-phone-screen" title={title}>
-        {children}
+      <i className="mb-phone-btn mb-phone-btn-silent" aria-hidden="true" />
+      <i className="mb-phone-btn mb-phone-btn-vol-up" aria-hidden="true" />
+      <i className="mb-phone-btn mb-phone-btn-vol-down" aria-hidden="true" />
+      <i className="mb-phone-btn mb-phone-btn-power" aria-hidden="true" />
+      <div className="mb-phone-bezel">
+        <div className="mb-phone-island" aria-hidden="true">
+          <span className="mb-phone-cam" />
+        </div>
+        <div className="mb-phone-screen" title={title}>
+          {children}
+        </div>
+        <div className="mb-phone-home" aria-hidden="true" />
       </div>
     </div>
   );

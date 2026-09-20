@@ -234,10 +234,13 @@ export function CommandShell({
   units = ["Bn C-02", "Charlie Coy", "Alpha Coy"],
   mode = "demo",
   clock = "2026-09-16 10:00 IST",
-  theme = "dark",
+  theme = "light",
   deskLabel,
   onNavigate,
   homeHref = "/command",
+  language = "en",
+  onLanguageChange,
+  chromeCopy,
 }: {
   children: ReactNode;
   pathname: string;
@@ -250,7 +253,33 @@ export function CommandShell({
   deskLabel?: string | undefined;
   onNavigate?: ((href: string) => void) | undefined;
   homeHref?: string | undefined;
+  language?: "en" | "hi" | undefined;
+  onLanguageChange?: ((lang: "en" | "hi") => void) | undefined;
+  chromeCopy?:
+    | {
+        expand: string;
+        collapse: string;
+        search: string;
+        themeLight: string;
+        themeDark: string;
+        langEn: string;
+        langHi: string;
+        langGroup: string;
+        deskSuffix: string;
+      }
+    | undefined;
 }) {
+  const labels = chromeCopy ?? {
+    expand: "Expand menu",
+    collapse: "Collapse menu",
+    search: "Search",
+    themeLight: "Survey paper",
+    themeDark: "Night panel",
+    langEn: "English",
+    langHi: "Hindi",
+    langGroup: "Console language",
+    deskSuffix: "desk",
+  };
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [unit, setUnit] = useState(units[0] ?? "Bn C-02");
@@ -273,6 +302,10 @@ export function CommandShell({
 
   useEffect(() => {
     setSoundOn(soundEnabled());
+    const stored = window.sessionStorage.getItem("manobal.console.theme");
+    if (stored === "dark" || stored === "light") {
+      setSkinTheme(stored);
+    }
   }, []);
 
   const onKey = useCallback((event: KeyboardEvent) => {
@@ -301,8 +334,10 @@ export function CommandShell({
     <div
       className="mb-theme mb-command"
       data-collapsed={collapsed ? "true" : "false"}
+      data-mode={mode}
       data-skin="command"
       data-theme={skinTheme}
+      lang={language}
     >
       <a className="mb-skip" href="#main">
         Skip to content
@@ -323,7 +358,7 @@ export function CommandShell({
         >
           <PanelLeft size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
           <span className="mb-rail-label">
-            {collapsed ? "Expand menu" : "Collapse menu"}
+            {collapsed ? labels.expand : labels.collapse}
           </span>
         </button>
         <div className="mb-rail-scroll">
@@ -351,9 +386,48 @@ export function CommandShell({
           );
         })}
         </div>
+        <div className="mb-rail-foot">
+          <div className="mb-lang-toggle" role="group" aria-label={labels.langGroup}>
+            <button
+              aria-label={labels.langEn}
+              aria-pressed={language === "en"}
+              className="mb-ghost"
+              onClick={() => onLanguageChange?.("en")}
+              type="button"
+            >
+              EN
+            </button>
+            <button
+              aria-label={labels.langHi}
+              aria-pressed={language === "hi"}
+              className="mb-ghost"
+              onClick={() => onLanguageChange?.("hi")}
+              type="button"
+            >
+              हि
+            </button>
+          </div>
+          <label className="mb-rail-theme">
+            <span className="mb-sr">Theme</span>
+            <select
+              aria-label="Theme"
+              onChange={(event) => {
+                const next = event.target.value === "light" ? "light" : "dark";
+                setSkinTheme(next);
+                if (typeof window !== "undefined") {
+                  window.sessionStorage.setItem("manobal.console.theme", next);
+                }
+              }}
+              value={skinTheme}
+            >
+              <option value="light">{labels.themeLight}</option>
+              <option value="dark">{labels.themeDark}</option>
+            </select>
+          </label>
+        </div>
       </nav>
       <div className="mb-command-main">
-        <header className="mb-topbar" aria-label="Console">
+        <header className="mb-topbar" aria-label={deskLabel ? `${deskLabel} ${labels.deskSuffix}` : "Console"}>
           <div className="mb-topbar-start">
             <ScreenNav
               compact
@@ -380,9 +454,7 @@ export function CommandShell({
             <h1 className="mb-type-title">{title}</h1>
           </div>
           <div className="mb-topbar-end">
-            {deskLabel ? <span className="mb-chip">{deskLabel} desk</span> : null}
             <SimClock value={clock} />
-            <ModeChip mode={mode} />
             <button
               aria-label={soundOn ? "Mute console chimes" : "Enable console chimes"}
               className="mb-ghost"
@@ -399,30 +471,16 @@ export function CommandShell({
                 <VolumeX size={16} strokeWidth={ICON_STROKE} />
               )}
             </button>
-            <label>
-              <span className="mb-sr">Theme</span>
-              <select
-                aria-label="Theme"
-                onChange={(event) =>
-                  setSkinTheme(event.target.value === "light" ? "light" : "dark")
-                }
-                value={skinTheme}
-              >
-                <option value="dark">Night panel</option>
-                <option value="light">Survey paper</option>
-              </select>
-            </label>
             <button
               aria-expanded={paletteOpen}
               aria-controls={paletteId}
-              className="mb-secondary"
+              aria-label={labels.search}
+              className="mb-ghost mb-search-btn"
               onClick={() => setPaletteOpen(true)}
               type="button"
             >
               <Search size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
-              Search
             </button>
-            <SyntheticMarker />
           </div>
         </header>
         <main className="mb-command-body" id="main" aria-label="Console content">
