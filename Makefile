@@ -1,7 +1,7 @@
 SHELL := /bin/sh
 COMPOSE := docker compose --env-file infra/.env -f infra/docker-compose.yml
 
-.PHONY: up down logs migrate seed reset contracts copy-lint test eval eval-live e2e deploy verify dev lint twa infra-ready providers-check providers-missing foundry-token translate-catalog audio-generate voice-latency azure-preflight azure-provision azure-secrets azure-build azure-finalize azure-verify azure-suspend
+.PHONY: up down logs migrate seed reset contracts copy-lint test eval eval-live e2e deploy verify dev lint twa infra-ready providers-check providers-missing foundry-token translate-catalog audio-generate voice-latency azure-preflight azure-provision azure-secrets azure-build azure-finalize azure-verify azure-suspend azure-pin-token-key
 
 up:
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
@@ -112,6 +112,9 @@ azure-verify:
 
 azure-suspend:
 	./scripts/azure-suspend.sh
+
+azure-pin-token-key:
+	./scripts/azure-pin-token-key.sh
 
 deploy: azure-finalize
 
