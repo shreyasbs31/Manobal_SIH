@@ -5465,11 +5465,17 @@ button.mb-layer {
   align-content: start;
 }
 
-/* Cards in a row stretched to match their tallest sibling, leaving large voids
-   under short ones (the counsellor desk "Today" card in particular). */
-.mb-slot-grid,
-.mb-theatre-grid {
+/* Sibling cards in a row should stay equal height - that reads as deliberate.
+   The void was one level up: the desk grid stretched the shorter column to
+   match the taller one, so pack those rows to the top instead. */
+.mb-counsel,
+.mb-hq-split,
+.mb-split {
   align-items: start;
+}
+
+.mb-theatre-grid {
+  align-items: stretch;
 }
 
 .mb-theatre {
@@ -5480,4 +5486,39 @@ button.mb-layer {
 .mb-tile {
   min-height: 28px;
   border-radius: 6px;
+}
+
+/* Roster company cards: four metric rows each carried ~46px of slack, so the
+   fourth company fell past the fold. */
+.mb-roster .mb-card {
+  padding: 12px 14px;
+}
+
+.mb-roster .mb-card label {
+  margin: 2px 0;
+  gap: 6px 12px;
+}
+
+.mb-roster .mb-sheet-head {
+  margin-block-end: 2px;
+}
+
+.mb-roster-list {
+  gap: 8px;
+}
+
+/* The lead-time chart is a fixed-height SVG that centres itself, so a tall box
+   just added empty space around a small plot. */
+.mb-lead-chart {
+  height: 190px;
+}
+
+.mb-lab-lead-layout {
+  align-items: start;
+}
+
+/* Row headers sat higher than their cells because only the cells were
+   vertically centred. */
+.mb-compare tbody th {
+  vertical-align: middle;
 }
