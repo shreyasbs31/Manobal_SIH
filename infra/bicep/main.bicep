@@ -775,6 +775,8 @@ var coreAsyncUrl = 'postgresql+asyncpg://${engineIdentity.name}@${coreDb.propert
 var vaultAsyncUrl = 'postgresql+asyncpg://${vaultIdentity.name}@${vaultDb.properties.fullyQualifiedDomainName}/manobal_vault?sslmode=require'
 var coreMigrationPostgresUrl = 'postgresql+psycopg://${coreMigrationIdentity.name}@${coreDb.properties.fullyQualifiedDomainName}/postgres?sslmode=require'
 var coreMigrationAppUrl = 'postgresql+psycopg://${coreMigrationIdentity.name}@${coreDb.properties.fullyQualifiedDomainName}/manobal_core?sslmode=require'
+// The seed connects with psycopg directly, which rejects the SQLAlchemy '+psycopg' scheme.
+var coreSeedUrl = 'postgresql://${coreMigrationIdentity.name}@${coreDb.properties.fullyQualifiedDomainName}/manobal_core?sslmode=require'
 var vaultMigrationPostgresUrl = 'postgresql+psycopg://${vaultMigrationIdentity.name}@${vaultDb.properties.fullyQualifiedDomainName}/postgres?sslmode=require'
 var vaultMigrationAppUrl = 'postgresql+psycopg://${vaultMigrationIdentity.name}@${vaultDb.properties.fullyQualifiedDomainName}/manobal_vault?sslmode=require'
 
@@ -1959,7 +1961,7 @@ resource seedJob 'Microsoft.App/jobs@2025-07-01' = if (!bootstrapMode) {
             }
             {
               name: 'CORE_ADMIN_DATABASE_URL'
-              value: coreMigrationAppUrl
+              value: coreSeedUrl
             }
             {
               name: 'VAULT_API_URL'
