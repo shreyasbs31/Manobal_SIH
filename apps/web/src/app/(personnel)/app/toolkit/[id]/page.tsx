@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect } from "react";
 
 import { ScreenExit } from "@/components/screen-exit";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { ToolkitPractice } from "../toolkit-practice";
 
 const COPY: Record<string, { title: string; audio?: string; body: string }> = {
@@ -33,6 +34,7 @@ const COPY: Record<string, { title: string; audio?: string; body: string }> = {
 };
 
 export default function ToolkitItemPage() {
+  const { p } = usePersonnelI18n();
   const params = useParams<{ id: string }>();
   const id = typeof params.id === "string" ? params.id : "grounding";
   const item = COPY[id] ?? { title: "Toolkit", body: "A short rest practice." };
@@ -46,11 +48,15 @@ export default function ToolkitItemPage() {
   if (id === "four_seven_eight") {
     return (
       <main className="mb-breathe">
-        <h1 className="mb-sr-only">4-7-8 breathing</h1>
+        <h1 className="mb-sr-only">{p("4-7-8 breathing")}</h1>
         <div className="mb-breathe-nav">
           <ScreenExit backHref="/app/toolkit" />
         </div>
-        <BreathGuide pattern={FOUR_SEVEN_EIGHT_PATTERN} title="4-7-8 breathing" />
+        <BreathGuide
+          pattern={FOUR_SEVEN_EIGHT_PATTERN}
+          title={p("4-7-8 breathing")}
+          translateLabel={p}
+        />
       </main>
     );
   }

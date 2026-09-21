@@ -5,9 +5,11 @@ import { SceneLeaveWindow } from "@manobal/illustrations";
 import { useEffect, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 export default function RestPage() {
+  const { p } = usePersonnelI18n();
   const { data, error, loading, offline } = useEngine("rest", (client, signal) =>
     client.meRest(signal),
   );
@@ -33,19 +35,27 @@ export default function RestPage() {
           <article className="mb-context-card">
             <SceneLeaveWindow />
             <div>
-              <h2>Leave planner</h2>
+              <h2>{p("Leave planner")}</h2>
               <p>
-                Earned leave {data.el_days} days. Casual leave {data.cl_days} days.
+                {p("Earned leave {el} days. Casual leave {cl} days.", {
+                  el: data.el_days,
+                  cl: data.cl_days,
+                })}
               </p>
-              <p>{data.copy}</p>
+              <p>{p(data.copy)}</p>
             </div>
           </article>
           {data.window ? (
             <>
               <p>
-                Suggested dates {start} to {end}. You send this yourself.
+                {p("Suggested dates {start} to {end}. You send this yourself.", { start, end })}
               </p>
               <LeaveWindowPicker
+                copy={{
+                  start: p("Suggested window start"),
+                  end: p("Suggested window end"),
+                  note: p("Unit blackout windows are shown at unit level only. MANOBAL does not submit leave."),
+                }}
                 end={end}
                 onChange={(next) => {
                   setStart(next.start);
@@ -54,7 +64,7 @@ export default function RestPage() {
                 start={start}
               />
               <label className="mb-field">
-                Travel days
+                {p("Travel days")}
                 <input
                   min={0}
                   onChange={(event) => setTravel(Number(event.target.value))}
@@ -65,27 +75,38 @@ export default function RestPage() {
               <button
                 className="mb-primary"
                 onClick={() => {
-                  const text = `Leave request ${start} to ${end}, travel ${travel} days.`;
+                  const text = p("Leave request {start} to {end}, travel {travel} days.", {
+                    start,
+                    end,
+                    travel,
+                  });
                   setDraft(text);
                   void navigator.clipboard?.writeText(text).then(() => setCopied(true));
                 }}
                 type="button"
               >
-                Draft leave request
+                {p("Draft leave request")}
               </button>
-              {copied ? <p>Copied. Paste it into your unit leave form yourself.</p> : null}
+              {copied ? <p>{p("Copied. Paste it into your unit leave form yourself.")}</p> : null}
               {draft ? <pre>{draft}</pre> : null}
             </>
           ) : (
-            <p>No feasible window in the current roster. Ask a welfare officer about rest days.</p>
+            <p>{p("No feasible window in the current roster. Ask a welfare officer about rest days.")}</p>
           )}
-          <h2 className="mb-section-label">Shift and sleep</h2>
-          <p>A suggestion for the next seven days.</p>
-          <ShiftTimeline days={data.days.map((day) => ({ label: day.label, start: day.start, end: day.end }))} />
+          <h2 className="mb-section-label">{p("Shift and sleep")}</h2>
+          <p>{p("A suggestion for the next seven days.")}</p>
+          <ShiftTimeline
+            days={data.days.map((day) => ({ label: p(day.label), start: day.start, end: day.end }))}
+            label={p("Shift timeline")}
+          />
           <ul>
             {data.days.map((day) => (
               <li key={day.label}>
-                {day.label}: sleep {day.sleep}. Caffeine {day.caffeine}.
+                {p("{day}: sleep {sleep}. Caffeine {caffeine}.", {
+                  day: p(day.label),
+                  sleep: p(day.sleep),
+                  caffeine: p(day.caffeine),
+                })}
               </li>
             ))}
           </ul>

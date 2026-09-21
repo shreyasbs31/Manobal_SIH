@@ -1,0 +1,16 @@
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	respond /healthz 200
+
+	@engine path /api/v1/*
+	reverse_proxy @engine http://{$ENGINE_APP_NAME}
+
+	@realtime path /realtime/*
+	reverse_proxy @realtime http://{$REALTIME_APP_NAME}
+
+	reverse_proxy http://{$WEB_APP_NAME}
+}

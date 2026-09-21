@@ -2,12 +2,16 @@
 
 import type { ReactNode } from "react";
 
+import { useOptionalPersonnelI18n } from "@/lib/personnel-i18n";
+
 export function ScreenState({
   loading,
   error,
   offline,
   empty,
-  emptyText = "Nothing here yet.",
+  emptyText,
+  loadingText,
+  offlineText,
   children,
 }: {
   loading: boolean;
@@ -15,10 +19,19 @@ export function ScreenState({
   offline: boolean;
   empty?: boolean;
   emptyText?: string;
+  loadingText?: string;
+  offlineText?: string;
   children: ReactNode;
 }) {
+  const personnel = useOptionalPersonnelI18n();
+  const resolvedEmpty = emptyText ?? personnel?.p("Nothing here yet.") ?? "Nothing here yet.";
+  const resolvedLoading = loadingText ?? personnel?.p("Loading.") ?? "Loading.";
+  const resolvedOffline =
+    offlineText ??
+    personnel?.p("Offline. This view stays on the phone after you open it once.") ??
+    "Offline. This view stays on the phone after you open it once.";
   if (loading && empty) {
-    return <p role="status">Loading.</p>;
+    return <p role="status">{resolvedLoading}</p>;
   }
   if (error && empty) {
     return <p role="alert">{error}</p>;
@@ -26,9 +39,7 @@ export function ScreenState({
   if (empty) {
     return (
       <p role="status">
-        {offline
-          ? "Offline. This view stays on the phone after you open it once."
-          : emptyText}
+        {offline ? resolvedOffline : resolvedEmpty}
       </p>
     );
   }

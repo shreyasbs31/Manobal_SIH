@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.azure/
 *.tsbuildinfo
 .venv/
 __pycache__/
@@ -23,3 +24,8 @@ services/synth/snapshots/*.dump
 services/synth/artifacts/
 apps/web/public/audio/*.wav
 e2e/test-results/
+e2e/artifacts/spine/
+e2e/out/
+out/
+demo/
+e2e.zip

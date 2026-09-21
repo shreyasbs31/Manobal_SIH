@@ -26,10 +26,24 @@ from .auth import (
     mint_access_token,
     principal_for_demo,
 )
-from .config import get_settings, live_providers_enabled
 from .calls import acs_configured
-from .providers.endpoints import foundry_is_live
+from .config import get_settings, live_providers_enabled
 from .database import apply_rls_context, close_database, core_ping, get_session
+from .demo_access import (
+    DemoAccessRequest,
+    DemoAccessResponse,
+    DemoAccessStatus,
+    DemoGateLevel,
+    access_level_for_code,
+    clear_gate_cookie,
+    demo_access_limiter,
+    gate_level_from_request,
+    mint_demo_gate,
+    request_client_key,
+    require_demo_role,
+    set_gate_cookie,
+    validate_demo_gate_settings,
+)
 from .errors import ApiError, install_error_handlers
 from .grants import GrantRequest, GrantToken, mint_grant
 from .live import router as live_router
@@ -44,6 +58,7 @@ from .passkeys import (
     verify_registration,
 )
 from .personnel import router as personnel_router
+from .providers.endpoints import foundry_is_live
 from .security import RowPredicate, require
 from .selftest import SelfTestReport, run_selftest
 from .sim_clock import ClockState, ClockUpdate, get_clock, update_clock
@@ -56,7 +71,11 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    if os.environ.get("MANOBAL_REQUIRE_LIVE_PROVIDERS") == "1" or settings.manobal_require_live_providers:
+    validate_demo_gate_settings(settings)
+    if (
+        os.environ.get("MANOBAL_REQUIRE_LIVE_PROVIDERS") == "1"
+        or settings.manobal_require_live_providers
+    ):
         missing = settings.missing_live_provider_names()
         if missing:
             raise RuntimeError("Missing live provider names: " + ", ".join(missing))
@@ -118,7 +137,7 @@ async def request_context(
         response.headers["referrer-policy"] = "no-referrer"
         response.headers["permissions-policy"] = "camera=(), geolocation=(), microphone=()"
         response.headers["content-security-policy"] = "default-src 'none'; frame-ancestors 'none'"
-        if settings.manobal_mode != "demo":
+        if settings.force_hsts or settings.manobal_mode != "demo":
             response.headers["strict-transport-security"] = "max-age=31536000; includeSubDomains"
         return response
     finally:
@@ -154,7 +173,10 @@ def engine_root() -> dict[str, str]:
         "status": "ok",
         "app": "http://localhost:3000",
         "health": "/api/v1/system/health",
-        "note": "This is the API process. Open http://localhost:3000 and sign in there. You do not paste an access token into this page.",
+        "note": (
+            "This is the API process. Open http://localhost:3000 and sign in there. "
+            "You do not paste an access token into this page."
+        ),
     }
 
 
@@ -168,8 +190,65 @@ class WelfareGrantBody(BaseModel):
     justification: str = Field(min_length=8, max_length=500)
 
 
+@app.post("/api/v1/auth/demo-access", response_model=DemoAccessResponse)
+async def demo_access(
+    body: DemoAccessRequest,
+    request: Request,
+    response: Response,
+) -> DemoAccessResponse:
+    if settings.manobal_mode != "demo" or not settings.demo_gate_required:
+        raise ApiError(
+            "demo_access_disabled",
+            "The judge access gate is not enabled",
+            hint="Continue from the sign-in page",
+            status_code=404,
+        )
+    client_key = request_client_key(request)
+    if not await demo_access_limiter.allow_attempt(client_key):
+        raise ApiError(
+            "demo_access_throttled",
+            "Too many access attempts",
+            hint="Wait before trying again",
+            status_code=429,
+        )
+    level = access_level_for_code(body.code, settings)
+    if level is None:
+        raise ApiError(
+            "demo_access_invalid",
+            "That access code was not accepted",
+            hint="Check the code shared with you",
+            status_code=401,
+        )
+    await demo_access_limiter.clear(client_key)
+    token, max_age = mint_demo_gate(level, settings)
+    set_gate_cookie(response, token=token, max_age=max_age, settings=settings)
+    return DemoAccessResponse(access=level, expires_in=max_age)
+
+
+@app.get("/api/v1/auth/demo-access/status", response_model=DemoAccessStatus)
+async def demo_access_status(request: Request) -> DemoAccessStatus:
+    if not settings.demo_gate_required:
+        return DemoAccessStatus(
+            required=False,
+            granted=True,
+            access=DemoGateLevel.OPERATOR,
+        )
+    try:
+        level = gate_level_from_request(request, settings)
+    except ApiError:
+        return DemoAccessStatus(required=True, granted=False)
+    return DemoAccessStatus(required=True, granted=True, access=level)
+
+
+@app.delete("/api/v1/auth/demo-access", status_code=204)
+async def demo_access_sign_out(response: Response) -> Response:
+    clear_gate_cookie(response, settings)
+    response.status_code = 204
+    return response
+
+
 @app.post("/api/v1/auth/demo-login", response_model=LoginResponse)
-async def demo_login(request: DemoLoginRequest) -> LoginResponse:
+async def demo_login(body: DemoLoginRequest, request: Request) -> LoginResponse:
     if settings.manobal_mode != "demo":
         raise ApiError(
             "demo_login_disabled",
@@ -177,15 +256,26 @@ async def demo_login(request: DemoLoginRequest) -> LoginResponse:
             hint="Use the configured identity provider",
             status_code=404,
         )
-    return mint_access_token(principal_for_demo(request))
+    require_demo_role(request, body.role, settings)
+    return mint_access_token(principal_for_demo(body))
 
 
 @app.get("/api/v1/auth/demo-catalog", response_model=DemoCatalog)
-async def demo_catalog() -> DemoCatalog:
+async def demo_catalog(request: Request) -> DemoCatalog:
+    level = gate_level_from_request(request, settings)
+    roles = [
+        role
+        for role in Role
+        if level is DemoGateLevel.OPERATOR or role not in {Role.ADMIN, Role.DIRECTOR}
+    ]
     return DemoCatalog(
-        roles=[role.value for role in Role],
+        roles=[role.value for role in roles],
         personas=[persona.model_dump() for persona in PERSONAS.values()],
-        officer_personas=[persona.model_dump(mode="json") for persona in OFFICER_PERSONAS.values()],
+        officer_personas=[
+            persona.model_dump(mode="json")
+            for role, persona in OFFICER_PERSONAS.items()
+            if role in roles
+        ],
     )
 
 
@@ -194,9 +284,11 @@ async def demo_catalog() -> DemoCatalog:
     response_model=PasskeyOptionsResponse,
 )
 async def passkey_register_options(
-    request: PasskeyOptionsRequest,
+    body: PasskeyOptionsRequest,
+    request: Request,
 ) -> PasskeyOptionsResponse:
-    return await registration_options(request)
+    gate_level_from_request(request, settings)
+    return await registration_options(body)
 
 
 @app.post(
@@ -204,9 +296,11 @@ async def passkey_register_options(
     response_model=LoginResponse,
 )
 async def passkey_register_verify(
-    request: PasskeyVerifyRequest,
+    body: PasskeyVerifyRequest,
+    request: Request,
 ) -> LoginResponse:
-    return await verify_registration(request)
+    gate_level_from_request(request, settings)
+    return await verify_registration(body)
 
 
 @app.post(
@@ -214,9 +308,11 @@ async def passkey_register_verify(
     response_model=PasskeyOptionsResponse,
 )
 async def passkey_login_options(
-    request: PasskeyOptionsRequest,
+    body: PasskeyOptionsRequest,
+    request: Request,
 ) -> PasskeyOptionsResponse:
-    return await authentication_options(request)
+    gate_level_from_request(request, settings)
+    return await authentication_options(body)
 
 
 @app.post(
@@ -224,13 +320,16 @@ async def passkey_login_options(
     response_model=LoginResponse,
 )
 async def passkey_login_verify(
-    request: PasskeyVerifyRequest,
+    body: PasskeyVerifyRequest,
+    request: Request,
 ) -> LoginResponse:
-    return await verify_authentication(request)
+    gate_level_from_request(request, settings)
+    return await verify_authentication(body)
 
 
 @app.get("/api/v1/auth/entra/callback", response_model=EntraCallbackResponse)
 async def entra_callback(
+    request: Request,
     code: Annotated[str, Query(min_length=4)],
     app_role: str,
 ) -> EntraCallbackResponse:
@@ -251,6 +350,7 @@ async def entra_callback(
             status_code=403,
         )
     role = Role(mapped_role)
+    require_demo_role(request, role, settings)
     login = mint_access_token(
         principal_for_demo(
             DemoLoginRequest(

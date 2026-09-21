@@ -14,13 +14,15 @@ export default async function LoginPage({
   searchParams: Promise<{ role?: string }>;
 }) {
   const params = await searchParams;
+  const gateValue = process.env.DEMO_GATE_REQUIRED?.trim().toLowerCase();
+  const gateRequired = gateValue === "1" || gateValue === "true";
   return (
     <div className="mb-theme" data-skin="saathi" data-theme="light">
       <PublicHeader mode={manobalMode()} />
       <main className="mb-login">
         <h1>Sign in</h1>
         <p>Choose who you are. This demonstration uses saved accounts.</p>
-        <DemoLogin initialRole={params.role} />
+        <DemoLogin gateRequired={gateRequired} initialRole={params.role} />
       </main>
     </div>
   );

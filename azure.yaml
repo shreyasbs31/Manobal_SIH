@@ -1,32 +1,56 @@
 name: manobal
 metadata:
-  template: manobal@0.1.0
+  template: manobal@0.2.0
 infra:
   provider: bicep
   path: infra/bicep
-  module: main.bicep
+  module: main
 services:
+  gateway:
+    project: ./infra/gateway
+    language: docker
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: ../..
+      remoteBuild: true
   engine:
     project: ./services/engine
     language: python
     host: containerapp
     docker:
       path: ./Dockerfile
+      context: ../..
+      remoteBuild: true
+  acute:
+    project: ./services/engine
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: ../..
+      remoteBuild: true
   vault:
     project: ./services/vault
     language: python
     host: containerapp
     docker:
       path: ./Dockerfile
+      context: ../..
+      remoteBuild: true
   web:
     project: ./apps/web
     language: js
     host: containerapp
     docker:
       path: ./Dockerfile
+      context: ../..
+      remoteBuild: true
   realtime:
     project: ./infra/realtime
     language: js
     host: containerapp
     docker:
       path: ./Dockerfile
+      context: ../..
+      remoteBuild: true

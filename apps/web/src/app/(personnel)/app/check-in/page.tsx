@@ -1,6 +1,5 @@
 "use client";
 
-import { t } from "@manobal/i18n";
 import { BaselineRibbonChart, FaceScale } from "@manobal/ui";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -9,6 +8,7 @@ import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
 import { useFlowMeta } from "@/lib/flow-meta";
 import { enqueue } from "@/lib/offline";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 import { announceWorld } from "@/lib/world";
 
@@ -24,6 +24,7 @@ const TAGS = [
 ] as const;
 
 export default function CheckInPage() {
+  const { lang, p } = usePersonnelI18n();
   const { data, error, loading, offline } = useEngine("check-in", async (client, signal) => {
     const [home, checkin] = await Promise.all([client.meHome(signal), client.meCheckIn(signal)]);
     return { home, checkin };
@@ -43,7 +44,7 @@ export default function CheckInPage() {
   const done = Boolean(savedLine);
   const questionCount = Math.max(visible.length, 1);
   useFlowMeta(
-    done || !question ? undefined : `${step + 1} of ${questionCount}`,
+    done || !question ? undefined : p("{step} of {total}", { step: step + 1, total: questionCount }),
   );
 
   useEffect(() => {
@@ -75,8 +76,7 @@ export default function CheckInPage() {
       tags,
       channel: "tap",
     };
-    const lang = data?.home.language ?? "en";
-    const line = t("checkin.saved", lang === "hi" || lang === "ta" ? lang : "en");
+    const line = p("Saved. Thank you for checking in.");
     const airplane =
       typeof window !== "undefined" && window.localStorage.getItem("manobal.airplane") === "1";
     const networkDown =
@@ -87,9 +87,9 @@ export default function CheckInPage() {
       return;
     }
     try {
-      const result = await engineClient().saveCheckIn(body);
+      await engineClient().saveCheckIn(body);
       announceWorld("checkin");
-      setSavedLine(result.message ?? line);
+      setSavedLine(line);
     } catch {
       await enqueue("checkin", body);
       setSavedLine(line);
@@ -101,20 +101,34 @@ export default function CheckInPage() {
       {done ? (
         <div className="mb-checkin">
           <BaselineRibbonChart
-            label="Your rhythm"
-            takeaway={savedLine ?? t("checkin.saved", "en")}
+            copy={{
+              usualRange: p("Your usual range"),
+              dataTable: p("Data table"),
+              day: p("Day"),
+              value: p("Value"),
+              outsideRange: p("is outside the usual range"),
+            }}
+            label={p("Your rhythm")}
+            takeaway={savedLine ?? p("Saved. Thank you for checking in.")}
             values={joined}
             variant="hero"
           />
           <Link className="mb-primary" href="/app">
-            Done
+            {p("Done")}
           </Link>
         </div>
       ) : question ? (
         <div className="mb-checkin">
-          <h1>{question.prompt}</h1>
+          <h1>{p(question.prompt)}</h1>
           <FaceScale
-            label={question.id === "mood" ? "Mood" : question.id === "energy" ? "Energy" : "Sleep"}
+            label={p(question.id === "mood" ? "Mood" : question.id === "energy" ? "Energy" : "Sleep")}
+            levelLabels={[
+              p("Very low"),
+              p("Low"),
+              p("Okay"),
+              p("Good"),
+              p("Very good"),
+            ]}
             onChange={(value) => {
               const next = [...answers];
               next[step] = value;
@@ -125,25 +139,25 @@ export default function CheckInPage() {
           />
           {busy ? (
             <button className="mb-ghost" onClick={() => setMore(true)} type="button">
-              More
+              {p("More")}
             </button>
           ) : null}
           <div className="mb-progress-line" aria-hidden="true">
             <span style={{ width: `${((step + 1) / Math.max(visible.length, 1)) * 100}%` }} />
           </div>
           <Link className="mb-secondary" href="/app/saathi">
-            Say it instead
+            {p("Say it instead")}
           </Link>
           {offline ? (
             <div>
-              <p>Listen, then tap an answer.</p>
-              <audio controls preload="auto" src="/audio/grounding.en.wav" />
+              <p>{p("Listen, then tap an answer.")}</p>
+              <audio controls preload="auto" src={`/audio/grounding.${lang === "hi" ? "hi" : "en"}.wav`} />
             </div>
           ) : null}
         </div>
       ) : tagStep ? (
         <div className="mb-checkin">
-          <h1>Anything on your mind?</h1>
+          <h1>{p("Anything on your mind?")}</h1>
           <div className="mb-tag-row">
             {TAGS.map((tag) => (
               <button
@@ -157,19 +171,19 @@ export default function CheckInPage() {
                 }}
                 type="button"
               >
-                {tag}
+                {p(tag)}
               </button>
             ))}
           </div>
           <button className="mb-primary" onClick={() => setStep((current) => current + 1)} type="button">
-            Continue
+            {p("Continue")}
           </button>
         </div>
       ) : hoursStep ? (
         <div className="mb-checkin">
-          <h1>About how many hours did you sleep?</h1>
+          <h1>{p("About how many hours did you sleep?")}</h1>
           <label>
-            Sleep hours
+            {p("Sleep hours")}
             <input
               max={12}
               min={0}
@@ -180,14 +194,14 @@ export default function CheckInPage() {
             />
           </label>
           <button className="mb-primary" onClick={() => void finish()} type="button">
-            Save
+            {p("Save")}
           </button>
         </div>
       ) : (busy || offline) && !question ? (
         <div className="mb-checkin">
-          <h1>Save this check-in</h1>
+          <h1>{p("Save this check-in")}</h1>
           <button className="mb-primary" onClick={() => void finish()} type="button">
-            Save
+            {p("Save")}
           </button>
         </div>
       ) : null}

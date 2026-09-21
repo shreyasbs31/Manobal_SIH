@@ -1,7 +1,7 @@
 SHELL := /bin/sh
 COMPOSE := docker compose --env-file infra/.env -f infra/docker-compose.yml
 
-.PHONY: up down logs migrate seed reset contracts copy-lint test eval eval-live e2e deploy verify dev lint twa infra-ready providers-check providers-missing foundry-token translate-catalog audio-generate voice-latency
+.PHONY: up down logs migrate seed reset contracts copy-lint test eval eval-live e2e deploy verify dev lint twa infra-ready providers-check providers-missing foundry-token translate-catalog audio-generate voice-latency azure-preflight azure-provision azure-secrets azure-build azure-finalize azure-verify azure-suspend
 
 up:
 	$(COMPOSE) up --build --detach --wait --wait-timeout 600
@@ -90,8 +90,30 @@ voice-latency:
 e2e:
 	corepack pnpm --filter @manobal/e2e test
 
-deploy:
-	azd up
+azure-preflight:
+	./scripts/azure-preflight.sh demo
+
+azure-provision:
+	azd provision --no-prompt
+
+azure-secrets:
+	PYTHONPATH=services/engine uv run --package manobal-engine python scripts/azure-secrets.py \
+		--app-vault "$$(azd env get-value APP_KEY_VAULT_NAME)" \
+		--identity-vault "$$(azd env get-value IDENTITY_KEY_VAULT_NAME)"
+
+azure-build:
+	./scripts/azure-build-images.sh
+
+azure-finalize:
+	./scripts/azure-finalize.sh
+
+azure-verify:
+	./scripts/azure-verify.sh
+
+azure-suspend:
+	./scripts/azure-suspend.sh
+
+deploy: azure-finalize
 
 verify: copy-lint
 	python3 scripts/verify-foundation.py

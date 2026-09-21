@@ -1,11 +1,14 @@
 name: azure
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+concurrency:
+  group: manobal-demo-deploy
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: manobal-demo
     permissions:
       id-token: write
       contents: read
@@ -15,25 +18,59 @@ jobs:
       - name: Azure login
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Deploy
-        env:
-          AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME }}
-          AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: azd up --no-prompt
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Azure Developer CLI login
+        run: |
+          azd auth login \
+            --client-id "${{ vars.AZURE_CLIENT_ID }}" \
+            --federated-credential-provider github \
+            --tenant-id "${{ vars.AZURE_TENANT_ID }}"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Playwright against Azure
-        env:
-          WEB_URL: ${{ secrets.AZURE_WEB_URL }}
-          ENGINE_URL: ${{ secrets.AZURE_ENGINE_URL }}
-          AZURE_WEB_URL: ${{ secrets.AZURE_WEB_URL }}
+      - name: Install and test
         run: |
           corepack enable
-          corepack pnpm install
-          corepack pnpm --filter @manobal/e2e exec playwright install chromium
-          corepack pnpm --filter @manobal/e2e test tests/demo-spine.spec.ts
+          uv sync
+          corepack pnpm install --frozen-lockfile
+          make test
+      - name: Configure deployment environment
+        env:
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+        run: |
+          az extension add --name containerapp --upgrade
+          azd env new "$AZURE_ENV_NAME"
+          principal_id=$(az ad sp show --id "${{ vars.AZURE_CLIENT_ID }}" --query id --output tsv)
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
+          azd env set AZURE_LOCATION "$AZURE_LOCATION"
+          azd env set AZURE_PRINCIPAL_ID "$principal_id"
+          azd env set AZURE_PRINCIPAL_TYPE ServicePrincipal
+          azd env set ALERT_EMAIL "$ALERT_EMAIL"
+          azd env set MONTHLY_BUDGET_AMOUNT 100000
+          azd env set AI_RESOURCE_GROUP rg-manobal-ai
+          azd env set BOOTSTRAP_MODE true
+          azd env set IMAGE_TAG bootstrap
+          azd env set PUBLIC_ENDPOINT_ENABLED false
+          azd env set WAF_MODE Prevention
+      - name: Provision, build, migrate, and seed
+        run: |
+          azd provision --no-prompt
+          ./scripts/azure-build-images.sh
+          ./scripts/azure-finalize.sh
+      - name: Smoke test Azure
+        env:
+          WEB_URL: ${{ vars.AZURE_WEB_URL }}
+        run: |
+          deployed_url=$(azd env get-value WEB_URL)
+          test "$deployed_url" = "$WEB_URL"
+          curl --fail --retry 12 --retry-delay 10 \
+            "${deployed_url}/api/v1/system/health"

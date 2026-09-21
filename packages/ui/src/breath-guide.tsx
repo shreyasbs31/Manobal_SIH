@@ -16,9 +16,11 @@ import { breathPulse } from "./sound";
 export function BreathGuide({
   pattern = BOX_BREATH_PATTERN,
   title,
+  translateLabel,
 }: {
   pattern?: BreathPattern;
   title: string;
+  translateLabel?: ((label: string) => string) | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const ringRef = useRef<HTMLDivElement>(null);
@@ -83,7 +85,7 @@ export function BreathGuide({
       />
       <p className="mb-breathe-count">{reduced ? "" : phase.count}</p>
       <p className="mb-breathe-phase" aria-live="polite">
-        {reduced ? title : phase.label}
+        {reduced ? title : (translateLabel?.(phase.label) ?? phase.label)}
       </p>
     </div>
   );

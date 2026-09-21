@@ -27,6 +27,14 @@ async function proxy(request: NextRequest, parts: string[]): Promise<Response> {
   if (trace) {
     headers.set("x-trace-id", trace);
   }
+  const cookie = request.headers.get("cookie");
+  if (cookie) {
+    headers.set("cookie", cookie);
+  }
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    headers.set("x-forwarded-for", forwardedFor);
+  }
   const init: RequestInit = {
     method: request.method,
     headers,
@@ -44,6 +52,10 @@ async function proxy(request: NextRequest, parts: string[]): Promise<Response> {
       if (value) {
         response.headers.set(key, value);
       }
+    }
+    const setCookie = upstream.headers.get("set-cookie");
+    if (setCookie) {
+      response.headers.set("set-cookie", setCookie);
     }
     return response;
   } catch {
@@ -66,6 +78,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+  const { path } = await context.params;
+  return proxy(request, path);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ path: string[] }> },
+) {
   const { path } = await context.params;
   return proxy(request, path);
 }

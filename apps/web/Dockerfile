@@ -27,8 +27,10 @@ COPY packages/i18n packages/i18n
 COPY packages/illustrations packages/illustrations
 ARG NEXT_PUBLIC_ENGINE_URL=http://localhost:8000
 ARG NEXT_PUBLIC_MANOBAL_MODE=demo
+ARG DEMO_GATE_REQUIRED=false
 ENV NEXT_PUBLIC_ENGINE_URL=$NEXT_PUBLIC_ENGINE_URL
 ENV NEXT_PUBLIC_MANOBAL_MODE=$NEXT_PUBLIC_MANOBAL_MODE
+ENV DEMO_GATE_REQUIRED=$DEMO_GATE_REQUIRED
 RUN corepack pnpm --filter @manobal/web build
 
 FROM node:20-alpine AS runner

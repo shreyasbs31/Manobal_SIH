@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     core_database_url: str = (
         "postgresql+asyncpg://core_app:core_app_dev_only@localhost:5432/manobal_core"
     )
+    core_database_entra_auth: bool = False
+    azure_client_id: str = ""
     redis_url: str = "redis://localhost:6379/0"
     vault_api_url: str = "http://localhost:8100"
     realtime_url: str = "ws://localhost:8080"
@@ -41,7 +43,16 @@ class Settings(BaseSettings):
 
     access_jwt_secret: SecretStr = SecretStr("access_dev_only_change_me_32bytes")
     access_token_minutes: int = Field(default=15, ge=1, le=1440)
+    demo_gate_required: bool = False
+    demo_gate_access_hash: SecretStr = SecretStr("")
+    demo_gate_operator_hash: SecretStr = SecretStr("")
+    demo_gate_jwt_secret: SecretStr = SecretStr("")
+    demo_gate_cookie_name: str = "manobal.demo_gate"
+    demo_gate_cookie_secure: bool = False
+    demo_gate_minutes: int = Field(default=480, ge=15, le=1440)
+    force_hsts: bool = False
     grant_private_key_file: Path = Path("infra/keys/grant-private.pem")
+    grant_private_key_pem: SecretStr = SecretStr("")
     grant_issuer: str = "manobal-engine"
     grant_audience: str = "manobal-vault"
 
@@ -69,6 +80,7 @@ class Settings(BaseSettings):
     blob_account_key: SecretStr = SecretStr(
         "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
     )
+    blob_use_managed_identity: bool = False
     blob_container: str = "audit-anchors"
 
     foundry_endpoint: str = ""

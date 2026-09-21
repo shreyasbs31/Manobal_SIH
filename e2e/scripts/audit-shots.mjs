@@ -84,7 +84,7 @@ for (const [slug, route, role, persona] of shots) {
   }
   if (slug === "copilot") {
     const frame = page.frameLocator("iframe[title='Command console']");
-    await frame.getByRole("button", { name: "Open copilot" }).click().catch(() => undefined);
+    await frame.getByRole("button", { name: "Ask copilot" }).click().catch(() => undefined);
     await frame.getByLabel("Question").fill("Charlie Coy mein kaun pareshan hai?").catch(() => undefined);
     await frame.getByRole("button", { name: "Ask" }).click().catch(() => undefined);
     await page.waitForTimeout(1500);

@@ -2,21 +2,29 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Coroutine
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from pathlib import Path
+from typing import Any, TypedDict
 
 from azure.core.exceptions import ResourceExistsError
+from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 
 from .config import Settings, get_settings
 from .i18n import t
 from .scoring.ruleset import REPO_ROOT
-from .voice.tts import silent_wav_bytes, synth_sentence
+from .voice.tts import silent_wav_bytes
 
 LANGUAGES = ("en", "hi", "ta", "hi-Latn")
 SCRIPTS = ("safety", "grounding", "breathing")
 MANIFEST_PATH = REPO_ROOT / "apps" / "web" / "public" / "audio" / "manifest.json"
+
+
+class AudioManifest(TypedDict):
+    files: list[str]
+    live_tts: bool
 
 SCRIPT_TEXT: dict[str, dict[str, str]] = {
     "safety": {
@@ -40,7 +48,7 @@ SCRIPT_TEXT: dict[str, dict[str, str]] = {
 }
 
 
-def manifest() -> dict[str, list[str]]:
+def manifest() -> AudioManifest:
     files = [f"{script}.{lang}.wav" for script in SCRIPTS for lang in LANGUAGES]
     return {"files": files, "live_tts": False}
 
@@ -50,19 +58,19 @@ def silent_wav(path: Path, seconds: float = 1.0) -> None:
     path.write_bytes(silent_wav_bytes(seconds=seconds, rate=16000))
 
 
-def _run(coro: object) -> object:
+def _run[ResultT](coro: Coroutine[Any, Any, ResultT]) -> ResultT:
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(coro)  # type: ignore[arg-type]
+        return asyncio.run(coro)
     with ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(asyncio.run, coro).result()
+        return pool.submit(lambda: asyncio.run(coro)).result()
 
 
 async def _synth_all(out_dir: Path, files: list[str]) -> str:
-    from .voice.tts import _provider_audio, _voice_candidates
-    from .voice.routing import tts_route
     from .config import get_settings as _settings
+    from .voice.routing import tts_route
+    from .voice.tts import _provider_audio, _voice_candidates
 
     settings = _settings()
     provider = "silent-wav"
@@ -91,7 +99,11 @@ async def _synth_all(out_dir: Path, files: list[str]) -> str:
     return provider
 
 
-def generate_audio(settings: Settings | None = None, *, out_dir: Path | None = None) -> dict[str, object]:
+def generate_audio(
+    settings: Settings | None = None,
+    *,
+    out_dir: Path | None = None,
+) -> dict[str, object]:
     active = settings or get_settings()
     target = out_dir or (REPO_ROOT / "apps" / "web" / "public" / "audio")
     files = manifest()["files"]
@@ -117,9 +129,18 @@ def sw_cache_list() -> list[str]:
 
 
 def _upload_blob(settings: Settings, directory: Path, files: list[str]) -> int:
+    identity_credential: DefaultAzureCredential | None = None
+    if settings.blob_use_managed_identity:
+        identity_credential = DefaultAzureCredential(
+            managed_identity_client_id=settings.azure_client_id or None,
+            exclude_interactive_browser_credential=True,
+        )
+        credential: str | DefaultAzureCredential = identity_credential
+    else:
+        credential = settings.blob_account_key.get_secret_value()
     service = BlobServiceClient(
         account_url=settings.blob_endpoint,
-        credential=settings.blob_account_key.get_secret_value(),
+        credential=credential,
     )
     container = service.get_container_client("audio")
     count = 0
@@ -134,4 +155,6 @@ def _upload_blob(settings: Settings, directory: Path, files: list[str]) -> int:
         return count
     finally:
         service.close()
+        if identity_credential is not None:
+            identity_credential.close()
     return count

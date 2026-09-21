@@ -8,6 +8,7 @@ from contextlib import suppress
 from datetime import UTC, date, datetime
 
 from azure.core.exceptions import ResourceExistsError
+from azure.identity.aio import DefaultAzureCredential
 from azure.storage.blob.aio import BlobServiceClient
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -117,9 +118,18 @@ async def write_daily_anchor(
         checked=verification.checked,
         created_at=now,
     )
+    identity_credential: DefaultAzureCredential | None = None
+    if active_settings.blob_use_managed_identity:
+        identity_credential = DefaultAzureCredential(
+            managed_identity_client_id=active_settings.azure_client_id or None,
+            exclude_interactive_browser_credential=True,
+        )
+        credential: str | DefaultAzureCredential = identity_credential
+    else:
+        credential = active_settings.blob_account_key.get_secret_value()
     service = BlobServiceClient(
         account_url=active_settings.blob_endpoint,
-        credential=active_settings.blob_account_key.get_secret_value(),
+        credential=credential,
     )
     try:
         container = service.get_container_client(active_settings.blob_container)
@@ -138,6 +148,8 @@ async def write_daily_anchor(
         return anchor.model_copy(update={"blob_uri": blob.url})
     finally:
         await service.close()
+        if identity_credential is not None:
+            await identity_credential.close()
 
 
 async def _main() -> int:

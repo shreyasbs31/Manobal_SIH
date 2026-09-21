@@ -18,6 +18,7 @@ import type { ReactNode } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { localNudgeRules } from "@/lib/offline";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 function illustrationFor(kind: string): ReactNode {
@@ -38,6 +39,7 @@ const TILES = [
 ] as const;
 
 export default function SaathiHomePage() {
+  const { p } = usePersonnelI18n();
   const { data, error, loading, offline } = useEngine("home", (client, signal) =>
     client.meHome(signal),
   );
@@ -55,44 +57,55 @@ export default function SaathiHomePage() {
             <div className="mb-ribbon-hero">
               <ContourTexture height={180} seed={data.persona_id} width={390} />
               <BaselineRibbonChart
-                label="Your mood and sleep against your usual range"
-                takeaway={data.takeaway}
+                copy={{
+                  usualRange: p("Your usual range"),
+                  dataTable: p("Data table"),
+                  day: p("Day"),
+                  value: p("Value"),
+                  outsideRange: p("is outside the usual range"),
+                }}
+                label={p("Your mood and sleep against your usual range")}
+                takeaway={p(data.takeaway)}
                 values={[...data.ribbon]}
                 variant="hero"
               />
             </div>
           ) : (
-            <h1 className="mb-type-title">Saathi</h1>
+            <h1 className="mb-type-title">{p("Saathi")}</h1>
           )}
           {data ? (
             <article className="mb-checkin-card">
               <div>
-                <h2>{data.checkin.title}</h2>
-                <p>{data.checkin.done ? "Done for today" : `${data.checkin.duration_s} seconds`}</p>
+                <h2>{p(data.checkin.title)}</h2>
+                <p>
+                  {data.checkin.done
+                    ? p("Done for today")
+                    : p("{n} seconds", { n: data.checkin.duration_s })}
+                </p>
               </div>
               <Link className="mb-primary" href={data.checkin.href}>
-                {data.checkin.done ? "Open" : "Start"}
+                {p(data.checkin.done ? "Open" : "Start")}
               </Link>
             </article>
           ) : (
             <article className="mb-checkin-card">
               <div>
-                <h2>Daily check-in</h2>
-                <p>Works on this phone without a network.</p>
+                <h2>{p("Daily check-in")}</h2>
+                <p>{p("Works on this phone without a network.")}</p>
               </div>
               <Link className="mb-primary" href="/app/check-in">
-                Start
+                {p("Start")}
               </Link>
             </article>
           )}
-          <p className="mb-section-label">For you now</p>
+          <p className="mb-section-label">{p("For you now")}</p>
           {cards.map((card) => (
             <article className="mb-context-card" key={card.title}>
               {illustrationFor("kind" in card && typeof card.kind === "string" ? card.kind : "nudge")}
               <div>
-                <h2>{card.title}</h2>
-                <p>{card.detail}</p>
-                <p className="mb-why">Why this? {card.why}</p>
+                <h2>{p(card.title)}</h2>
+                <p>{p(card.detail)}</p>
+                <p className="mb-why">{p("Why this? {text}", { text: p(card.why) })}</p>
               </div>
             </article>
           ))}
@@ -101,19 +114,19 @@ export default function SaathiHomePage() {
                 <article className="mb-context-card" key={card.title}>
                   <SceneSleepWindDown />
                   <div>
-                    <h2>{card.title}</h2>
-                    <p className="mb-why">Why this? {card.why}</p>
+                    <h2>{p(card.title)}</h2>
+                    <p className="mb-why">{p("Why this? {text}", { text: p(card.why) })}</p>
                   </div>
                 </article>
               ))
             : null}
-          <nav aria-label="Shortcuts" className="mb-quick-tiles">
+          <nav aria-label={p("Shortcuts")} className="mb-quick-tiles">
             {TILES.map((tile) => {
               const Icon = tile.icon;
               return (
                 <Link href={tile.href} key={tile.href}>
                   <Icon height={22} width={22} />
-                  {tile.label}
+                  {p(tile.label)}
                 </Link>
               );
             })}

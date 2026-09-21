@@ -105,11 +105,21 @@ export function BaselineRibbonChart({
   label,
   variant = "hero",
   takeaway,
+  copy,
 }: {
   values: readonly RibbonPoint[];
   label: string;
   variant?: "hero" | "detail" | "empty" | undefined;
   takeaway?: string | undefined;
+  copy?:
+    | {
+        usualRange: string;
+        dataTable: string;
+        day: string;
+        value: string;
+        outsideRange: string;
+      }
+    | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const width = variant === "hero" ? 360 : 640;
@@ -179,7 +189,7 @@ export function BaselineRibbonChart({
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`${sentence}. Personal median with a usual-range band.`}
+        aria-label={`${sentence}. ${copy?.usualRange ?? "Personal median with a usual-range band."}`}
       >
         <path
           className="mb-ribbon-band-edge"
@@ -198,7 +208,7 @@ export function BaselineRibbonChart({
         />
         {variant === "detail" ? (
           <text className="mb-ribbon-direct" x={pad} y={Math.max(bandTop - 6, 14)}>
-            Your usual range
+            {copy?.usualRange ?? "Your usual range"}
           </text>
         ) : null}
         <path className="mb-ribbon-line" d={line} />
@@ -210,7 +220,7 @@ export function BaselineRibbonChart({
             cy={y(point.value)}
             r={4.5}
           >
-            <title>{`Day ${point.day} is outside the usual range`}</title>
+            <title>{`${copy?.day ?? "Day"} ${point.day} ${copy?.outsideRange ?? "is outside the usual range"}`}</title>
           </circle>
         ))}
         {today ? (
@@ -221,12 +231,12 @@ export function BaselineRibbonChart({
         ) : null}
       </svg>
       <details className="mb-chart-table">
-        <summary>Data table</summary>
+        <summary>{copy?.dataTable ?? "Data table"}</summary>
         <table>
           <thead>
             <tr>
-              <th scope="col">Day</th>
-              <th scope="col">Value</th>
+              <th scope="col">{copy?.day ?? "Day"}</th>
+              <th scope="col">{copy?.value ?? "Value"}</th>
             </tr>
           </thead>
           <tbody>
@@ -307,6 +317,7 @@ export function FormationGrid({
   takeaway = "Charlie Coy's workload has risen for three weeks.",
   sparks,
   onSelect,
+  copy,
 }: {
   units: readonly string[];
   weeks: number;
@@ -314,6 +325,16 @@ export function FormationGrid({
   takeaway?: string | undefined;
   sparks?: Record<string, readonly number[]> | undefined;
   onSelect?: ((cell: FormationCell & { weekLabel: string }) => void) | undefined;
+  copy?:
+    | {
+        unit?: string;
+        hidden?: string;
+        usual?: string;
+        watch?: string;
+        heavy?: string;
+        gridLabel?: string;
+      }
+    | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const [selected, setSelected] = useState<string | null>(null);
@@ -326,6 +347,10 @@ export function FormationGrid({
     return offset === 0 ? "W0" : `W-${offset}`;
   });
   const letters = ["A", "B", "C", "D", "E", "F"];
+  const unitLabel = copy?.unit ?? "Unit";
+  const hiddenReason =
+    copy?.hidden ?? "Hidden to protect individuals. Fewer than 10 people or a recent large change.";
+  const gridLabel = copy?.gridLabel ?? "Unit posture by week";
 
   useEffect(() => {
     if (reduced || revealedCount >= units.length) {
@@ -353,9 +378,9 @@ export function FormationGrid({
       }
     >
       <p className="mb-lay-takeaway">{takeaway}</p>
-      <div className="mb-formation" role="grid" aria-label="Unit posture by week">
+      <div className="mb-formation" role="grid" aria-label={gridLabel}>
         <span className="mb-formation-head" role="columnheader">
-          Unit
+          {unitLabel}
         </span>
         {weekLabels.map((label) => (
           <span className="mb-formation-head" key={label} role="columnheader">
@@ -386,13 +411,10 @@ export function FormationGrid({
                       weekLabel,
                     });
                   }}
-                  title="Hidden to protect individuals. Fewer than 10 people or recent large changes."
+                  title={hiddenReason}
                   type="button"
                 >
-                  <HiddenTile
-                    compact
-                    reason="Hidden to protect individuals. Fewer than 10 people or recent large changes."
-                  />
+                  <HiddenTile compact reason={hiddenReason} />
                 </button>
               );
             }
@@ -430,6 +452,24 @@ export function FormationGrid({
           ];
         })}
       </div>
+      <p className="mb-formation-legend">
+        <span>
+          <i className="mb-formation-swatch" data-tone="usual" />
+          {copy?.usual ?? "Usual"}
+        </span>
+        <span>
+          <i className="mb-formation-swatch" data-tone="watch" />
+          {copy?.watch ?? "Watch"}
+        </span>
+        <span>
+          <i className="mb-formation-swatch" data-tone="heavy" />
+          {copy?.heavy ?? "Heavy"}
+        </span>
+        <span>
+          <i className="mb-formation-swatch" data-tone="hidden" />
+          {copy?.hidden ?? "Hidden to protect individuals"}
+        </span>
+      </p>
     </div>
   );
 }
@@ -469,28 +509,207 @@ export function FairnessBar({
 
 export function ReliabilityChart({
   points,
+  predictedLabel = "Predicted",
+  observedLabel = "Observed",
 }: {
   points: readonly { predicted: number; observed: number }[];
+  predictedLabel?: string | undefined;
+  observedLabel?: string | undefined;
 }) {
+  const width = 360;
+  const height = 240;
+  const pad = { l: 48, r: 16, t: 16, b: 40 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const x = (value: number) => pad.l + Math.min(1, Math.max(0, value)) * innerW;
+  const y = (value: number) => pad.t + (1 - Math.min(1, Math.max(0, value))) * innerH;
+  const ticks = [0, 0.5, 1];
   const path = useMemo(
     () =>
       points
-        .map((point, index) => {
-          const command = index === 0 ? "M" : "L";
-          return `${command} ${point.predicted * 180 + 10} ${180 - point.observed * 160}`;
-        })
+        .map((point, index) => `${index === 0 ? "M" : "L"} ${x(point.predicted).toFixed(1)} ${y(point.observed).toFixed(1)}`)
         .join(" "),
     [points],
   );
   return (
     <svg
       className="mb-reliability"
-      viewBox="0 0 200 180"
+      viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label="Reliability diagram of predicted band versus observed share"
+      aria-label={`${observedLabel} versus ${predictedLabel}. The diagonal is perfect calibration.`}
     >
-      <line x1="10" y1="170" x2="190" y2="10" stroke="currentColor" opacity="0.3" />
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="2" />
+      {ticks.map((tick) => (
+        <g key={tick}>
+          <line
+            x1={pad.l}
+            x2={width - pad.r}
+            y1={y(tick)}
+            y2={y(tick)}
+            stroke="currentColor"
+            strokeOpacity="0.12"
+          />
+          <line
+            y1={pad.t}
+            y2={height - pad.b}
+            x1={x(tick)}
+            x2={x(tick)}
+            stroke="currentColor"
+            strokeOpacity="0.12"
+          />
+          <text className="mb-chart-tick" x={pad.l - 8} y={y(tick) + 4} textAnchor="end">
+            {tick.toFixed(1)}
+          </text>
+          <text className="mb-chart-tick" x={x(tick)} y={height - 18} textAnchor="middle">
+            {tick.toFixed(1)}
+          </text>
+        </g>
+      ))}
+      <line
+        x1={x(0)}
+        y1={y(0)}
+        x2={x(1)}
+        y2={y(1)}
+        stroke="currentColor"
+        strokeDasharray="5 5"
+        strokeOpacity="0.45"
+      />
+      {path ? <path d={path} fill="none" stroke="currentColor" strokeWidth="2" /> : null}
+      {points.map((point) => (
+        <circle
+          key={`${point.predicted}-${point.observed}`}
+          cx={x(point.predicted)}
+          cy={y(point.observed)}
+          r="5"
+          fill="currentColor"
+        >
+          <title>
+            {predictedLabel} {point.predicted.toFixed(2)}, {observedLabel} {point.observed.toFixed(2)}
+          </title>
+        </circle>
+      ))}
+      <text className="mb-chart-axis" x={width / 2} y={height - 4} textAnchor="middle">
+        {predictedLabel}
+      </text>
+      <text
+        className="mb-chart-axis"
+        x={14}
+        y={height / 2}
+        textAnchor="middle"
+        transform={`rotate(-90 14 ${height / 2})`}
+      >
+        {observedLabel}
+      </text>
+    </svg>
+  );
+}
+
+export function LeadTimeChart({
+  values,
+  medianLabel = "Median",
+  daysLabel = "Days",
+  countLabel = "Cases",
+}: {
+  values: readonly number[];
+  medianLabel?: string | undefined;
+  daysLabel?: string | undefined;
+  countLabel?: string | undefined;
+}) {
+  const width = 360;
+  const height = 240;
+  const pad = { l: 48, r: 20, t: 20, b: 40 };
+  const edges = [0, 1, 2, 4, 7, 14, 30];
+  const labels = ["0-1", "1-2", "2-4", "4-7", "7-14", "14+"];
+  const counts = labels.map((_, index) => {
+    const lo = edges[index] ?? 0;
+    const hi = edges[index + 1];
+    return values.filter((value) => (hi === undefined ? value >= lo : value >= lo && value < hi)).length;
+  });
+  const max = Math.max(...counts, 1);
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const barW = innerW / counts.length;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median =
+    sorted.length === 0
+      ? null
+      : sorted.length % 2
+        ? (sorted[mid] ?? 0)
+        : ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
+  const medianX =
+    median === null
+      ? null
+      : pad.l +
+        (median <= 0
+          ? 0
+          : median >= 14
+            ? innerW * 0.92
+            : (labels.findIndex((_, index) => {
+                const lo = edges[index] ?? 0;
+                const hi = edges[index + 1] ?? 30;
+                return median >= lo && median < hi;
+              }) +
+                0.5) *
+              barW);
+  return (
+    <svg
+      className="mb-lead-chart"
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label={`${countLabel} by ${daysLabel.toLowerCase()} to first action. ${medianLabel}${median === null ? "" : ` ${median.toFixed(1)}`}.`}
+    >
+      {counts.map((count, index) => {
+        const barH = (count / max) * innerH;
+        const x = pad.l + index * barW + 6;
+        const y = pad.t + innerH - barH;
+        return (
+          <g key={labels[index]}>
+            <rect
+              x={x}
+              y={y}
+              width={barW - 12}
+              height={Math.max(barH, count ? 2 : 0)}
+              fill="currentColor"
+              opacity="0.72"
+            />
+            <text className="mb-chart-tick" x={x + (barW - 12) / 2} y={height - 18} textAnchor="middle">
+              {labels[index]}
+            </text>
+            {count ? (
+              <text className="mb-chart-tick" x={x + (barW - 12) / 2} y={y - 6} textAnchor="middle">
+                {count}
+              </text>
+            ) : null}
+          </g>
+        );
+      })}
+      {medianX !== null ? (
+        <g>
+          <line
+            x1={medianX}
+            x2={medianX}
+            y1={pad.t}
+            y2={height - pad.b}
+            stroke="currentColor"
+            strokeDasharray="5 5"
+          />
+          <text className="mb-chart-axis" x={Math.min(medianX + 8, width - pad.r)} y={pad.t + 12}>
+            {medianLabel} {median?.toFixed(1)}
+          </text>
+        </g>
+      ) : null}
+      <text className="mb-chart-axis" x={width / 2} y={height - 4} textAnchor="middle">
+        {daysLabel}
+      </text>
+      <text
+        className="mb-chart-axis"
+        x={14}
+        y={height / 2}
+        textAnchor="middle"
+        transform={`rotate(-90 14 ${height / 2})`}
+      >
+        {countLabel}
+      </text>
     </svg>
   );
 }

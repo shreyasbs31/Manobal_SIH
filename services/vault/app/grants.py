@@ -22,9 +22,16 @@ class GrantClaims(BaseModel):
     jti: str
 
 
+def _grant_public_key(settings: Settings) -> str:
+    configured = settings.grant_public_key_pem.get_secret_value()
+    if configured.strip():
+        return configured
+    return settings.grant_public_key_file.read_text(encoding="utf-8")
+
+
 def verify_grant(encoded: str, settings: Settings) -> GrantClaims:
     try:
-        public_key = settings.grant_public_key_file.read_text(encoding="utf-8")
+        public_key = _grant_public_key(settings)
         payload = jwt.decode(
             encoded,
             public_key,

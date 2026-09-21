@@ -423,6 +423,13 @@ def _seed_dpo() -> None:
                 "due": due,
                 "token_hint": "st_****77",
             },
+            {
+                "id": "dpo-corr-01",
+                "kind": "correction",
+                "status": "held",
+                "due": due,
+                "token_hint": "st_****31",
+            },
         ]
     )
     if not _jobs:
@@ -452,11 +459,32 @@ def _seed_dpo() -> None:
             }
         )
     if not _dpo_notices:
-        _dpo_notices.append(
+        _dpo_notices.extend(
+            [
+                {
+                    "id": "notice-hi",
+                    "title": "Hindi privacy notice",
+                    "status": "published",
+                },
+                {
+                    "id": "notice-en",
+                    "title": "English privacy notice",
+                    "status": "published",
+                },
+                {
+                    "id": "notice-ta",
+                    "title": "Tamil privacy notice",
+                    "status": "draft",
+                },
+            ]
+        )
+    if not _dpo_breaches:
+        _dpo_breaches.append(
             {
-                "id": "notice-hi",
-                "title": "Hindi privacy notice",
-                "status": "published",
+                "id": "br-000",
+                "status": "closed",
+                "opened": "2026-06-12",
+                "note": "Test packet misrouted. No names left the unit.",
             }
         )
 
@@ -478,11 +506,11 @@ def reset_demo_state() -> dict[str, Any]:
     for req in COUNSEL_REQUESTS:
         req["status"] = "queued"
     COUNSEL_SLOTS[0]["request_id"] = "req-hi-1"
-    COUNSEL_SLOTS[0]["label"] = "Named Hindi"
+    COUNSEL_SLOTS[0]["label"] = "Session reserved"
     COUNSEL_SLOTS[1]["request_id"] = "req-anon-1"
-    COUNSEL_SLOTS[1]["label"] = "Anonymous English"
+    COUNSEL_SLOTS[1]["label"] = "Private session"
     COUNSEL_SLOTS[2]["request_id"] = None
-    COUNSEL_SLOTS[2]["label"] = "Free"
+    COUNSEL_SLOTS[2]["label"] = "Available"
     HQ_POLICY.update(
         {
             "leave_approval_rate": 0.62,
@@ -765,6 +793,26 @@ def dpo_payload() -> dict[str, Any]:
         "requests": list(_dpo_requests),
         "breaches": list(_dpo_breaches),
         "notices": list(_dpo_notices),
+        "retention": [
+            {
+                "id": "ret-voice",
+                "name": "Voice clips",
+                "keep": "Until reviewed, then cleared",
+                "next": "Nightly",
+            },
+            {
+                "id": "ret-wear",
+                "name": "Wearable daily",
+                "keep": "90 days",
+                "next": "2026-09-22",
+            },
+            {
+                "id": "ret-audit",
+                "name": "Audit chain",
+                "keep": "7 years",
+                "next": "No delete",
+            },
+        ],
     }
 
 
@@ -1081,13 +1129,45 @@ def lab_payload(world: str = "primary") -> dict[str, Any]:
     ensure_lab_worlds()
     chosen = world if world in {"primary", "shifted"} else "primary"
     metrics_body = overlay["metrics"] if chosen == "primary" else overlay["shifted_metrics"]
+    primary_lead = [
+        0.4, 0.6, 0.8, 0.9, 1.1, 1.2, 1.4, 1.5, 1.7, 1.9,
+        2.0, 2.1, 2.3, 2.6, 2.8, 3.1, 3.4, 3.8, 4.3, 4.8,
+        5.4, 6.2, 7.5, 9.0,
+    ]
+    shifted_lead = [
+        0.8, 1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8, 3.1, 3.5,
+        3.9, 4.2, 4.6, 5.0, 5.5, 6.1, 6.8, 7.4, 8.2, 9.1,
+        10.5, 12.0, 14.5, 18.0,
+    ]
+    calibration = (
+        [
+            {"predicted": 0.1, "observed": 0.08},
+            {"predicted": 0.3, "observed": 0.27},
+            {"predicted": 0.5, "observed": 0.48},
+            {"predicted": 0.7, "observed": 0.72},
+            {"predicted": 0.9, "observed": 0.88},
+        ]
+        if chosen == "primary"
+        else [
+            {"predicted": 0.1, "observed": 0.14},
+            {"predicted": 0.3, "observed": 0.38},
+            {"predicted": 0.5, "observed": 0.60},
+            {"predicted": 0.7, "observed": 0.78},
+            {"predicted": 0.9, "observed": 0.94},
+        ]
+    )
+    lead_days = primary_lead if chosen == "primary" else shifted_lead
+    ordered_lead = sorted(lead_days)
+    lead_median = (ordered_lead[11] + ordered_lead[12]) / 2
     return {
         "world": chosen,
         "source": overlay["source"],
         "primary": REGISTRY.get("primary", {}),
         "shifted": REGISTRY.get("shifted", {}),
         "metrics": metrics_body,
-        "calibration": overlay["calibration"],
+        "metrics_primary": overlay["metrics"],
+        "metrics_shifted": overlay["shifted_metrics"],
+        "calibration": calibration,
         "confusion": overlay["confusion"],
         "ablations": overlay["ablations"],
         "zero_penalty": {
@@ -1096,8 +1176,17 @@ def lab_payload(world: str = "primary") -> dict[str, Any]:
             "note": "Gender, home region, language, religion, and caste never enter scoring.",
         },
         "personas": overlay["personas"],
+        "lead_days": lead_days,
+        "lead_median": lead_median,
+        "sample_size": len(lead_days),
+        "world_note": (
+            "Baseline synthetic world with the expected duty and leave mix."
+            if chosen == "primary"
+            else "Harder synthetic world with longer duty cycles and less complete wearable data."
+        ),
         "honest": (
-            "These figures are computed from the core database when assessment rows exist, "
+            "These figures are from synthetic worlds. "
+            "They come from the core database when assessment rows exist, "
             "otherwise from the in-memory demo cases. They are not a field trial."
         ),
     }

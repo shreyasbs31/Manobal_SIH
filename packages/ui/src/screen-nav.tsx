@@ -138,6 +138,8 @@ export function ScreenNav({
   title,
   meta,
   end,
+  backLabel = "Back",
+  closeLabel = "Close",
 }: {
   showBack: boolean;
   showClose: boolean;
@@ -147,13 +149,15 @@ export function ScreenNav({
   title?: string | undefined;
   meta?: string | undefined;
   end?: ReactNode;
+  backLabel?: string | undefined;
+  closeLabel?: string | undefined;
 }) {
   if (!showBack && !showClose && !title && !meta && !end) {
     return null;
   }
   const backButton = showBack ? (
     <button
-      aria-label="Back"
+      aria-label={backLabel}
       className="mb-ghost mb-screen-nav-btn"
       onClick={onBack}
       type="button"
@@ -165,7 +169,7 @@ export function ScreenNav({
   );
   const closeButton = showClose ? (
     <button
-      aria-label="Close"
+      aria-label={closeLabel}
       className="mb-ghost mb-screen-nav-btn mb-screen-close"
       onClick={onClose}
       type="button"

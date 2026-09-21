@@ -68,7 +68,9 @@ COUNSEL_REQUESTS: list[dict[str, Any]] = [
         "language": "hi",
         "handle": None,
         "status": "queued",
-        "summary": "Leave and rest, Hindi.",
+        "summary": "Wants to talk about leave and rest after duty.",
+        "privacy": "Name shared only with the counsellor.",
+        "reference": "Session CS-1042",
     },
     {
         "id": "req-anon-1",
@@ -76,15 +78,17 @@ COUNSEL_REQUESTS: list[dict[str, Any]] = [
         "language": "en",
         "handle": "River-17",
         "status": "queued",
-        "summary": "Anonymous check-in slot.",
+        "summary": "Asked for a private check-in. No case notes were shared.",
+        "privacy": "Name hidden. Use the private reference during the session.",
+        "reference": "River-17",
     },
 ]
 COUNSEL_SUGGESTIONS: list[dict[str, str]] = []
 CASE_ACTIONS: list[dict[str, str]] = []
 COUNSEL_SLOTS: list[dict[str, Any]] = [
-    {"id": "slot-0930", "when": "09:30", "label": "Named Hindi", "request_id": "req-hi-1"},
-    {"id": "slot-1100", "when": "11:00", "label": "Anonymous English", "request_id": "req-anon-1"},
-    {"id": "slot-1600", "when": "16:00", "label": "Free", "request_id": None},
+    {"id": "slot-0930", "when": "09:30", "label": "Session reserved", "request_id": "req-hi-1"},
+    {"id": "slot-1100", "when": "11:00", "label": "Private session", "request_id": "req-anon-1"},
+    {"id": "slot-1600", "when": "16:00", "label": "Available", "request_id": None},
 ]
 HQ_POLICY: dict[str, Any] = {
     "leave_approval_rate": 0.62,
@@ -494,7 +498,7 @@ def copilot_answer(question: str, lang: str = "en") -> dict[str, Any]:
         elif lang.startswith("hi"):
             answer = (
                 "मैं किसी जवान का नाम नहीं बता सकता। "
-                "Charlie Coy में टी2 या उससे ऊपर हिस्सा 20 से 30 प्रतिशत है, "
+                "चार्ली कॉय में टी2 या उससे ऊपर हिस्सा 20 से 30 प्रतिशत है, "
                 "और ड्यूटी घंटे तीन सप्ताह से ऊपर हैं।"
             )
         else:
@@ -513,8 +517,8 @@ def copilot_answer(question: str, lang: str = "en") -> dict[str, Any]:
         "refuse": False,
         "answer": (
             (
-                f"Charlie Coy में टी2 या उससे ऊपर हिस्सा {metrics['share_t2']} है। "
-                f"ड्यूटी घंटे {metrics['duty_hours']}, रात का भार {metrics['night_load']}।"
+                f"चार्ली कॉय में टी2 या उससे ऊपर हिस्सा {metrics['share_t2']} है। "
+                f"ड्यूटी घंटे {metrics['duty_hours']} हैं, रात का भार {metrics['night_load']} है।"
             )
             if lang.startswith("hi")
             else (
@@ -575,6 +579,12 @@ def hq_payload() -> dict[str, Any]:
         "capacity": {
             "demand": "stretched",
             "recommend": "Move one counsellor day toward Central.",
+            "rows": [
+                {"id": "central", "staffed": "2", "demand": "3", "gap": "1 day short"},
+                {"id": "north", "staffed": "2", "demand": "2", "gap": "held"},
+                {"id": "east", "staffed": "1", "demand": "2", "gap": "1 day short"},
+                {"id": "capital", "staffed": "2", "demand": "1", "gap": "spare day"},
+            ],
         },
         "levers": {
             "note": "Observational, not causal",
@@ -586,6 +596,7 @@ def hq_payload() -> dict[str, Any]:
         "retention": {
             "transfer_requests": "banded",
             "exit_intent_tags": "suppressed under k",
+            "note": "Shown as bands only. Groups under 10 stay hidden.",
         },
         "policy": dict(HQ_POLICY),
         "brief": dict(HQ_BRIEF),
@@ -671,9 +682,15 @@ def medical_referrals(scope_path: str) -> list[dict[str, str]]:
     del scope_path
     return [
         {
-            "from": "UWO",
+            "from": "Welfare officer",
             "case_id": "MB-6604",
-            "context": "Acute path. Minimum necessary. No journal.",
+            "context": "The person asked for immediate help during a spoken check-in.",
+            "opened": "09:41",
+            "language": "Hindi preferred",
+            "channel": "Spoken check-in",
+            "location": "Unit duty area",
+            "privacy": "Minimum necessary context. No journal or assessment answers.",
+            "last_action": "Welfare officer notified at 09:41.",
         }
     ]
 
@@ -718,7 +735,7 @@ def book_counsel(slot_id: str, request_id: str) -> dict[str, Any]:
     for slot in COUNSEL_SLOTS:
         if slot["id"] == slot_id:
             slot["request_id"] = request_id
-            slot["label"] = "Booked"
+            slot["label"] = "Session booked"
             found = dict(slot)
             break
     if found is None:

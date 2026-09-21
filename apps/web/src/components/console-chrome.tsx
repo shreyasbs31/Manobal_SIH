@@ -5,10 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { currentPrincipal } from "@/lib/engine";
+import { currentPrincipal, inStageFrame, setStagePendingPath, waitForStageRole } from "@/lib/engine";
 import { readConsoleTheme, useConsoleLang } from "@/lib/console-i18n";
 import { manobalMode } from "@/lib/mode";
-import { allowedConsolePath } from "@/lib/stage-role";
+import { roleForPath } from "@/lib/stage-role";
 
 function titleFor(pathname: string, titles: Record<string, string>): string {
   if (pathname.startsWith("/welfare/cases/")) {
@@ -28,13 +28,6 @@ function homeHrefFor(pathname: string, titles: Record<string, string>): string {
   return titles[root] ? root : "/command";
 }
 
-function goViaStage(href: string) {
-  window.parent.postMessage(
-    { type: "manobal.stage.console-go", path: href, frame: window.name },
-    window.location.origin,
-  );
-}
-
 export function ConsoleChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -52,36 +45,20 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    for (const item of tx.nav) {
+      router.prefetch(item.href);
+    }
+  }, [router, tx.nav]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) {
       return;
     }
-    const onClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey) {
-        return;
-      }
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const anchor = target.closest("a");
-      if (!anchor) {
-        return;
-      }
-      const href = anchor.getAttribute("href");
-      if (!href || !href.startsWith("/") || href.startsWith("//") || href.includes("://")) {
-        return;
-      }
-      const path = href.split("?")[0] ?? href;
-      if (!allowedConsolePath(path)) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      goViaStage(href);
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, []);
+    window.parent.postMessage(
+      { type: "manobal.stage.console-path", path: pathname, frame: window.name },
+      window.location.origin,
+    );
+  }, [pathname]);
 
   const deskLabel = deskRole ? (tx.desks[deskRole] ?? deskRole) : "";
 
@@ -94,9 +71,16 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
       navItems={[...tx.nav]}
       onLanguageChange={setLang}
       onNavigate={(href) => {
-        if (typeof window !== "undefined" && window.parent !== window) {
-          goViaStage(href);
-          return;
+        if (inStageFrame()) {
+          const needed = roleForPath(href);
+          const role = currentPrincipal()?.role;
+          if (needed !== "any" && needed !== "personnel" && role && needed !== role) {
+            void waitForStageRole(href).then(() => {
+              router.push(href);
+              window.setTimeout(() => setStagePendingPath(null), 600);
+            });
+            return;
+          }
         }
         router.push(href);
       }}
@@ -104,6 +88,7 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
       deskLabel={deskLabel}
       theme={readConsoleTheme()}
       title={titleFor(pathname, tx.titles)}
+      units={[tx.units["Bn C-02"] ?? "Bn C-02", tx.units["Charlie Coy"] ?? "Charlie Coy", tx.units["Alpha Coy"] ?? "Alpha Coy"]}
       chromeCopy={{
         expand: tx.expand,
         collapse: tx.collapse,
@@ -114,6 +99,13 @@ export function ConsoleChrome({ children }: { children: ReactNode }) {
         langHi: tx.langHi,
         langGroup: tx.langGroup,
         deskSuffix: tx.deskSuffix,
+        simulated: tx.simulated,
+        skip: tx.skip,
+        theme: tx.theme,
+        unitScope: tx.unitScope,
+        soundOn: tx.soundOn,
+        soundOff: tx.soundOff,
+        palette: tx.palette,
       }}
     >
       {children}

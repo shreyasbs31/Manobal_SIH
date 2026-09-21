@@ -91,7 +91,10 @@ class AzureKeyVaultKeyProvider:
         if settings.keyvault_uri is None:
             raise ValueError("KEYVAULT_URI is required")
         self._settings = settings
-        self._credential = DefaultAzureCredential()
+        self._credential = DefaultAzureCredential(
+            managed_identity_client_id=settings.azure_client_id or None,
+            exclude_interactive_browser_credential=True,
+        )
         self._keys = KeyClient(settings.keyvault_uri, self._credential)
         self._secrets = SecretClient(settings.keyvault_uri, self._credential)
         self._token_key: bytes | None = None

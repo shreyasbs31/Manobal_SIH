@@ -5,9 +5,11 @@ import Link from "next/link";
 
 import { ScreenState } from "@/components/screen-state";
 import { assessmentTitle } from "@/lib/assessment-titles";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 export default function AssessmentsPage() {
+  const { p } = usePersonnelI18n();
   const { data, error, loading, offline } = useEngine("assessments", (client, signal) =>
     client.meAssessments(signal),
   );
@@ -16,7 +18,7 @@ export default function AssessmentsPage() {
     <ScreenState error={error} loading={loading} offline={offline} empty={!data && !offline}>
       {data || offline ? (
         <div className="mb-home-stack">
-          <p>A few short questions. Answers stay with you unless you ask for help.</p>
+          <p>{p("A few short questions. Answers stay with you unless you ask for help.")}</p>
           {(data?.items ?? [
             {
               id: "pss10",
@@ -29,16 +31,16 @@ export default function AssessmentsPage() {
           ]).map((item) => (
             <article className="mb-instrument" key={item.id}>
               <div>
-                <h2>{assessmentTitle(item.id, item.title)}</h2>
-                <p>{item.self_only ? "Stays on this phone" : "Optional"}</p>
+                <h2>{p(assessmentTitle(item.id, item.title))}</h2>
+                <p>{p(item.self_only ? "Stays on this phone" : "Optional")}</p>
                 {item.self_only ? (
-                  <span className="mb-self-only">Self-only</span>
+                  <span className="mb-self-only">{p("Self-only")}</span>
                 ) : (
-                  <ValidatedBadge />
+                  <ValidatedBadge label={p("Validated translation")} />
                 )}
               </div>
               <Link className="mb-primary" href={`/app/assessments/${item.id}`}>
-                Open
+                {p("Open")}
               </Link>
             </article>
           ))}

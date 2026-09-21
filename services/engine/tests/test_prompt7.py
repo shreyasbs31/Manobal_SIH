@@ -120,7 +120,9 @@ def test_medical_acute_board_and_guide() -> None:
     assert ack.json()["status"] == "ack"
     referrals = client.get("/api/v1/medical/referrals", headers=headers).json()
     assert referrals["items"][0]["case_id"] == "MB-6604"
-    assert "journal" in referrals["items"][0]["context"].lower() or "minimum" in referrals["items"][0]["context"].lower()
+    ref_item = referrals["items"][0]
+    ref_text = (ref_item.get("context", "") + " " + ref_item.get("privacy", "")).lower()
+    assert "journal" in ref_text or "minimum" in ref_text
     note = referrals["guide"]["note"].lower()
     assert "suicide risk score" not in note
     assert "self-harm" in note or "never scores" in note

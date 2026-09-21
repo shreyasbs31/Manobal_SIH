@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
-import { useConsoleLang } from "@/lib/console-i18n";
+import { type ConsoleCopy, localisePhrase, localiseUnit, useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
@@ -79,7 +79,14 @@ export default function RosterPage() {
   }
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
+    <ScreenState
+      error={error}
+      loading={loading}
+      offline={offline}
+      empty={!data}
+      loadingText={tx.loading}
+      offlineText={tx.offlineView}
+    >
       {data ? (
         <div className="mb-desk">
           <div className="mb-roster">
@@ -95,11 +102,11 @@ export default function RosterPage() {
                     onClick={() => setFocus(row.label)}
                     type="button"
                   >
-                    <h2>{row.label}</h2>
+                    <h2>{localiseUnit(tx, row.label)}</h2>
                     <span>{row.n}</span>
                   </button>
                   {row.locked ? (
-                    <p className="mb-locked-note">{row.lock_reason}</p>
+                    <p className="mb-locked-note">{localisePhrase(tx, row.lock_reason ?? "")}</p>
                   ) : (
                     <>
                       <label>
@@ -158,15 +165,42 @@ export default function RosterPage() {
             </section>
             <section className="mb-sheet">
               <h2>{tx.hold14}</h2>
-              <div className="mb-hold-list">
+              <div className="mb-roster-board">
+                <RosterMap focus={focus} rows={preview} tx={tx} />
+                <div className="mb-roster-diagram" role="img" aria-label={tx.hold14}>
                 {preview.map((row) => (
-                  <p key={row.label}>
-                    <span>{row.label}</span>
-                    <strong>
-                      {row.locked ? tx.locked : `${row.duty}h · ${row.night}% ${tx.night}`}
+                  <div
+                    className="mb-roster-diagram-row"
+                    data-focus={row.label === focus ? "true" : "false"}
+                    key={row.label}
+                  >
+                    <span className="mb-roster-coy">{localiseUnit(tx, row.label)}</span>
+                    <div className="mb-roster-diagram-tracks">
+                      <span className="mb-roster-track" data-kind="duty">
+                        <i style={{ width: clampWidth(row.duty, 40, 72) }} />
+                      </span>
+                      <span className="mb-roster-track" data-kind="night">
+                        <i style={{ width: clampWidth(row.night, 10, 50) }} />
+                      </span>
+                    </div>
+                    <strong className="mb-roster-diagram-meta">
+                      {row.locked
+                        ? tx.locked
+                        : `${row.duty}${tx.hoursUnit} · ${row.night}${tx.nightUnit}`}
                     </strong>
-                  </p>
+                  </div>
                 ))}
+                <p className="mb-roster-diagram-legend">
+                  <span>
+                    <i data-kind="duty" />
+                    {tx.dutyTrack}
+                  </span>
+                  <span>
+                    <i data-kind="night" />
+                    {tx.nightTrack}
+                  </span>
+                </p>
+              </div>
               </div>
               <div className="mb-action-row">
                 <button
@@ -183,7 +217,7 @@ export default function RosterPage() {
                           },
                     );
                     setCompanies(eased);
-                    setStatus("Night share stepped down. Project to see coverage.");
+                    setStatus(tx.nightStepped);
                   }}
                   type="button"
                 >
@@ -203,10 +237,10 @@ export default function RosterPage() {
                         };
                         setProjection(payload.posture ?? []);
                         setCoverage(payload.coverage ?? []);
-                        setStatus("14-day projection is ready.");
+                        setStatus(tx.projectionReady);
                       })
                       .catch((caught: unknown) => {
-                        setStatus(caught instanceof Error ? caught.message : "Could not project.");
+                        setStatus(caught instanceof Error ? caught.message : tx.couldNotProject);
                       })
                       .finally(() => setBusy(false));
                   }}
@@ -223,7 +257,7 @@ export default function RosterPage() {
                       .commandDraft({ companies: rows })
                       .then((result) => {
                         setOrder(result.body);
-                        setStatus("Draft ready to copy. It is not sent.");
+                        setStatus(tx.draftReady);
                       })
                       .finally(() => setBusy(false));
                   }}
@@ -259,7 +293,7 @@ export default function RosterPage() {
                     className="mb-ghost"
                     onClick={() => {
                       void navigator.clipboard?.writeText(order);
-                      setStatus("Draft copied.");
+                      setStatus(tx.draftCopied);
                     }}
                     type="button"
                   >
@@ -280,12 +314,12 @@ export default function RosterPage() {
                   key={row.label}
                   onClick={() => {
                     setFocus(row.label);
-                    setStatus(`${row.label} leave wait ${row.longest_wait}.`);
+                    setStatus(`${localiseUnit(tx, row.label)} ${tx.leaveWait} ${row.longest_wait}.`);
                   }}
                   type="button"
                 >
-                  <span>{row.label}</span>
-                  <strong>{row.backlog_days} days</strong>
+                  <span>{localiseUnit(tx, row.label)}</span>
+                  <strong>{row.backlog_days} {tx.days}</strong>
                   <em>{row.longest_wait}</em>
                 </button>
               ))}
@@ -307,12 +341,12 @@ export default function RosterPage() {
                             : "Alpha Coy";
                       setWeek(row.week);
                       setFocus(next);
-                      setStatus(`${row.week}: ${row.heavy}.`);
+                      setStatus(`${row.week}: ${localisePhrase(tx, row.heavy)}.`);
                     }}
                     type="button"
                   >
                     <span>{row.week}</span>
-                    <strong>{row.heavy}</strong>
+                    <strong>{localisePhrase(tx, row.heavy)}</strong>
                   </button>
                 ))}
               </div>
@@ -320,10 +354,10 @@ export default function RosterPage() {
                 <button
                   className="mb-compare-band"
                   key={row.category}
-                  onClick={() => setStatus(`${row.category} open ${row.age}.`)}
+                    onClick={() => setStatus(`${localisePhrase(tx, row.category)} ${tx.openStatus} ${row.age}.`)}
                   type="button"
                 >
-                  <span>{row.category}</span>
+                  <span>{localisePhrase(tx, row.category)}</span>
                   <strong>{row.age}</strong>
                 </button>
               ))}
@@ -332,5 +366,64 @@ export default function RosterPage() {
         </div>
       ) : null}
     </ScreenState>
+  );
+}
+
+function RosterMap({
+  rows,
+  focus,
+  tx,
+}: {
+  rows: readonly { label: string; locked: boolean; duty: number; night: number }[];
+  focus: string;
+  tx: ConsoleCopy;
+}) {
+  const width = 640;
+  const height = 220;
+  const cx = 320;
+  const cy = 112;
+  const count = Math.max(rows.length, 1);
+  return (
+    <svg className="mb-roster-map" viewBox={`0 0 ${width} ${height}`} role="img" aria-hidden="true">
+      <defs>
+        <radialGradient id="mb-roster-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#a7fccd" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#f6f3f1" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx={cx} cy={cy} r="58" fill="url(#mb-roster-glow)" />
+      <circle className="mb-roster-hub" cx={cx} cy={cy} r="32" />
+      <text className="mb-roster-hub-label" textAnchor="middle" x={cx} y={cy + 4}>
+        {localiseUnit(tx, "Bn C-02")}
+      </text>
+      {rows.map((row, index) => {
+        const angle = (Math.PI * 2 * index) / count - Math.PI / 2;
+        const x = cx + Math.cos(angle) * 168;
+        const y = cy + Math.sin(angle) * 72;
+        const mx = (cx + x) / 2 + (y - cy) * 0.12;
+        const my = (cy + y) / 2 - (x - cx) * 0.08;
+        return (
+          <g key={row.label}>
+            <path
+              className="mb-roster-link"
+              d={`M ${cx} ${cy} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`}
+            />
+            <rect
+              className="mb-roster-node"
+              data-focus={row.label === focus ? "true" : "false"}
+              data-locked={row.locked ? "true" : "false"}
+              height="28"
+              rx="14"
+              width="132"
+              x={x - 66}
+              y={y - 14}
+            />
+            <text className="mb-roster-node-label" textAnchor="middle" x={x} y={y + 4}>
+              {localiseUnit(tx, row.label)}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }

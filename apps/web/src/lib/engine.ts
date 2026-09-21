@@ -151,6 +151,26 @@ export function applyFrameSession(token: string, principal?: Principal | null): 
   }
 }
 
+const PENDING_CONSOLE_PATH = "manobal.stage.pending-path";
+
+export function setStagePendingPath(path: string | null): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (path) {
+    window.sessionStorage.setItem(PENDING_CONSOLE_PATH, path);
+    return;
+  }
+  window.sessionStorage.removeItem(PENDING_CONSOLE_PATH);
+}
+
+export function stagePendingPath(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.sessionStorage.getItem(PENDING_CONSOLE_PATH);
+}
+
 export function askParentForStageRole(pathname: string): void {
   if (typeof window === "undefined" || !inStageFrame()) {
     return;
@@ -159,6 +179,33 @@ export function askParentForStageRole(pathname: string): void {
     { type: "manobal.stage.need-role", path: pathname, frame: window.name },
     window.location.origin,
   );
+}
+
+export function waitForStageRole(pathname: string, timeoutMs = 2500): Promise<boolean> {
+  if (typeof window === "undefined" || !inStageFrame()) {
+    return Promise.resolve(true);
+  }
+  if (principalMatchesPath(currentPrincipal()?.role, pathname) && currentAccessToken()) {
+    return Promise.resolve(true);
+  }
+  setStagePendingPath(pathname);
+  askParentForStageRole(pathname);
+  return new Promise((resolve) => {
+    const finish = (ok: boolean) => {
+      window.clearTimeout(timer);
+      window.removeEventListener("manobal-session", onSession);
+      resolve(ok);
+    };
+    const onSession = () => {
+      if (principalMatchesPath(currentPrincipal()?.role, pathname) && currentAccessToken()) {
+        finish(true);
+      }
+    };
+    const timer = window.setTimeout(() => {
+      finish(Boolean(principalMatchesPath(currentPrincipal()?.role, pathname) && currentAccessToken()));
+    }, timeoutMs);
+    window.addEventListener("manobal-session", onSession);
+  });
 }
 
 export function stageRoleReady(pathname: string): boolean {
@@ -283,8 +330,13 @@ if (typeof window !== "undefined" && inStageFrame()) {
     };
     if (data?.type === "manobal.stage.auth" && typeof data.access_token === "string") {
       const nextPrincipal = data.principal ?? null;
-      if (nextPrincipal && !principalMatchesPath(nextPrincipal.role, window.location.pathname)) {
-        askParentForStageRole(window.location.pathname);
+      const pending = stagePendingPath();
+      const allowedPath = pending ?? window.location.pathname;
+      if (
+        nextPrincipal &&
+        window.name === STAGE_CONSOLE_FRAME &&
+        !principalMatchesPath(nextPrincipal.role, allowedPath)
+      ) {
         return;
       }
       applyFrameSession(data.access_token, nextPrincipal);

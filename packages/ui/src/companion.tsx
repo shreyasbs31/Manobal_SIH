@@ -24,9 +24,11 @@ export function VoiceOrb({
 export function CaptionStream({
   language,
   lines,
+  copy,
 }: {
   language: string;
   lines: readonly { speaker: "you" | "saathi"; text: string }[] | readonly string[];
+  copy?: { you: string; saathi: string } | undefined;
 }) {
   const normalised = lines.map((line) =>
     typeof line === "string"
@@ -38,7 +40,7 @@ export function CaptionStream({
       {language ? <span className="mb-chip">{language}</span> : null}
       {normalised.map((line, index) => (
         <p className="mb-caption-line" data-speaker={line.speaker} key={`${line.speaker}-${index}`}>
-          {line.speaker === "you" ? "You: " : "Saathi: "}
+          {line.speaker === "you" ? `${copy?.you ?? "You"}: ` : `${copy?.saathi ?? "Saathi"}: `}
           {line.text}
         </p>
       ))}
@@ -58,11 +60,13 @@ export function CallPanel({
   peer,
   status,
   joinLabel = "Join call",
+  leaveLabel = "Leave",
   onJoin,
 }: {
   peer: string;
   status: string;
   joinLabel?: string | undefined;
+  leaveLabel?: string | undefined;
   onJoin?: (() => void) | undefined;
 }) {
   return (
@@ -74,7 +78,7 @@ export function CallPanel({
           {joinLabel}
         </button>
         <button className="mb-secondary" type="button">
-          Leave
+          {leaveLabel}
         </button>
       </div>
     </section>
@@ -95,13 +99,17 @@ export function PhoneFrame({
       <i className="mb-phone-btn mb-phone-btn-vol-down" aria-hidden="true" />
       <i className="mb-phone-btn mb-phone-btn-power" aria-hidden="true" />
       <div className="mb-phone-bezel">
-        <div className="mb-phone-island" aria-hidden="true">
-          <span className="mb-phone-cam" />
+        <div className="mb-phone-status" aria-hidden="true">
+          <div className="mb-phone-island">
+            <span className="mb-phone-cam" />
+          </div>
         </div>
         <div className="mb-phone-screen" title={title}>
           {children}
         </div>
-        <div className="mb-phone-home" aria-hidden="true" />
+        <div className="mb-phone-home-bar" aria-hidden="true">
+          <span className="mb-phone-home" />
+        </div>
       </div>
     </div>
   );

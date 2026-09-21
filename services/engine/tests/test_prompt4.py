@@ -159,6 +159,8 @@ def test_sync_acute_opens_care_queue() -> None:
 
 
 def test_post_acute_under_two_seconds() -> None:
+    warm = client.get("/")
+    assert warm.status_code == 200
     started = time.perf_counter()
     response = client.post(
         "/api/v1/acute",

@@ -1,10 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 
-import { signIn } from "./session";
+import { grantDemoAccess, signIn } from "./session";
 
 const engine = process.env.ENGINE_URL ?? "http://localhost:8000";
 
-async function reset(request: { post: (url: string, opts: { data?: object; headers?: Record<string, string> }) => Promise<{ json: () => Promise<{ seconds?: number; access_token?: string }> }> }) {
+async function reset(request: APIRequestContext) {
+  await grantDemoAccess(request, "operator");
   const login = await request.post(`${engine}/api/v1/auth/demo-login`, {
     data: { role: "director" },
   });
@@ -40,7 +41,7 @@ async function runSpine(page: import("@playwright/test").Page) {
   await signIn(page, "commander");
   await page.goto("/command");
   await expect(page.getByText("Post D-7").first()).toBeVisible();
-  await page.getByRole("button", { name: "Open copilot" }).click();
+  await page.getByRole("button", { name: "Ask copilot" }).click();
   await page.getByLabel("Question").fill("Charlie Coy mein kaun pareshan hai?");
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByText(/Main kisi jawan ka naam nahi de sakta/)).toBeVisible();
@@ -62,19 +63,19 @@ async function runSpine(page: import("@playwright/test").Page) {
   await expect(page.getByText(/Imran stays T1/)).toBeVisible();
   await expect(page.getByText(/Thomas stays T0/)).toBeVisible();
   await page.getByRole("button", { name: "Shifted world" }).click();
-  await expect(page.getByText("These figures are from synthetic worlds.")).toBeVisible();
+  await expect(page.getByText("Synthetic validation only. This is not evidence from a field trial.")).toBeVisible();
 
   await signIn(page, "dpo");
   await page.goto("/dpo");
-  await expect(page.getByText("erasure").first()).toBeVisible();
+  await expect(page.getByText(/erasure/i).first()).toBeVisible();
 
   await signIn(page, "hrms_integrator");
   await page.goto("/integrations");
   await expect(page.getByText(/quarantine/i).first()).toBeVisible();
 
   await page.goto("/architecture");
-  await expect(page.getByRole("heading", { name: "Phone" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Never connected" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Phone" }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Never connected" }).first()).toBeVisible();
 
   await page.goto("/trust");
   await expect(page.getByRole("button", { name: "Read this page aloud" })).toBeVisible();
@@ -82,7 +83,7 @@ async function runSpine(page: import("@playwright/test").Page) {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/stage?phone=/app/me&console=/welfare/cases/MB-4091&shot=workspace");
   await expect(page.locator(".mb-stage-drawer")).toBeHidden();
-  await expect(page.getByText("Case workspace reveal")).toBeVisible();
+  await expect(page.getByText("Case workspace reveal").first()).toBeVisible();
 }
 
 test("demo spine twice with reset between", async ({ page, request }) => {

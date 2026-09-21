@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     vault_database_url: str = (
         "postgresql+asyncpg://vault_app:vault_app_dev_only@localhost:5432/manobal_vault"
     )
+    vault_database_entra_auth: bool = False
+    azure_client_id: str = ""
     redis_url: str = "redis://localhost:6379/1"
     key_provider: Literal["local", "azure"] = "local"
     local_key_file: Path = Path("infra/keys/dev-vault-keys.json")
@@ -33,6 +35,7 @@ class Settings(BaseSettings):
     kv_kek_name: str = "vault-kek"
     kv_token_key_name: str = "vault-token-hmac"
     grant_public_key_file: Path = Path("infra/keys/grant-public.pem")
+    grant_public_key_pem: SecretStr = SecretStr("")
     grant_issuer: str = "manobal-engine"
     grant_audience: str = "manobal-vault"
     tokenise_ingest_secret: SecretStr = SecretStr("ingest_dev_only_change_me")

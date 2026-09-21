@@ -408,4 +408,6 @@ def compute_overlays() -> dict[str, Any]:
             "thomas": f"Thomas stays {thomas_tier or 'T0'}. Coverage is complete and the ribbon is flat.",
         },
         "excluded": sorted(EXCLUDED_ATTRIBUTES),
+        "lead_days": [float(v) for v in body["lead_days"] if v is not None],
+        "lead_median": lead,
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { CaseCard, EscalationLadder, SlaTimer, chimeKindForQueue, playConsoleChime } from "@manobal/ui";
+import { EscalationLadder, SlaTimer, chimeKindForQueue, playConsoleChime } from "@manobal/ui";
 import { useEffect, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
@@ -16,10 +16,10 @@ export default function MedicalPage() {
   const extra = useEngine("medical-referrals", (client, signal) => client.medicalReferrals(signal));
   const items = data ?? [];
   const [picked, setPicked] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    const t4 = items.filter((item) => item.tier === "T4").length;
-    const kind = chimeKindForQueue(t4, 0);
+    const kind = chimeKindForQueue(items.filter((item) => item.tier === "T4").length, 0);
     if (kind) {
       playConsoleChime(kind);
     }
@@ -32,96 +32,164 @@ export default function MedicalPage() {
   }, [items, picked]);
 
   const current = items.find((item) => item.case_id === picked) ?? items[0];
+  const referral =
+    extra.data?.items.find((item) => item.case_id === current?.case_id) ?? extra.data?.items[0];
+  const guideSteps = [tx.guideStay, tx.guideReach, tx.guideInvolve, tx.guidePolicy];
+
+  async function openCall() {
+    try {
+      const result = await engineClient().callsToken();
+      setNotice(result.configured ? tx.callReady : tx.callUnavailable);
+    } catch {
+      setNotice(tx.callUnavailable);
+    }
+  }
 
   return (
     <ScreenState
-      empty={items.length === 0}
+      empty={data === null}
       emptyText={tx.emptyAcute}
       error={error}
       loading={loading}
+      loadingText={tx.loading}
       offline={offline}
+      offlineText={tx.offlineView}
     >
-      <div className="mb-desk mb-desk-fill">
-        <div className="mb-acute-board">
-          <div className="mb-acute-list">
-            {items.map((item) => (
-              <article data-focus={item.case_id === current?.case_id ? "true" : "false"} key={item.case_id}>
-                <button className="mb-sheet-head" onClick={() => setPicked(item.case_id)} type="button">
-                  <SlaTimer
-                    label={tx.acknowledge}
-                    remainingLabel={item.sla_label}
-                    remainingRatio={item.remaining_ratio}
-                    tier="T4"
-                  />
-                </button>
-                <CaseCard
-                  caseId={item.case_id}
-                  domains={[...item.drivers]}
-                  drift={item.drift}
-                  lever={item.lever_title}
-                  limited={item.limited}
-                  remainingRatio={item.remaining_ratio}
-                  sla={item.sla_label}
-                  source={item.source}
-                  status={item.status}
-                  tier={item.tier}
-                  trajectory={item.trajectory}
+      <div className="mb-desk mb-acute-desk">
+        <p className="mb-desk-purpose">{tx.acutePurpose}</p>
+        {notice ? <p className="mb-acute-notice" role="status">{notice}</p> : null}
+        {current ? (
+          <>
+            <section className="mb-acute-hero">
+              <div className="mb-acute-hero-copy">
+                <span>{tx.acuteCaseOpen}</span>
+                <h2>{current.case_id}</h2>
+                <p>{tx.acuteImmediate}</p>
+              </div>
+              <div className="mb-acute-timer">
+                <SlaTimer
+                  label={tx.acknowledge}
+                  remainingLabel={current.sla_label}
+                  remainingRatio={current.remaining_ratio}
+                  tier="T4"
                 />
-              </article>
-            ))}
-          </div>
-          {current ? (
-            <aside className="mb-sheet">
-              <h2>{current.case_id}</h2>
-              <SlaTimer
-                label={tx.acknowledge}
-                remainingLabel={current.sla_label}
-                remainingRatio={current.remaining_ratio}
-                tier="T4"
-              />
-              <EscalationLadder
-                current={current.status === "ack" ? "Battalion MO" : "waiting"}
-                steps={[
-                  { role: "UWO", status: "notified", time: "09:41" },
-                  { role: "Company welfare deputy", status: "waiting", time: "" },
-                  {
-                    role: "Battalion MO",
-                    status: current.status === "ack" ? "acknowledged" : "waiting",
-                    time: current.status === "ack" ? "now" : "",
-                  },
-                  { role: "Sector counsellor", status: "waiting", time: "" },
-                ]}
-              />
-              <button
-                className="mb-primary mb-ack"
-                onClick={() => {
-                  void engineClient()
-                    .medicalAck(current.case_id)
-                    .then(() => reload());
-                }}
-                type="button"
-              >
-                {current.status === "ack" ? tx.closedLabel : tx.acknowledge}
-              </button>
-              {extra.data?.items.length ? (
-                <div className="mb-work-list">
-                  {extra.data.items.map((item) => (
-                    <button
-                      className="mb-compare-band"
-                      key={item.case_id}
-                      onClick={() => setPicked(item.case_id)}
-                      type="button"
-                    >
-                      <span>{item.case_id}</span>
-                      <strong>{item.from}</strong>
-                      <em>{item.context}</em>
-                    </button>
-                  ))}
+              </div>
+              <dl className="mb-acute-meta">
+                <div>
+                  <dt>{tx.acuteOpenedAt}</dt>
+                  <dd>{referral?.opened ?? "09:41"}</dd>
                 </div>
-              ) : null}
-            </aside>
-          ) : null}
-        </div>
+                <div>
+                  <dt>{tx.acuteOwner}</dt>
+                  <dd>{tx.roleMo}</dd>
+                </div>
+                <div>
+                  <dt>{tx.dpoStatus}</dt>
+                  <dd>{current.status === "ack" ? tx.statusAck : tx.acuteAwaiting}</dd>
+                </div>
+              </dl>
+              <div className="mb-acute-hero-actions">
+                <button
+                  className="mb-primary mb-ack"
+                  disabled={current.status === "ack"}
+                  onClick={() => {
+                    void engineClient()
+                      .medicalAck(current.case_id)
+                      .then(() => {
+                        setNotice(tx.ackDone);
+                        reload();
+                      });
+                  }}
+                  type="button"
+                >
+                  {current.status === "ack" ? tx.ackDone : tx.acknowledge}
+                </button>
+                <button className="mb-secondary" onClick={() => void openCall()} type="button">
+                  {tx.callNow}
+                </button>
+              </div>
+            </section>
+            {items.length > 1 ? (
+              <nav aria-label={tx.acuteOpen} className="mb-acute-tabs">
+                {items.map((item) => (
+                  <button
+                    aria-pressed={item.case_id === current.case_id}
+                    key={item.case_id}
+                    onClick={() => setPicked(item.case_id)}
+                    type="button"
+                  >
+                    {item.case_id}
+                  </button>
+                ))}
+              </nav>
+            ) : null}
+            <div className="mb-acute-workspace">
+              <section className="mb-sheet mb-acute-context">
+                <h2>{tx.acuteContext}</h2>
+                <dl className="mb-fact-list">
+                  <div>
+                    <dt>{tx.acuteTrigger}</dt>
+                    <dd>{tx.acuteTriggerDetail}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.acuteChannel}</dt>
+                    <dd>{tx.acuteSpoken}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.acuteLanguage}</dt>
+                    <dd>{tx.acuteHindiPreferred}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.acuteLocation}</dt>
+                    <dd>{tx.acuteUnitArea}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.acutePrivacy}</dt>
+                    <dd>{tx.acuteNoAssessment}</dd>
+                  </div>
+                </dl>
+              </section>
+              <section className="mb-sheet mb-acute-response">
+                <h2>{tx.whoReached}</h2>
+                <EscalationLadder
+                  current={current.status === "ack" ? tx.roleMo : tx.statusWaiting}
+                  steps={[
+                    { role: tx.roleUwo, status: tx.statusNotified, time: "09:41" },
+                    { role: tx.roleDeputy, status: tx.statusWaiting, time: "" },
+                    {
+                      role: tx.roleMo,
+                      status: current.status === "ack" ? tx.statusAck : tx.statusWaiting,
+                      time: current.status === "ack" ? tx.now : "",
+                    },
+                    { role: tx.roleCounsellor, status: tx.statusWaiting, time: "" },
+                  ]}
+                />
+                <p className="mb-acute-last">
+                  <strong>{tx.acuteLastAction}</strong>
+                  {tx.acuteWelfareNotified}
+                </p>
+              </section>
+              <section className="mb-sheet mb-acute-protocol">
+                <h2>{tx.acuteProtocol}</h2>
+              <ol className="mb-guide">
+                {guideSteps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+                <p>{tx.guideNote}</p>
+              </section>
+            </div>
+          </>
+        ) : (
+          <section className="mb-sheet mb-acute-clear">
+            <h2>{tx.emptyAcute}</h2>
+            <p>{tx.quietAcute}</p>
+            <h3>{tx.stayGuide}</h3>
+            <ol className="mb-guide">
+              {guideSteps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+          </section>
+        )}
       </div>
     </ScreenState>
   );

@@ -122,6 +122,19 @@ const ROLE_LABEL: Record<ManobalRole, string> = {
   director: "Demo director",
 };
 
+const CONSOLE_ROLES: readonly ManobalRole[] = [
+  "commander",
+  "uwo",
+  "counsellor",
+  "mo",
+  "hq",
+  "wdec",
+  "dpo",
+  "hrms_integrator",
+  "admin",
+  "director",
+];
+
 export function StageView({
   phonePath,
   consolePath,
@@ -137,6 +150,7 @@ export function StageView({
   const [note, setNote] = useState("");
   const [armed, setArmed] = useState(false);
   const [liveConsole, setLiveConsole] = useState(consoleSafe);
+  const [consoleSrc] = useState(consoleSafe);
   const phoneToken = useRef<string | null>(null);
   const consoleToken = useRef<string | null>(null);
   const phonePrincipal = useRef<Principal | null>(null);
@@ -146,6 +160,7 @@ export function StageView({
   const minting = useRef(false);
   const pendingConsole = useRef<string | null>(null);
   const consoleGen = useRef(0);
+  const roleSessions = useRef(new Map<ManobalRole, { token: string; principal: Principal }>());
   const label = (shot && SHOT_LABELS[shot]) || "Home";
   const persona = phonePersona(phone, shot);
   const officerRole = consoleRole(consoleSafe);
@@ -176,6 +191,16 @@ export function StageView({
     postAuth(consoleFrame.current?.contentWindow, consoleToken.current, consolePrincipal.current);
   }, [postAuth]);
 
+  const applyConsoleSession = useCallback(
+    (token: string, principal: Principal) => {
+      consoleToken.current = token;
+      consolePrincipal.current = principal;
+      storeStageSession(STAGE_CONSOLE_FRAME, token, principal);
+      postAuth(consoleFrame.current?.contentWindow, token, principal);
+    },
+    [postAuth],
+  );
+
   const mintConsole = useCallback(
     async (path: string) => {
       pendingConsole.current = path;
@@ -196,6 +221,11 @@ export function StageView({
             );
             continue;
           }
+          const cached = roleSessions.current.get(needed);
+          if (cached) {
+            applyConsoleSession(cached.token, cached.principal);
+            continue;
+          }
           if (consolePrincipal.current?.role === needed && consoleToken.current) {
             postAuth(
               consoleFrame.current?.contentWindow,
@@ -213,10 +243,11 @@ export function StageView({
             if (gen !== consoleGen.current) {
               continue;
             }
-            consoleToken.current = login.access_token;
-            consolePrincipal.current = login.principal;
-            storeStageSession(STAGE_CONSOLE_FRAME, login.access_token, login.principal);
-            postAuth(consoleFrame.current?.contentWindow, login.access_token, login.principal);
+            roleSessions.current.set(needed, {
+              token: login.access_token,
+              principal: login.principal,
+            });
+            applyConsoleSession(login.access_token, login.principal);
             setArmed(true);
           } catch (caught: unknown) {
             setNote(caught instanceof Error ? caught.message : "Could not prepare the console session.");
@@ -229,13 +260,38 @@ export function StageView({
         }
       }
     },
-    [postAuth],
+    [applyConsoleSession, postAuth],
   );
+
+  useEffect(() => {
+    if (!armed) {
+      return;
+    }
+    const frame = consoleFrame.current?.contentWindow;
+    if (!frame) {
+      return;
+    }
+    let current = "";
+    try {
+      current = frame.location.pathname;
+    } catch {
+      current = "";
+    }
+    if (!current || pathOnly(current) === pathOnly(consoleSafe)) {
+      return;
+    }
+    void mintConsole(consoleSafe).then(() => {
+      try {
+        frame.location.assign(consoleSafe);
+      } catch {
+        // Cross-origin during boot is ignored.
+      }
+    });
+  }, [armed, consoleSafe, mintConsole]);
 
   useEffect(() => {
     let cancelled = false;
     const gen = ++consoleGen.current;
-    setArmed(false);
     const client = new ManobalClient(engineBaseUrl());
     void (async () => {
       try {
@@ -250,10 +306,26 @@ export function StageView({
         consoleToken.current = consoleLogin.access_token;
         phonePrincipal.current = phoneLogin.principal;
         consolePrincipal.current = consoleLogin.principal;
+        roleSessions.current.set(officerRole, {
+          token: consoleLogin.access_token,
+          principal: consoleLogin.principal,
+        });
         storeStageSession(STAGE_PHONE_FRAME, phoneLogin.access_token, phoneLogin.principal);
         storeStageSession(STAGE_CONSOLE_FRAME, consoleLogin.access_token, consoleLogin.principal);
         setNote("");
         setArmed(true);
+        void Promise.allSettled(
+          CONSOLE_ROLES.filter((role) => role !== officerRole).map(async (role) => {
+            const login = await client.demoLogin({ role, persona_id: null });
+            if (cancelled) {
+              return;
+            }
+            roleSessions.current.set(role, {
+              token: login.access_token,
+              principal: login.principal,
+            });
+          }),
+        );
       } catch (caught: unknown) {
         if (!cancelled) {
           setNote(caught instanceof Error ? caught.message : "Could not prepare stage sessions.");
@@ -263,7 +335,7 @@ export function StageView({
     return () => {
       cancelled = true;
     };
-  }, [consoleSafe, officerRole, persona]);
+  }, [officerRole, persona]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -271,6 +343,13 @@ export function StageView({
         return;
       }
       const data = event.data as { type?: string; kind?: string; path?: string; frame?: string };
+      if (data?.type === "manobal.stage.console-path" && typeof data.path === "string") {
+        const next = safePath(data.path, allowedConsolePath, liveConsole);
+        if (next !== liveConsole) {
+          setLiveConsole(next);
+        }
+        return;
+      }
       if (data?.type === "manobal.stage.ready") {
         if (event.source === phoneFrame.current?.contentWindow) {
           postAuth(phoneFrame.current?.contentWindow, phoneToken.current, phonePrincipal.current);
@@ -296,11 +375,8 @@ export function StageView({
           return;
         }
         void mintConsole(next).then(() => {
-          if (data.type === "manobal.stage.console-go" && next !== liveConsole) {
+          if (next !== liveConsole) {
             setLiveConsole(next);
-            const url = new URL(window.location.href);
-            url.searchParams.set("console", next);
-            window.history.replaceState({}, "", url);
           }
         });
       }
@@ -371,11 +447,10 @@ export function StageView({
           {armed && consoleToken.current ? (
             <iframe
               allow="autoplay"
-              key={liveConsole}
               name={STAGE_CONSOLE_FRAME}
               onLoad={pushSessions}
               ref={consoleFrame}
-              src={liveConsole}
+              src={consoleSrc}
               title="Command console"
               loading="eager"
             />

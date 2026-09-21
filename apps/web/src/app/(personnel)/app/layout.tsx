@@ -5,72 +5,142 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import {
+  PersonnelLanguageProvider,
+  usePersonnelI18n,
+} from "@/lib/personnel-i18n";
 import { queueCount } from "@/lib/offline";
 import { useEngine } from "@/lib/use-engine";
 import { useFlowMetaValue } from "@/lib/flow-meta";
 
-function languageLabel(code?: string): string | undefined {
+function languageLabel(code: string | undefined, p: (text: string) => string): string | undefined {
   if (code === "ta" || code === "Tamil") {
-    return "Tamil";
+    return p("Tamil");
   }
   if (code === "en" || code === "English") {
-    return "English";
+    return p("English");
   }
   if (code === "hi" || code === "Hindi" || code === "hi-Latn" || code === "Hinglish") {
-    return code === "hi-Latn" || code === "Hinglish" ? "Hinglish" : "Hindi";
+    return p(code === "hi-Latn" || code === "Hinglish" ? "Hinglish" : "Hindi");
   }
   return undefined;
 }
 
-function screenTitle(pathname: string): string | undefined {
+function screenTitle(pathname: string, p: (text: string) => string): string | undefined {
   if (pathname === "/app") {
     return undefined;
   }
   if (pathname === "/app/saathi") {
-    return "Saathi";
+    return p("Saathi");
   }
   if (pathname.startsWith("/app/onboarding")) {
-    return "Getting started";
+    return p("Getting started");
   }
   if (pathname.startsWith("/app/check-in")) {
-    return "Check-in";
+    return p("Check-in");
   }
   if (pathname.startsWith("/app/talk")) {
-    return "Talk to a person";
+    return p("Talk to a person");
   }
   if (pathname.startsWith("/app/toolkit")) {
-    return "Toolkit";
+    return p("Toolkit");
   }
   if (pathname === "/app/me") {
-    return "Me";
+    return p("Me");
   }
   if (pathname.startsWith("/app/assessments/")) {
-    return "Assessments";
+    return p("Assessments");
   }
   if (pathname.startsWith("/app/assessments")) {
-    return "Assessments";
+    return p("Assessments");
   }
   if (pathname.startsWith("/app/rest")) {
-    return "Plan my rest";
+    return p("Plan my rest");
   }
   if (pathname.startsWith("/app/plan")) {
-    return "My safety plan";
+    return p("My safety plan");
   }
   if (pathname.startsWith("/app/family")) {
-    return "Family connect";
+    return p("Family connect");
   }
   if (pathname.startsWith("/app/concerns")) {
-    return "Raise a concern";
+    return p("Raise a concern");
   }
   if (pathname.startsWith("/app/buddy")) {
-    return "Buddy";
+    return p("Buddy");
   }
-  return "Saathi";
+  return p("Saathi");
+}
+
+function LocalisedSaathiShell({
+  children,
+  pathname,
+  chrome,
+  greeting,
+  shiftLine,
+  language,
+  offline,
+  queued,
+  simple,
+  stepMeta,
+}: {
+  children: ReactNode;
+  pathname: string;
+  chrome: "full" | "flow" | "none";
+  greeting?: string | undefined;
+  shiftLine?: string | undefined;
+  language?: string | undefined;
+  offline: boolean;
+  queued: number;
+  simple: boolean;
+  stepMeta: string;
+}) {
+  const router = useRouter();
+  const { lang, p } = usePersonnelI18n();
+  const isHome = pathname === "/app";
+  const flowLabel = screenTitle(pathname, p);
+  const flowMeta = pathname === "/app/saathi" ? languageLabel(language, p) : stepMeta || undefined;
+  const homeGreeting =
+    lang === "hi" ? p("Good morning") : lang === "ta" ? (greeting ?? p("Saathi")) : "Good morning";
+  const offlineLabel =
+    queued > 0 ? p("Offline. {n} check-ins saved on this phone.", { n: queued }) : p("Offline");
+
+  return (
+    <SaathiShell
+      chrome={chrome}
+      copy={{
+        skip: p("Skip to content"),
+        shell: p("Saathi"),
+        content: p("Saathi content"),
+        back: p("Back"),
+        close: p("Close"),
+        offline: offlineLabel,
+        syncing: p("Syncing"),
+        demo: p("Demo"),
+      }}
+      flowLabel={flowLabel}
+      flowMeta={flowMeta}
+      greeting={isHome ? homeGreeting : p("Saathi")}
+      navItems={[
+        { href: "/app", label: p("Home") },
+        { href: "/app/saathi", label: p("Saathi") },
+        { href: "/app/toolkit", label: p("Toolkit") },
+        { href: "/app/me", label: p("Me") },
+      ]}
+      offline={offline}
+      onNavigate={(href) => router.push(href)}
+      pathname={pathname}
+      queued={queued}
+      shiftLine={isHome && shiftLine ? p(shiftLine) : undefined}
+      simple={simple}
+    >
+      {children}
+    </SaathiShell>
+  );
 }
 
 export default function SaathiLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const chrome =
     pathname.startsWith("/app/safety") ||
     pathname.startsWith("/app/toolkit/")
@@ -82,14 +152,9 @@ export default function SaathiLayout({ children }: { children: ReactNode }) {
         ? "flow"
         : "full";
   const { data } = useEngine("home-chrome", (client, signal) => client.meHome(signal));
-  const greeting = pathname === "/app" ? (data?.greeting ?? "Saathi") : "Saathi";
-  const shiftLine = pathname === "/app" ? data?.shift_line : undefined;
   const [offline, setOffline] = useState(false);
   const [queued, setQueued] = useState(0);
   const stepMeta = useFlowMetaValue();
-  const flowLabel = screenTitle(pathname);
-  const flowMeta =
-    pathname === "/app/saathi" ? languageLabel(data?.language) : stepMeta || undefined;
 
   useEffect(() => {
     const sync = () => {
@@ -108,19 +173,20 @@ export default function SaathiLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SaathiShell
-      chrome={chrome}
-      flowLabel={flowLabel}
-      flowMeta={flowMeta}
-      greeting={greeting}
-      offline={offline}
-      onNavigate={(href) => router.push(href)}
-      pathname={pathname}
-      queued={queued}
-      shiftLine={shiftLine}
-      simple={Boolean(data?.simple_mode)}
-    >
-      {children}
-    </SaathiShell>
+    <PersonnelLanguageProvider fallback={data?.language}>
+      <LocalisedSaathiShell
+        chrome={chrome}
+        greeting={data?.greeting}
+        language={data?.language}
+        offline={offline}
+        pathname={pathname}
+        queued={queued}
+        shiftLine={data?.shift_line}
+        simple={Boolean(data?.simple_mode)}
+        stepMeta={stepMeta}
+      >
+        {children}
+      </LocalisedSaathiShell>
+    </PersonnelLanguageProvider>
   );
 }

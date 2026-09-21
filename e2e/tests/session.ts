@@ -1,12 +1,32 @@
-import type { Page } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 
 const ENGINE = process.env.ENGINE_URL ?? "http://localhost:8000";
+
+export async function grantDemoAccess(
+  request: APIRequestContext,
+  level: "judge" | "operator" = "judge",
+): Promise<void> {
+  const code =
+    level === "operator"
+      ? process.env.OPERATOR_ACCESS_CODE
+      : process.env.JUDGE_ACCESS_CODE;
+  if (!code) {
+    return;
+  }
+  const response = await request.post(`${ENGINE}/api/v1/auth/demo-access`, {
+    data: { code },
+  });
+  if (!response.ok()) {
+    throw new Error(`Demo ${level} access failed with ${response.status()}.`);
+  }
+}
 
 export async function signIn(
   page: Page,
   role: string,
   personaId?: string,
 ): Promise<void> {
+  await grantDemoAccess(page.request);
   const response = await page.request.post(`${ENGINE}/api/v1/auth/demo-login`, {
     data: {
       role,

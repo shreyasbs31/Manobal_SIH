@@ -1,9 +1,11 @@
 FROM node:20-alpine
 
 RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
-WORKDIR /app
-COPY infra/realtime/package.json ./
-RUN pnpm install --prod --no-frozen-lockfile
+WORKDIR /workspace
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY infra/realtime/package.json infra/realtime/package.json
+RUN pnpm install --prod --frozen-lockfile --filter @manobal/realtime-local
+WORKDIR /workspace/infra/realtime
 COPY infra/realtime/server.mjs ./
 
 USER node

@@ -69,6 +69,8 @@ export function SaathiShell({
   flowMeta,
   homeHref = "/app",
   onNavigate,
+  navItems = SAATHI_TABS,
+  copy,
 }: {
   children: ReactNode;
   pathname: string;
@@ -84,6 +86,19 @@ export function SaathiShell({
   flowMeta?: string | undefined;
   homeHref?: string | undefined;
   onNavigate?: ((href: string) => void) | undefined;
+  navItems?: readonly NavItem[] | undefined;
+  copy?:
+    | {
+        skip: string;
+        shell: string;
+        content: string;
+        back: string;
+        close: string;
+        offline: string;
+        syncing: string;
+        demo: string;
+      }
+    | undefined;
 }) {
   const isHome = pathname === homeHref;
   const nav = usePathStack("manobal.nav.saathi", pathname, homeHref);
@@ -139,9 +154,9 @@ export function SaathiShell({
       data-theme="light"
     >
       <a className="mb-skip" href="#main">
-        Skip to content
+        {copy?.skip ?? "Skip to content"}
       </a>
-      <header className="mb-saathi-top" aria-label="Saathi">
+      <header className="mb-saathi-top" aria-label={copy?.shell ?? "Saathi"}>
         {isHome && chrome === "full" ? (
           <>
             <div className="mb-saathi-greet">
@@ -152,8 +167,10 @@ export function SaathiShell({
           </>
         ) : (
           <>
-            <h1 className="mb-sr-only">{flowLabel || "Saathi"}</h1>
+            <h1 className="mb-sr-only">{flowLabel || copy?.shell || "Saathi"}</h1>
             <ScreenNav
+              backLabel={copy?.back}
+              closeLabel={copy?.close}
               meta={flowMeta}
               onBack={goBack}
               onClose={goClose}
@@ -165,18 +182,18 @@ export function SaathiShell({
         )}
         {showTabs && isHome ? (
           <div className="mb-saathi-status">
-            {offline ? <StatusChip kind="offline" queued={queued} /> : null}
-            {syncing ? <StatusChip kind="syncing" /> : null}
-            {mode === "demo" ? <StatusChip kind="demo" /> : null}
+            {offline ? <StatusChip kind="offline" label={copy?.offline} queued={queued} /> : null}
+            {syncing ? <StatusChip kind="syncing" label={copy?.syncing} /> : null}
+            {mode === "demo" ? <StatusChip kind="demo" label={copy?.demo} /> : null}
           </div>
         ) : null}
       </header>
-      <main className="mb-saathi-main" id="main" aria-label="Saathi content">
+      <main className="mb-saathi-main" id="main" aria-label={copy?.content ?? "Saathi content"}>
         {children}
       </main>
       {showTabs ? (
-        <nav className="mb-saathi-tabs" aria-label="Saathi">
-          {SAATHI_TABS.map((tab, index) => {
+        <nav className="mb-saathi-tabs" aria-label={copy?.shell ?? "Saathi"}>
+          {navItems.map((tab, index) => {
             const Icon = TAB_ICONS[index] ?? House;
             const current =
               tab.href === "/app"
@@ -266,10 +283,17 @@ export function CommandShell({
         langHi: string;
         langGroup: string;
         deskSuffix: string;
+        simulated?: string;
+        skip?: string;
+        theme?: string;
+        unitScope?: string;
+        soundOn?: string;
+        soundOff?: string;
+        palette?: string;
       }
     | undefined;
 }) {
-  const labels = chromeCopy ?? {
+  const labels = {
     expand: "Expand menu",
     collapse: "Collapse menu",
     search: "Search",
@@ -279,6 +303,14 @@ export function CommandShell({
     langHi: "Hindi",
     langGroup: "Console language",
     deskSuffix: "desk",
+    simulated: "",
+    skip: "Skip to content",
+    theme: "Theme",
+    unitScope: "Unit",
+    soundOn: "Mute console chimes",
+    soundOff: "Enable console chimes",
+    palette: "Open a surface",
+    ...chromeCopy,
   };
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -287,6 +319,11 @@ export function CommandShell({
   const [soundOn, setSoundOn] = useState(false);
   const paletteId = useId();
   const items = useMemo(() => navItems, [navItems]);
+  useEffect(() => {
+    if (!units.includes(unit)) {
+      setUnit(units[0] ?? unit);
+    }
+  }, [unit, units]);
   const nav = usePathStack("manobal.nav.command", pathname, homeHref);
   const goBack = useCallback(() => {
     if (requestScreenBack()) {
@@ -294,11 +331,7 @@ export function CommandShell({
     }
     goHref(nav.back(), onNavigate);
   }, [nav, onNavigate]);
-  const goClose = useCallback(() => {
-    goHref(nav.close(), onNavigate);
-  }, [nav, onNavigate]);
   const showBack = nav.canBack || pathname !== homeHref;
-  const showClose = pathname !== homeHref;
 
   useEffect(() => {
     setSoundOn(soundEnabled());
@@ -340,7 +373,7 @@ export function CommandShell({
       lang={language}
     >
       <a className="mb-skip" href="#main">
-        Skip to content
+        {labels.skip}
       </a>
       <nav className="mb-rail" aria-label="Console">
         <div className="mb-rail-texture" aria-hidden="true">
@@ -389,28 +422,30 @@ export function CommandShell({
         <div className="mb-rail-foot">
           <div className="mb-lang-toggle" role="group" aria-label={labels.langGroup}>
             <button
-              aria-label={labels.langEn}
+              aria-label="English"
               aria-pressed={language === "en"}
               className="mb-ghost"
               onClick={() => onLanguageChange?.("en")}
+              title={labels.langEn}
               type="button"
             >
               EN
             </button>
             <button
-              aria-label={labels.langHi}
+              aria-label="Hindi"
               aria-pressed={language === "hi"}
               className="mb-ghost"
               onClick={() => onLanguageChange?.("hi")}
+              title={labels.langHi}
               type="button"
             >
               हि
             </button>
           </div>
           <label className="mb-rail-theme">
-            <span className="mb-sr">Theme</span>
+            <span className="mb-sr">{labels.theme}</span>
             <select
-              aria-label="Theme"
+              aria-label={labels.theme}
               onChange={(event) => {
                 const next = event.target.value === "light" ? "light" : "dark";
                 setSkinTheme(next);
@@ -429,17 +464,12 @@ export function CommandShell({
       <div className="mb-command-main">
         <header className="mb-topbar" aria-label={deskLabel ? `${deskLabel} ${labels.deskSuffix}` : "Console"}>
           <div className="mb-topbar-start">
-            <ScreenNav
-              compact
-              onBack={goBack}
-              onClose={goClose}
-              showBack={showBack}
-              showClose={showClose}
-            />
+            {/* The rail is the console's navigation; a compact Back/Close pair
+                here duplicated it and rendered as two empty boxes. */}
             <label className="mb-unit">
-              <span className="mb-sr">Unit</span>
+              <span className="mb-sr">{labels.unitScope}</span>
               <select
-                aria-label="Scoped unit"
+                aria-label={labels.unitScope}
                 className="mb-unit"
                 onChange={(event) => setUnit(event.target.value)}
                 value={unit}
@@ -454,9 +484,9 @@ export function CommandShell({
             <h1 className="mb-type-title">{title}</h1>
           </div>
           <div className="mb-topbar-end">
-            <SimClock value={clock} />
+            <SimClock prefix={labels.simulated} value={clock} />
             <button
-              aria-label={soundOn ? "Mute console chimes" : "Enable console chimes"}
+              aria-label={soundOn ? labels.soundOn : labels.soundOff}
               className="mb-ghost"
               onClick={() => {
                 const next = !soundOn;
@@ -489,8 +519,8 @@ export function CommandShell({
       </div>
       {paletteOpen ? (
         <div className="mb-cmdk" id={paletteId}>
-          <Command label="Open a surface" loop>
-            <Command.Input placeholder="Open a surface" />
+          <Command label={labels.palette} loop>
+            <Command.Input placeholder={labels.palette} />
             <Command.List>
               {items.map((item) => (
                 <Command.Item

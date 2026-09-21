@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
-import { useConsoleLang } from "@/lib/console-i18n";
+import { localiseUnit, useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
@@ -22,7 +22,7 @@ export default function CommandPage() {
   const [chart, setChart] = useState("40%");
   const [asking, setAsking] = useState(false);
   const [panel, setPanel] = useState({
-    title: "Charlie Coy, W0",
+    title: "",
     unit: "Charlie Coy",
     share: "20 to 30%",
     note: "",
@@ -66,7 +66,14 @@ export default function CommandPage() {
   }
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
+    <ScreenState
+      error={error}
+      loading={loading}
+      offline={offline}
+      empty={!data}
+      loadingText={tx.loading}
+      offlineText={tx.offlineView}
+    >
       {data ? (
         <div className="mb-desk mb-desk-fill">
           <p className="mb-kpi-strip">
@@ -78,31 +85,50 @@ export default function CommandPage() {
           </p>
           <div className="mb-posture" data-copilot={copilot ? "true" : "false"}>
             <FormationGrid
-              cells={[...data.cells]}
+              cells={(data.cells ?? []).map((cell) => ({
+                ...cell,
+                unit: localiseUnit(tx, cell.unit),
+              }))}
               onSelect={(cell) => {
+                const original =
+                  (data.companies ?? []).find((name) => localiseUnit(tx, name) === cell.unit) ??
+                  cell.unit;
                 setPanel({
                   title: `${cell.unit}, ${cell.weekLabel}`,
-                  unit: cell.unit,
+                  unit: original,
                   share:
                     cell.band === "hidden"
                       ? tx.hiddenPeople
-                      : (cell.shareLabel ?? "under 10%"),
+                      : (cell.shareLabel ?? tx.under10),
                   note:
                     cell.band === "hidden"
                       ? tx.hiddenNote
-                      : cell.unit === "Charlie Coy"
+                      : original === "Charlie Coy"
                         ? tx.charlieNote
                         : tx.shareT2Note,
                   hidden: cell.band === "hidden",
                 });
               }}
-              sparks={data.sparks}
+              sparks={Object.fromEntries(
+                Object.entries(data.sparks ?? {}).map(([key, value]) => [
+                  localiseUnit(tx, key),
+                  value,
+                ]),
+              )}
               takeaway={tx.takeaway}
-              units={[...data.companies]}
+              copy={{
+                unit: tx.unit,
+                hidden: tx.hiddenNote,
+                usual: tx.usual,
+                watch: tx.watch,
+                heavy: tx.heavy,
+                gridLabel: tx.gridLabel,
+              }}
+              units={(data.companies ?? []).map((name) => localiseUnit(tx, name))}
               weeks={12}
             />
             <aside className="mb-sheet">
-              <h2>{panel.title}</h2>
+              <h2>{panel.title || `${localiseUnit(tx, "Charlie Coy")}, W0`}</h2>
               <p className="mb-sheet-metric">
                 {tx.shareT2}: {panel.share || "20 to 30%"}
               </p>

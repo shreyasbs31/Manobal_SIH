@@ -1,6 +1,18 @@
 .git
 .cursor
+.azure
 .venv
+.env
+**/.env
+**/.env.*
+infra/secrets.env
+infra/keys
+infra/.cache
+**/*.pem
+**/*.p12
+**/*.p8
+**/*.keystore
+**/*.jks
 **/__pycache__
 **/.pytest_cache
 **/.mypy_cache
@@ -9,4 +21,8 @@
 **/.next
 **/dist
 **/coverage
+e2e/artifacts
+e2e/out
+out
+*.zip
 docs

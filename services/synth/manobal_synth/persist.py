@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 import httpx
 import polars as pl
 import psycopg
+from azure.identity import DefaultAzureCredential
+from azure_postgresql_auth.psycopg3 import EntraConnection
 from psycopg.types.json import Jsonb
 
 from .org import build_units
@@ -39,6 +43,31 @@ SECONDARY_INDEXES = (
     "ix_assessment_token_date",
     "ix_assessment_final_tier_date",
 )
+
+
+def _entra_enabled() -> bool:
+    return os.environ.get("CORE_DATABASE_ENTRA_AUTH", "").strip().lower() in {
+        "1",
+        "true",
+    }
+
+
+@contextmanager
+def _database_connection(database_url: str) -> Iterator[psycopg.Connection[Any]]:
+    if not _entra_enabled():
+        with psycopg.connect(database_url) as connection:
+            yield connection
+        return
+    credential = DefaultAzureCredential(
+        managed_identity_client_id=os.environ.get("AZURE_CLIENT_ID") or None,
+        exclude_interactive_browser_credential=True,
+    )
+    connection = EntraConnection.connect(database_url, credential=credential)
+    try:
+        with connection:
+            yield connection
+    finally:
+        credential.close()
 
 
 def write_artifacts(world: World, directory: Path | None = None) -> Path:
@@ -92,14 +121,15 @@ def tokenise_world(
     rows = world.subjects.select(["token", "service_no", "display_label", "unit_path"]).to_dicts()
 
     def one(row: dict[str, object]) -> tuple[str, str]:
+        service_no = str(row["service_no"])
         with httpx.Client(base_url=vault_url, timeout=30) as client:
             response = client.post(
                 "/tokenise",
                 headers={"x-ingest-token": ingest_secret},
                 json={
-                    "service_no": row["service_no"],
+                    "service_no": service_no,
                     "name": row["display_label"],
-                    "phone": f"SYN-PHONE-{row['service_no'][4:]}",
+                    "phone": f"SYN-PHONE-{service_no[4:]}",
                     "posting": str(row["unit_path"]),
                     "synthetic": True,
                 },
@@ -150,9 +180,10 @@ def apply_token_map(world: World, mapping: dict[str, str]) -> World:
 def persist_world(world: World, database_url: str) -> None:
     units = build_units()
     unit_ids = {unit.path: _stable(f"unit:{unit.path}") for unit in units}
-    with psycopg.connect(database_url) as connection:
+    with _database_connection(database_url) as connection:
         with connection.cursor() as cursor:
-            cursor.execute("SET session_replication_role = replica")
+            if not _entra_enabled():
+                cursor.execute("SET session_replication_role = replica")
             for name in SECONDARY_INDEXES:
                 cursor.execute(f"DROP INDEX IF EXISTS {name}")
             for unit in units:
@@ -219,7 +250,8 @@ def persist_world(world: World, database_url: str) -> None:
                 ),
             )
             _recreate_indexes(cursor)
-            cursor.execute("SET session_replication_role = origin")
+            if not _entra_enabled():
+                cursor.execute("SET session_replication_role = origin")
         connection.commit()
 
 
@@ -267,7 +299,7 @@ def seed_primary(
     }
 
 
-def _copy_subjects(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_subjects(cursor: psycopg.Cursor, world: World) -> None:
     rows = world.subjects.select(
         [
             "token",
@@ -292,7 +324,7 @@ def _copy_subjects(cursor: psycopg.Cursor, world: World) -> None:  # type: ignor
         copy.write(csv)
 
 
-def _copy_duty(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_duty(cursor: psycopg.Cursor, world: World) -> None:
     frame = world.duty.select(
         ["token", "date", "hours", "shift_start", "night", "rest_day", "rest_denied", "sim_at"]
     )
@@ -308,7 +340,7 @@ def _copy_duty(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[ty
 
 
 def _copy_frame(
-    cursor: psycopg.Cursor,  # type: ignore[type-arg]
+    cursor: psycopg.Cursor,
     table: str,
     columns: list[str],
     frame: pl.DataFrame,
@@ -323,7 +355,7 @@ def _copy_frame(
         copy.write(csv)
 
 
-def _copy_simple(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_simple(cursor: psycopg.Cursor, world: World) -> None:
     _copy_frame(
         cursor,
         "leave_event",
@@ -443,7 +475,7 @@ def _copy_simple(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[
     )
 
 
-def _copy_org_events(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_org_events(cursor: psycopg.Cursor, world: World) -> None:
     if world.org_event.height == 0:
         return
     for row in world.org_event.iter_rows(named=True):
@@ -464,7 +496,7 @@ def _copy_org_events(cursor: psycopg.Cursor, world: World) -> None:  # type: ign
         )
 
 
-def _copy_ema(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_ema(cursor: psycopg.Cursor, world: World) -> None:
     if world.ema.height == 0:
         return
     frame = world.ema.with_columns(
@@ -484,7 +516,7 @@ def _copy_ema(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[typ
     del csv
 
 
-def _copy_instruments(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_instruments(cursor: psycopg.Cursor, world: World) -> None:
     if world.instrument.height == 0:
         return
     for row in world.instrument.iter_rows(named=True):
@@ -511,7 +543,7 @@ def _copy_instruments(cursor: psycopg.Cursor, world: World) -> None:  # type: ig
         )
 
 
-def _copy_voice(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _copy_voice(cursor: psycopg.Cursor, world: World) -> None:
     if world.voice_features.height == 0:
         return
     for row in world.voice_features.iter_rows(named=True):
@@ -533,7 +565,7 @@ def _copy_voice(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[t
         )
 
 
-def _insert_officers(cursor: psycopg.Cursor, world: World) -> None:  # type: ignore[type-arg]
+def _insert_officers(cursor: psycopg.Cursor, world: World) -> None:
     for row in world.officers.iter_rows(named=True):
         cursor.execute(
             """
@@ -558,7 +590,7 @@ def _insert_officers(cursor: psycopg.Cursor, world: World) -> None:  # type: ign
         )
 
 
-def _recreate_indexes(cursor: psycopg.Cursor) -> None:  # type: ignore[type-arg]
+def _recreate_indexes(cursor: psycopg.Cursor) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_unit_path_gist ON unit USING gist (path)")
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS ix_subject_unit_path ON subject USING gist (unit_path)"

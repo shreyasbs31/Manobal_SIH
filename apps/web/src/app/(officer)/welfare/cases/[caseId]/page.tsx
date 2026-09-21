@@ -14,7 +14,13 @@ import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
-import { useConsoleLang } from "@/lib/console-i18n";
+import {
+  localisePhrase,
+  localiseUnit,
+  tierCaption,
+  trajectoryCopy,
+  useConsoleLang,
+} from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 import { announceWorld } from "@/lib/world";
@@ -68,15 +74,22 @@ export default function CaseWorkspacePage() {
   const nodes = useMemo(() => (data ? briefNodes(data.brief, data.brief_fields) : []), [data]);
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
+    <ScreenState
+      error={error}
+      loading={loading}
+      offline={offline}
+      empty={!data}
+      loadingText={tx.loading}
+      offlineText={tx.offlineView}
+    >
       {data ? (
         <div className="mb-case-work">
           <header className="mb-action-row">
             <strong>{data.case_id}</strong>
-            <TierBadge tier={data.tier} />
-            <TrajectoryArrow direction={data.trajectory} />
+            <TierBadge caption={tierCaption(tx, data.tier)} tier={data.tier} />
+            <TrajectoryArrow direction={data.trajectory} labels={trajectoryCopy(tx)} />
             <SlaTimer
-              label="SLA"
+              label={tx.sla}
               remainingLabel={data.sla_label}
               remainingRatio={data.remaining_ratio}
               tier={data.tier}
@@ -91,11 +104,11 @@ export default function CaseWorkspacePage() {
           <div className="mb-case-cols">
             <section>
               <h2>{tx.whatChanged}</h2>
-              {data.what_changed.map((row) => (
+                  {data.what_changed.map((row) => (
                 <p key={row.title}>
-                  <strong>{row.title}</strong>
+                  <strong>{localisePhrase(tx, row.title)}</strong>
                   <br />
-                  {row.detail}
+                  {localisePhrase(tx, row.detail)}
                 </p>
               ))}
               <h2>{tx.trendSharing}</h2>
@@ -116,11 +129,11 @@ export default function CaseWorkspacePage() {
               <h2>{tx.recommendedActions}</h2>
               {data.levers.map((item, index) => (
                 <LeverOption
-                  hint={item.hint}
+                  hint={localisePhrase(tx, item.hint)}
                   index={index + 1}
                   key={item.title}
-                  rationale={item.rationale}
-                  title={item.title}
+                  rationale={localisePhrase(tx, item.rationale)}
+                  title={localisePhrase(tx, item.title)}
                 />
               ))}
               <BriefPanel>
@@ -139,9 +152,11 @@ export default function CaseWorkspacePage() {
                 <div className="mb-identity-card">
                   <p>{reveal.notice}</p>
                   <p>
-                    {String(reveal.card.label)}. {String(reveal.card.rank)}. {String(reveal.card.unit)}.
+                    {String(reveal.card.label)}. {String(reveal.card.rank)}. {localiseUnit(tx, String(reveal.card.unit))}.
                   </p>
-                  <p>Contact {String(reveal.card.contact)}. Note due {reveal.contact_note_due}.</p>
+                  <p>
+                    {tx.contactLine} {String(reveal.card.contact)}. {tx.noteDue} {reveal.contact_note_due}.
+                  </p>
                   <label>
                     {tx.contactNote}
                     <textarea onChange={(event) => setNote(event.target.value)} value={note} />
@@ -151,7 +166,7 @@ export default function CaseWorkspacePage() {
                     onClick={() => {
                       void engineClient()
                         .welfareContactNote(reveal.grant_id, note)
-                        .then(() => setMessage("Contact note saved."));
+                        .then(() => setMessage(tx.contactSaved));
                     }}
                     type="button"
                   >
@@ -197,7 +212,7 @@ export default function CaseWorkspacePage() {
                           announceWorld("ledger");
                         })
                         .catch((caught: unknown) => {
-                          setMessage(caught instanceof Error ? caught.message : "Reveal failed");
+                          setMessage(caught instanceof Error ? caught.message : tx.revealFailed);
                         });
                     }}
                     type="button"
@@ -209,12 +224,12 @@ export default function CaseWorkspacePage() {
               )}
               <h2>{tx.log}</h2>
               <EscalationLadder
-                current="waiting"
+                current={tx.statusWaiting}
                 steps={[
-                  { role: "UWO", status: "acknowledged", time: "09:12" },
-                  { role: "Company welfare deputy", status: "notified", time: "09:18" },
-                  { role: "Battalion MO", status: "waiting", time: "" },
-                  { role: "Sector counsellor", status: "waiting", time: "" },
+                  { role: tx.roleUwo, status: tx.statusAck, time: "09:12" },
+                  { role: tx.roleDeputy, status: tx.statusNotified, time: "09:18" },
+                  { role: tx.roleMo, status: tx.statusWaiting, time: "" },
+                  { role: tx.roleCounsellor, status: tx.statusWaiting, time: "" },
                 ]}
               />
               <label>
@@ -257,7 +272,7 @@ export default function CaseWorkspacePage() {
                       refer,
                     })
                     .then(() => {
-                      setMessage("Action recorded.");
+                      setMessage(tx.actionRecorded);
                       reload();
                     });
                 }}
@@ -276,7 +291,7 @@ export default function CaseWorkspacePage() {
                       follow_up: followUp,
                       refer,
                     })
-                    .then(() => setMessage("Case closed."));
+                    .then(() => setMessage(tx.caseClosed));
                 }}
                 type="button"
               >

@@ -6,7 +6,7 @@ import {
   type ManobalRole,
 } from "@manobal/contracts";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { engineBaseUrl, persistLogin } from "@/lib/engine";
 import { loginWithPasskey, registerPasskey } from "@/lib/passkeys";
@@ -51,23 +51,62 @@ const roleRoutes: Record<ManobalRole, string> = {
 };
 
 const roleIds = new Set<string>(roles.map((role) => role.id));
+const operatorRoleIds = new Set<ManobalRole>(["admin", "director"]);
 
 export function DemoLogin({
+  gateRequired,
   initialRole,
 }: {
+  gateRequired: boolean;
   initialRole?: string | undefined;
 }) {
   const router = useRouter();
-  const [role, setRole] = useState<ManobalRole>(
+  const requestedRole =
     initialRole && roleIds.has(initialRole)
       ? (initialRole as ManobalRole)
-      : "personnel",
+      : "personnel";
+  const [role, setRole] = useState<ManobalRole>(
+    gateRequired && operatorRoleIds.has(requestedRole)
+      ? "personnel"
+      : requestedRole,
   );
   const [personaId, setPersonaId] = useState("arjun");
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState("Choose who you are, then continue.");
   const [pin, setPin] = useState("");
+  const [operator, setOperator] = useState(!gateRequired);
   const client = useMemo(() => new ManobalClient(engineBaseUrl()), []);
+  const availableRoles = useMemo(
+    () =>
+      operator
+        ? roles
+        : roles.filter((item) => !operatorRoleIds.has(item.id)),
+    [operator],
+  );
+
+  useEffect(() => {
+    if (!gateRequired) {
+      return;
+    }
+    void fetch("/api/v1/auth/demo-access/status", {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        return (await response.json()) as { access?: string };
+      })
+      .then((payload) => {
+        const hasOperatorAccess = payload?.access === "operator";
+        setOperator(hasOperatorAccess);
+        if (!hasOperatorAccess && operatorRoleIds.has(role)) {
+          setRole("personnel");
+        }
+      })
+      .catch(() => setOperator(false));
+  }, [gateRequired, role]);
 
   function finish(login: LoginResponse) {
     persistLogin(login, {
@@ -97,7 +136,7 @@ export function DemoLogin({
     <div className="mb-home-stack">
       <fieldset className="role-grid">
         <legend>Access as</legend>
-        {roles.map((item) => (
+        {availableRoles.map((item) => (
           <button
             aria-pressed={role === item.id}
             className="choice-button"
@@ -145,7 +184,7 @@ export function DemoLogin({
         >
           {pending ? "Signing in" : "Continue"}
         </button>
-        {role === "personnel" ? (
+        {role === "personnel" && !gateRequired ? (
           <>
             <button
               className="mb-secondary"

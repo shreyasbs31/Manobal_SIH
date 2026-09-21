@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ScreenExit } from "@/components/screen-exit";
 import { engineClient } from "@/lib/engine";
 import { browserLexiconHit } from "@/lib/lexicon";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 
 const GROUNDING = [
   { count: 5, prompt: "Name five things you can see." },
@@ -63,6 +64,7 @@ function markHelped(id: string, reward: "helped" | "not_for_me") {
 }
 
 function JournalBox() {
+  const { p } = usePersonnelI18n();
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(0);
   return (
@@ -82,13 +84,13 @@ function JournalBox() {
       }}
     >
       <label>
-        Private journal
+        {p("Private journal")}
         <textarea onChange={(event) => setText(event.target.value)} value={text} />
       </label>
       <button className="mb-primary" type="submit">
-        Save on this phone
+        {p("Save on this phone")}
       </button>
-      <p>{saved ? `${saved} notes on this phone.` : "Officers never see this."}</p>
+      <p>{saved ? p("{n} notes on this phone.", { n: saved }) : p("Officers never see this.")}</p>
     </form>
   );
 }
@@ -100,31 +102,33 @@ function StepPractice({
   steps: string[];
   doneLabel: string;
 }) {
+  const { p } = usePersonnelI18n();
   const [step, setStep] = useState(0);
   const current = steps[step];
   if (!current) {
-    return <p>{doneLabel}</p>;
+    return <p>{p(doneLabel)}</p>;
   }
   return (
     <div className="mb-practice">
       <p>
-        {step + 1} of {steps.length}
+        {p("{step} of {total}", { step: step + 1, total: steps.length })}
       </p>
-      <h2>{current}</h2>
+      <h2>{p(current)}</h2>
       <button className="mb-primary" onClick={() => setStep((value) => value + 1)} type="button">
-        {step + 1 === steps.length ? "Finish" : "Next"}
+        {p(step + 1 === steps.length ? "Finish" : "Next")}
       </button>
     </div>
   );
 }
 
 function GroundingPractice() {
+  const { p } = usePersonnelI18n();
   const [step, setStep] = useState(0);
   const [named, setNamed] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const current = GROUNDING[step];
   if (!current) {
-    return <p>You named what is here. Stay with that for one more breath.</p>;
+    return <p>{p("You named what is here. Stay with that for one more breath.")}</p>;
   }
   return (
     <form
@@ -144,18 +148,18 @@ function GroundingPractice() {
       }}
     >
       <p>
-        {current.count - named.length} left in this step
+        {p("{n} left in this step", { n: current.count - named.length })}
       </p>
-      <h2>{current.prompt}</h2>
+      <h2>{p(current.prompt)}</h2>
       {named.map((item) => (
         <p key={item}>{item}</p>
       ))}
       <label>
-        Write one
+        {p("Write one")}
         <input onChange={(event) => setDraft(event.target.value)} value={draft} />
       </label>
       <button className="mb-primary" type="submit">
-        Add
+        {p("Add")}
       </button>
     </form>
   );
@@ -170,6 +174,7 @@ function TimedPractice({
   label: string;
   audio?: string;
 }) {
+  const { p } = usePersonnelI18n();
   const [left, setLeft] = useState(seconds);
   const [running, setRunning] = useState(false);
   useEffect(() => {
@@ -183,7 +188,7 @@ function TimedPractice({
   const secs = String(left % 60).padStart(2, "0");
   return (
     <div className="mb-practice">
-      <p>{label}</p>
+      <p>{p(label)}</p>
       <p className="mb-breathe-count">{minutes}:{secs}</p>
       {audio ? <audio controls preload="auto" src={audio} /> : null}
       <button
@@ -196,13 +201,14 @@ function TimedPractice({
         }}
         type="button"
       >
-        {running ? (left === 0 ? "Start again" : "Running") : "Start"}
+        {p(running ? (left === 0 ? "Start again" : "Running") : "Start")}
       </button>
     </div>
   );
 }
 
 function Checklist({ items }: { items: string[] }) {
+  const { p } = usePersonnelI18n();
   const [done, setDone] = useState<boolean[]>(() => items.map(() => false));
   return (
     <ul className="mb-practice-list">
@@ -218,7 +224,7 @@ function Checklist({ items }: { items: string[] }) {
               }}
               type="checkbox"
             />
-            {item}
+            {p(item)}
           </label>
         </li>
       ))}
@@ -227,6 +233,7 @@ function Checklist({ items }: { items: string[] }) {
 }
 
 function LetterHome() {
+  const { p } = usePersonnelI18n();
   const [text, setText] = useState(
     typeof window === "undefined" ? "" : window.localStorage.getItem("manobal.letter") ?? "",
   );
@@ -244,28 +251,29 @@ function LetterHome() {
       }}
     >
       <label>
-        Letter home
+        {p("Letter home")}
         <textarea onChange={(event) => setText(event.target.value)} rows={8} value={text} />
       </label>
-      <p>This stays on this phone unless you copy it out yourself.</p>
+      <p>{p("This stays on this phone unless you copy it out yourself.")}</p>
       <button className="mb-primary" type="submit">
-        Save on this phone
+        {p("Save on this phone")}
       </button>
-      {saved ? <p>Saved on this phone.</p> : null}
+      {saved ? <p>{p("Saved on this phone.")}</p> : null}
     </form>
   );
 }
 
 function AngerWalk() {
+  const { p } = usePersonnelI18n();
   const [steps, setSteps] = useState(0);
   return (
     <div className="mb-practice">
-      <p>Walk the perimeter. Tap once each time you pass the start.</p>
+      <p>{p("Walk the perimeter. Tap once each time you pass the start.")}</p>
       <p className="mb-breathe-count">{steps}</p>
       <button className="mb-primary" onClick={() => setSteps((value) => value + 1)} type="button">
-        I passed the start
+        {p("I passed the start")}
       </button>
-      {steps >= 1 ? <p>Speak later. You do not have to settle this now.</p> : null}
+      {steps >= 1 ? <p>{p("Speak later. You do not have to settle this now.")}</p> : null}
     </div>
   );
 }
@@ -281,14 +289,20 @@ export function ToolkitPractice({
   body: string;
   audio?: string | undefined;
 }) {
+  const { lang, p } = usePersonnelI18n();
+  const localAudio = lang === "hi" ? audio?.replace(".en.", ".hi.") : audio;
   return (
     <main className="mb-overlay-page">
-      <h1 className="mb-sr-only">{title}</h1>
-      <ScreenExit backHref="/app/toolkit" title={title} />
-      <p>{body}</p>
+      <h1 className="mb-sr-only">{p(title)}</h1>
+      <ScreenExit backHref="/app/toolkit" title={p(title)} />
+      <p>{p(body)}</p>
       {id === "grounding" ? <GroundingPractice /> : null}
       {id === "sleep_wind_down" ? (
-        <TimedPractice audio={audio ?? "/audio/breathing.en.wav"} label="Ten quiet minutes" seconds={600} />
+        <TimedPractice
+          audio={localAudio ?? `/audio/breathing.${lang === "hi" ? "hi" : "en"}.wav`}
+          label="Ten quiet minutes"
+          seconds={600}
+        />
       ) : null}
       {id === "yoga_nidra" ? (
         <StepPractice doneLabel="Sit up when you are ready." steps={NIDRA} />
@@ -304,9 +318,9 @@ export function ToolkitPractice({
       ) : null}
       {id === "heat_cold" ? (
         <>
-          <h2 className="mb-section-label">Heat</h2>
+          <h2 className="mb-section-label">{p("Heat")}</h2>
           <Checklist items={HEAT} />
-          <h2 className="mb-section-label">Cold</h2>
+          <h2 className="mb-section-label">{p("Cold")}</h2>
           <Checklist items={COLD} />
         </>
       ) : null}
@@ -314,15 +328,15 @@ export function ToolkitPractice({
       {id === "letter_home" ? <LetterHome /> : null}
       {id === "journal" ? <JournalBox /> : null}
       {id === "music_decompress" ? (
-        <audio controls preload="auto" src={audio ?? "/audio/breathing.en.wav"} />
+        <audio controls preload="auto" src={localAudio ?? `/audio/breathing.${lang === "hi" ? "hi" : "en"}.wav`} />
       ) : null}
       {id === "articles" ? (
         <div>
           {ARTICLES.map((article) => (
             <article className="mb-context-card" key={article.title}>
               <div>
-                <h2>{article.title}</h2>
-                <p>{article.body}</p>
+                <h2>{p(article.title)}</h2>
+                <p>{p(article.body)}</p>
               </div>
             </article>
           ))}
@@ -336,14 +350,14 @@ export function ToolkitPractice({
         }}
         type="button"
       >
-        This helped
+        {p("This helped")}
       </button>
       <button
         className="mb-ghost"
         onClick={() => markHelped(id, "not_for_me")}
         type="button"
       >
-        Not for me
+        {p("Not for me")}
       </button>
     </main>
   );

@@ -88,7 +88,10 @@ class FoundryClient:
         if file_token_ok(token_file) and token_file is not None:
             self._credential = _FileTokenCredential(Path(token_file))
             return self._credential
-        self._credential = DefaultAzureCredential(exclude_interactive_browser_credential=True)
+        self._credential = DefaultAzureCredential(
+            managed_identity_client_id=self.settings.azure_client_id or None,
+            exclude_interactive_browser_credential=True,
+        )
         return self._credential
 
     async def bearer_token(self) -> str:
@@ -168,7 +171,10 @@ class FoundryClient:
     ) -> ProviderResponse:
         del temperature
         if sovereign and self.settings.sovereign_llm_base_url:
-            client = AsyncOpenAI(base_url=self.settings.sovereign_llm_base_url.rstrip("/"), api_key="x")
+            client = AsyncOpenAI(
+                base_url=self.settings.sovereign_llm_base_url.rstrip("/"),
+                api_key="x",
+            )
             completion = await client.chat.completions.create(
                 model=self._deployment(model_class),
                 messages=messages,  # type: ignore[arg-type]
@@ -238,7 +244,12 @@ class FoundryClient:
         message = completion.choices[0].message
         text = str(message.content or "")
         usage = completion.usage
-        _LOG.info("foundry_chat class=%s auth=%s chars=%s", model_class, self.auth_path(), len(text))
+        _LOG.info(
+            "foundry_chat class=%s auth=%s chars=%s",
+            model_class,
+            self.auth_path(),
+            len(text),
+        )
         return ProviderResponse(
             text=text,
             provider=model_class,

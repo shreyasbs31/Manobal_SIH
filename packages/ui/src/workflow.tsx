@@ -86,6 +86,10 @@ export function CaseCard({
   status,
   source,
   selected = false,
+  slaLabel = "SLA",
+  limitedLabel = "Limited data",
+  tierCaption,
+  trajectoryLabels,
 }: {
   caseId: string;
   tier: TierId;
@@ -99,18 +103,22 @@ export function CaseCard({
   status?: string | undefined;
   source?: string | undefined;
   selected?: boolean | undefined;
+  slaLabel?: string | undefined;
+  limitedLabel?: string | undefined;
+  tierCaption?: string | undefined;
+  trajectoryLabels?: { rising: string; easing: string; steady: string } | undefined;
 }) {
   const shown = domains.slice(0, 3);
   const extra = domains.length - shown.length;
   return (
     <article className="mb-case" data-selected={selected ? "true" : "false"} data-tier={tier}>
       <div className="mb-case-head">
-        <TierBadge tier={tier} />
+        <TierBadge caption={tierCaption} tier={tier} />
         <strong className="mb-num">{caseId}</strong>
-        <TrajectoryArrow direction={trajectory} />
-        {limited ? <LimitedDataTag /> : null}
+        <TrajectoryArrow direction={trajectory} labels={trajectoryLabels} />
+        {limited ? <LimitedDataTag label={limitedLabel} /> : null}
         <SlaTimer
-          label="SLA"
+          label={slaLabel}
           remainingLabel={sla}
           remainingRatio={remainingRatio}
           tier={tier}
@@ -243,6 +251,7 @@ export function ConsentToggleCard({
   checked,
   onChange,
   illustration,
+  copy,
 }: {
   title: string;
   leavesPhone: string;
@@ -250,14 +259,22 @@ export function ConsentToggleCard({
   checked: boolean;
   onChange: (next: boolean) => void;
   illustration?: ReactNode | undefined;
+  copy?:
+    | {
+        leavesPhone: string;
+        whoCanSee: string;
+        on: string;
+        off: string;
+      }
+    | undefined;
 }) {
   return (
     <article className="mb-consent">
       {illustration ? <div className="mb-consent-illust">{illustration}</div> : null}
       <div className="mb-consent-copy">
         <h3>{title}</h3>
-        <p>What leaves your phone: {leavesPhone}</p>
-        <p>Who can ever see this: {whoCanSee}</p>
+        <p>{copy?.leavesPhone ?? "What leaves your phone"}: {leavesPhone}</p>
+        <p>{copy?.whoCanSee ?? "Who can ever see this"}: {whoCanSee}</p>
       </div>
       <button
         aria-pressed={checked}
@@ -265,7 +282,7 @@ export function ConsentToggleCard({
         onClick={() => onChange(!checked)}
         type="button"
       >
-        {checked ? "On" : "Off"}
+        {checked ? (copy?.on ?? "On") : (copy?.off ?? "Off")}
       </button>
     </article>
   );
@@ -274,9 +291,11 @@ export function ConsentToggleCard({
 export function ReceiptCard({
   hash,
   time,
+  copy,
 }: {
   hash: string;
   time: string;
+  copy?: { title: string; download: string } | undefined;
 }) {
   const first = hash.slice(0, Math.ceil(hash.length / 2));
   const second = hash.slice(Math.ceil(hash.length / 2));
@@ -285,12 +304,12 @@ export function ReceiptCard({
       <svg className="mb-receipt-perf" viewBox="0 0 200 8" aria-hidden="true">
         <path d="M0 4 Q 6 0 12 4 T 24 4 T 36 4 T 48 4 T 60 4 T 72 4 T 84 4 T 96 4 T 108 4 T 120 4 T 132 4 T 144 4 T 156 4 T 168 4 T 180 4 T 192 4" />
       </svg>
-      <h3>Consent receipt</h3>
+      <h3>{copy?.title ?? "Consent receipt"}</h3>
       <p className="mb-num">{first}</p>
       <p className="mb-num">{second}</p>
       <p>{time}</p>
       <button className="mb-secondary" type="button">
-        Download
+        {copy?.download ?? "Download"}
       </button>
     </article>
   );

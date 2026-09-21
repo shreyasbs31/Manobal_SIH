@@ -4,6 +4,8 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+from azure.identity import DefaultAzureCredential
+from azure_postgresql_auth.sqlalchemy import enable_entra_authentication
 from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Connection
 
@@ -19,6 +21,13 @@ if database_url:
     )
 
 target_metadata = None
+
+
+def _entra_enabled() -> bool:
+    return os.environ.get("CORE_DATABASE_ENTRA_AUTH", "").strip().lower() in {
+        "1",
+        "true",
+    }
 
 
 def run_migrations_offline() -> None:
@@ -43,12 +52,28 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 def run_migrations_online() -> None:
+    credential: DefaultAzureCredential | None = None
+    connect_args: dict[str, object] = {}
+    if _entra_enabled():
+        credential = DefaultAzureCredential(
+            managed_identity_client_id=os.environ.get("AZURE_CLIENT_ID") or None,
+            exclude_interactive_browser_credential=True,
+        )
+        connect_args["credential"] = credential
     connectable = create_engine(
         config.get_main_option("sqlalchemy.url") or "",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
-    with connectable.connect() as connection:
-        do_run_migrations(connection)
+    if credential is not None:
+        enable_entra_authentication(connectable)
+    try:
+        with connectable.connect() as connection:
+            do_run_migrations(connection)
+    finally:
+        connectable.dispose()
+        if credential is not None:
+            credential.close()
 
 
 if context.is_offline_mode():

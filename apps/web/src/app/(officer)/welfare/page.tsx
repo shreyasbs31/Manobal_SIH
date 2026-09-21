@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
-import { type ConsoleCopy, useConsoleLang } from "@/lib/console-i18n";
+import { type ConsoleCopy, localiseDomain, localisePhrase, tierCaption, trajectoryCopy, useConsoleLang } from "@/lib/console-i18n";
 import { engineClient } from "@/lib/engine";
 import { useEngine } from "@/lib/use-engine";
 
@@ -99,7 +99,7 @@ export default function WelfarePage() {
       reload();
       tabs.reload();
     } catch (caught: unknown) {
-      setNotice(caught instanceof Error ? caught.message : "Could not update that case.");
+      setNotice(caught instanceof Error ? caught.message : tx.couldNotUpdate);
     }
   }
 
@@ -109,7 +109,9 @@ export default function WelfarePage() {
       emptyText={tx.emptyQueue}
       error={error ?? tabs.error}
       loading={loading}
+      loadingText={tx.loading}
       offline={offline}
+      offlineText={tx.offlineView}
     >
       <div className="mb-desk">
         {t4[0] ? (
@@ -126,7 +128,7 @@ export default function WelfarePage() {
           {profile.data ? <span>{tx.digestAt} {String(profile.data.digest_time)}</span> : null}
         </p>
         {notice ? <p role="status">{notice}</p> : null}
-        <div className="mb-tabs" role="tablist" aria-label="Welfare views">
+        <div className="mb-tabs" role="tablist" aria-label={tx.welfareViews}>
           {TAB_IDS.map((id) => (
             <button
               aria-selected={tab === id}
@@ -161,17 +163,21 @@ export default function WelfarePage() {
                     >
                       <CaseCard
                         caseId={item.case_id}
-                        domains={[...item.drivers]}
-                        drift={item.drift}
-                        lever={item.lever_title}
+                        domains={item.drivers.map((domain) => localiseDomain(tx, domain))}
+                        drift={localisePhrase(tx, item.drift)}
+                        lever={item.lever_title ? localisePhrase(tx, item.lever_title) : undefined}
                         limited={item.limited}
+                        limitedLabel={tx.limitedData}
                         remainingRatio={item.remaining_ratio}
                         selected={item.case_id === selected}
                         sla={item.sla_label}
+                        slaLabel={tx.sla}
                         source={item.source}
                         status={item.status}
                         tier={item.tier}
+                        tierCaption={tierCaption(tx, item.tier)}
                         trajectory={item.trajectory}
+                        trajectoryLabels={trajectoryCopy(tx)}
                       />
                     </a>
                   ))}
@@ -185,6 +191,8 @@ export default function WelfarePage() {
                 restLabel={tx.logRest}
                 referLabel={tx.refer}
                 recommendedLabel={tx.recommended}
+                slaLabel={tx.sla}
+                tx={tx}
                 onRest={() => void act(current.case_id, "open", tx.restLogged)}
                 onRefer={() => void act(current.case_id, "referred", tx.referredCounsellor)}
               />
@@ -203,6 +211,7 @@ export default function WelfarePage() {
             kind="incident"
             openLabel={tx.open}
             talkLabel={tx.askedTalk}
+            soonLabel={tx.soon}
             onAction={(caseId) => void act(caseId, "open", tx.pickUp)}
           />
         ) : null}
@@ -218,6 +227,7 @@ export default function WelfarePage() {
             kind="referral"
             openLabel={tx.open}
             talkLabel={tx.askedTalk}
+            soonLabel={tx.soon}
             onAction={(caseId) => void act(caseId, "open", tx.pickUp)}
           />
         ) : null}
@@ -233,6 +243,7 @@ export default function WelfarePage() {
             kind="followup"
             openLabel={tx.open}
             talkLabel={tx.askedTalk}
+            soonLabel={tx.soon}
             onAction={(caseId) => void act(caseId, "done", tx.markDone)}
           />
         ) : null}
@@ -248,6 +259,7 @@ export default function WelfarePage() {
             kind="closed"
             openLabel={tx.open}
             talkLabel={tx.askedTalk}
+            soonLabel={tx.soon}
           />
         ) : null}
         {tab === "digest" ? (
@@ -262,10 +274,11 @@ export default function WelfarePage() {
             kind="digest"
             openLabel={tx.open}
             talkLabel={tx.askedTalk}
+            soonLabel={tx.soon}
             onAction={(caseId) => void act(caseId, "open", tx.pickUp)}
           />
         ) : null}
-        <p className="mb-workload" aria-label="Workload this week">
+        <p className="mb-workload" aria-label={tx.workloadWeek}>
           {asNumbers(meta.workload).map((value, index) => (
             <i key={`${value}-${index}`} style={{ height: `${8 + value * 4}px` }} />
           ))}
@@ -283,6 +296,8 @@ function QueueAside({
   restLabel,
   referLabel,
   recommendedLabel,
+  slaLabel,
+  tx,
 }: {
   current: WelfareCase;
   onRest: () => void;
@@ -291,13 +306,22 @@ function QueueAside({
   restLabel: string;
   referLabel: string;
   recommendedLabel: string;
+  slaLabel: string;
+  tx: ConsoleCopy;
 }) {
+  const trajectory = trajectoryCopy(tx);
+  const direction =
+    current.trajectory === "rising"
+      ? trajectory.rising
+      : current.trajectory === "easing"
+        ? trajectory.easing
+        : trajectory.steady;
   return (
     <aside className="mb-sheet">
       <h2>
-        {current.case_id} {current.tier} {current.trajectory}
+        {current.case_id} {tierCaption(tx, current.tier)} {direction}
       </h2>
-      <p>{current.drift}</p>
+      <p>{localisePhrase(tx, current.drift)}</p>
       <CaseStrip
         actions={[110]}
         days={Array.from({ length: 24 }, (_, index) => ({
@@ -308,10 +332,10 @@ function QueueAside({
         onsetDay={100}
       />
       <p>
-        {recommendedLabel}: {current.lever_title}
+        {recommendedLabel}: {localisePhrase(tx, current.lever_title)}
       </p>
       <SlaTimer
-        label="SLA"
+        label={slaLabel}
         remainingLabel={current.sla_label}
         remainingRatio={current.remaining_ratio}
         tier={current.tier}
@@ -369,6 +393,7 @@ function TabCards({
   digestLabel,
   dueLabel,
   talkLabel,
+  soonLabel,
 }: {
   items: Record<string, unknown>[];
   empty: string;
@@ -381,6 +406,7 @@ function TabCards({
   digestLabel: string;
   dueLabel: string;
   talkLabel: string;
+  soonLabel: string;
 }) {
   if (items.length === 0) {
     return <p>{empty}</p>;
@@ -394,9 +420,9 @@ function TabCards({
           kind === "incident"
             ? String(item.window_id ?? talkLabel)
             : kind === "referral"
-              ? `${String(item.channel ?? talkLabel)} · ${String(item.status ?? "open")}`
+              ? `${String(item.channel ?? talkLabel)} · ${String(item.status ?? openLabel)}`
               : kind === "followup"
-                ? `${dueLabel} ${String(item.due ?? "soon")}`
+                ? `${dueLabel} ${String(item.due ?? soonLabel)}`
                 : kind === "closed"
                   ? closedLabel
                   : digestLabel;

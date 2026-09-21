@@ -4,9 +4,11 @@ import { useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 export default function ConcernsPage() {
+  const { p } = usePersonnelI18n();
   const { data, error, loading, offline, reload } = useEngine("concerns", (client, signal) =>
     client.meConcerns(signal),
   );
@@ -17,19 +19,19 @@ export default function ConcernsPage() {
   return (
     <ScreenState error={error} loading={loading} offline={offline} empty={false}>
       <div className="mb-home-stack">
-        <p>Leave, land, family, or colleagues. You can send this without your name.</p>
+        <p>{p("Leave, land, family, or colleagues. You can send this without your name.")}</p>
         <label>
-          Category
+          {p("Category")}
           <select onChange={(event) => setCategory(event.target.value)} value={category}>
-            <option value="leave">Leave</option>
-            <option value="land">Land or property</option>
-            <option value="family">Family</option>
-            <option value="colleagues">Colleagues</option>
-            <option value="other">Other</option>
+            <option value="leave">{p("Leave")}</option>
+            <option value="land">{p("Land or property")}</option>
+            <option value="family">{p("Family")}</option>
+            <option value="colleagues">{p("Colleagues")}</option>
+            <option value="other">{p("Other")}</option>
           </select>
         </label>
         <label>
-          What happened
+          {p("What happened")}
           <textarea onChange={(event) => setText(event.target.value)} value={text} />
         </label>
         <label className="mb-check-row">
@@ -38,7 +40,7 @@ export default function ConcernsPage() {
             onChange={(event) => setAnonymous(event.target.checked)}
             type="checkbox"
           />
-          Send without my name
+          {p("Send without my name")}
         </label>
         <button
           className="mb-primary"
@@ -55,19 +57,19 @@ export default function ConcernsPage() {
           }}
           type="button"
         >
-          Send
+          {p("Send")}
         </button>
-        <h2 className="mb-section-label">Status</h2>
+        <h2 className="mb-section-label">{p("Status")}</h2>
         {(data?.items ?? []).length === 0 ? (
-          <p>No concerns sent yet.</p>
+          <p>{p("No concerns sent yet.")}</p>
         ) : (
           (data?.items ?? []).map((row) => (
             <article className="mb-card" key={String(row.id)}>
-              <h2>{String(row.category)}</h2>
+              <h2>{p(String(row.category))}</h2>
               <p>
-                {String(row.status)}
-                {row.sla ? ` · due ${String(row.sla)}` : ""}
-                {row.anonymous ? " · sent without your name" : ""}
+                {p(String(row.status))}
+                {row.sla ? ` · ${p("due {date}", { date: String(row.sla) })}` : ""}
+                {row.anonymous ? ` · ${p("sent without your name")}` : ""}
               </p>
             </article>
           ))

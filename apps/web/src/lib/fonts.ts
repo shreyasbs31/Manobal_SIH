@@ -12,6 +12,7 @@ import {
   Noto_Sans_Oriya,
   Noto_Sans_Tamil,
   Noto_Sans_Telugu,
+  Source_Serif_4,
 } from "next/font/google";
 
 const anek = Anek_Latin({
@@ -34,6 +35,13 @@ const mukta = Mukta({
   weight: ["400", "600", "700"],
   display: "swap",
   variable: "--font-mukta",
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+  variable: "--font-source-serif",
 });
 
 const noto = Noto_Sans({
@@ -120,6 +128,7 @@ export const fontClassName = [
   anek.variable,
   anekDeva.variable,
   mukta.variable,
+  sourceSerif.variable,
   noto.variable,
   notoTa.variable,
   notoTe.variable,

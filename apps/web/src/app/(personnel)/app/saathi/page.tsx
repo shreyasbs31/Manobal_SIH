@@ -20,6 +20,7 @@ import {
   localReflect,
   onDeviceCapability,
 } from "@/lib/on-device";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 const COMPANION_MODE = "checkin";
@@ -50,6 +51,7 @@ function upsertCaption(
 }
 
 export default function SaathiCompanionPage() {
+  const { p } = usePersonnelI18n();
   const { data, error, loading, offline } = useEngine("voice", (client, signal) =>
     client.meVoice(signal),
   );
@@ -64,7 +66,7 @@ export default function SaathiCompanionPage() {
   const [sending, setSending] = useState(false);
   const [fixtureBusy, setFixtureBusy] = useState(false);
   const [journalSaved, setJournalSaved] = useState(false);
-  const [voiceNote, setVoiceNote] = useState<string | null>(HOLD_HINT);
+  const [voiceNote, setVoiceNote] = useState<string | null>(p(HOLD_HINT));
 
   const fixtureId =
     typeof window === "undefined"
@@ -235,7 +237,7 @@ export default function SaathiCompanionPage() {
     socketRef.current = socket;
     sessionReadyRef.current = false;
     socket.onerror = () => {
-      setVoiceNote("Voice could not connect. Sign in again if this keeps happening.");
+      setVoiceNote(p("Voice could not connect. Sign in again if this keeps happening."));
     };
     socket.onclose = () => {
       if (socketRef.current === socket) {
@@ -258,7 +260,7 @@ export default function SaathiCompanionPage() {
       if (payload.type === "auth.failed") {
         void (async () => {
           if (inStageFrame() || authRetry.current) {
-            setVoiceNote("Your session ended. Sign in again.");
+            setVoiceNote(p("Your session ended. Sign in again."));
             if (!inStageFrame()) {
               window.location.assign("/login");
             }
@@ -267,7 +269,7 @@ export default function SaathiCompanionPage() {
           authRetry.current = true;
           const ok = await refreshDemoSession();
           if (!ok) {
-            setVoiceNote("Your session ended. Sign in again.");
+            setVoiceNote(p("Your session ended. Sign in again."));
             window.location.assign("/login");
             return;
           }
@@ -286,7 +288,7 @@ export default function SaathiCompanionPage() {
       if (payload.type === "no_speech") {
         setState("idle");
         setAmplitude(0.08);
-        setVoiceNote("Nothing was heard. Hold the button the whole time you speak, then release.");
+        setVoiceNote(p("Nothing was heard. Hold the button the whole time you speak, then release."));
         return;
       }
       if (payload.type === "caption" && payload.text && payload.speaker) {
@@ -294,7 +296,7 @@ export default function SaathiCompanionPage() {
         const text = payload.text;
         setLines((current) => upsertCaption(current, speaker, text, Boolean(payload.interim)));
         if (speaker === "you" && !payload.interim) {
-          setVoiceNote("Sent. Saathi is writing.");
+          setVoiceNote(p("Sent. Saathi is writing."));
         }
       }
       if (payload.type === "tts") {
@@ -331,7 +333,7 @@ export default function SaathiCompanionPage() {
       );
     };
     return socket;
-  }, [sessionLang]);
+  }, [p, sessionLang]);
 
   useEffect(() => {
     return () => {
@@ -394,7 +396,7 @@ export default function SaathiCompanionPage() {
     captureArmed.current = false;
     peakRms.current = 0;
     holdStartedAt.current = performance.now();
-    setVoiceNote("Listening. Keep holding.");
+    setVoiceNote(p("Listening. Keep holding."));
     if (playbackRef.current) {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify({ type: "barge_in" }));
@@ -416,7 +418,7 @@ export default function SaathiCompanionPage() {
         holdActive.current = false;
         setHolding(false);
         setState("idle");
-        setVoiceNote("Voice could not start. Sign in again if this keeps happening.");
+        setVoiceNote(p("Voice could not start. Sign in again if this keeps happening."));
         return;
       }
       const AudioCtx =
@@ -477,7 +479,7 @@ export default function SaathiCompanionPage() {
       releaseMic();
       setHolding(false);
       setState("idle");
-      setVoiceNote("Microphone is blocked. Allow the mic, then hold the button while you speak.");
+      setVoiceNote(p("Microphone is blocked. Allow the mic, then hold the button while you speak."));
     }
   };
 
@@ -495,24 +497,24 @@ export default function SaathiCompanionPage() {
       setState("idle");
       setAmplitude(0.08);
       if (!captureArmed.current) {
-        setVoiceNote(HOLD_HINT);
+        setVoiceNote(p(HOLD_HINT));
         return;
       }
       if (heldMs < MIN_HOLD_MS) {
-        setVoiceNote(HOLD_HINT);
+        setVoiceNote(p(HOLD_HINT));
         return;
       }
-      setVoiceNote("Nothing was heard. Hold the button the whole time you speak, then release.");
+      setVoiceNote(p("Nothing was heard. Hold the button the whole time you speak, then release."));
       return;
     }
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       setState("thinking");
-      setVoiceNote("Sent. Saathi is writing.");
+      setVoiceNote(p("Sent. Saathi is writing."));
       socketRef.current.send(JSON.stringify({ type: "end_of_turn", heard: true }));
       return;
     }
     setState("idle");
-    setVoiceNote("Voice dropped before that turn could send. Hold to talk again.");
+    setVoiceNote(p("Voice dropped before that turn could send. Hold to talk again."));
   };
 
   const playRecorded = async () => {
@@ -521,7 +523,7 @@ export default function SaathiCompanionPage() {
     }
     setFixtureBusy(true);
     setState("thinking");
-    setVoiceNote("Playing a recorded check-in.");
+    setVoiceNote(p("Playing a recorded check-in."));
     try {
       const AudioCtx =
         window.AudioContext ||
@@ -543,11 +545,11 @@ export default function SaathiCompanionPage() {
         socket.send(JSON.stringify({ type: "transcript_final", text: fixture.transcript }));
       } else {
         setState("idle");
-        setVoiceNote("Could not open the voice connection. Sign in again if this keeps happening.");
+        setVoiceNote(p("Could not open the voice connection. Sign in again if this keeps happening."));
       }
     } catch (caught: unknown) {
       setState("idle");
-      setVoiceNote(caught instanceof Error ? caught.message : "Recorded check-in could not run.");
+      setVoiceNote(caught instanceof Error ? caught.message : p("Recorded check-in could not run."));
     } finally {
       setFixtureBusy(false);
     }
@@ -595,7 +597,7 @@ export default function SaathiCompanionPage() {
         ...upsertCaption(current, "you", text),
         {
           speaker: "saathi",
-          text: "I cannot follow that request. If you want to talk about rest, sleep, or leave, I am here.",
+          text: p("I cannot follow that request. If you want to talk about rest, sleep, or leave, I am here."),
         },
       ]);
       sendingRef.current = false;
@@ -604,7 +606,7 @@ export default function SaathiCompanionPage() {
     }
     setLines((current) => upsertCaption(current, "you", text));
     setState("thinking");
-    setVoiceNote("Sent. Saathi is writing.");
+    setVoiceNote(p("Sent. Saathi is writing."));
 
     if (offline && onDevice && sessionLang.startsWith("en")) {
       setLines((current) => upsertCaption(current, "saathi", localReflect(text, sessionLang)));
@@ -627,7 +629,7 @@ export default function SaathiCompanionPage() {
         upsertCaption(
           current,
           "saathi",
-          "Offline. Open this screen once while connected, or wait until the phone is back online.",
+          p("Offline. Open this screen once while connected, or wait until the phone is back online."),
         ),
       );
       setState("idle");
@@ -670,10 +672,10 @@ export default function SaathiCompanionPage() {
         setLines((current) => upsertCaption(current, "saathi", reply));
         setVoiceNote(null);
       } else {
-        setVoiceNote("Saathi could not reply just then. Try again.");
+        setVoiceNote(p("Saathi could not reply just then. Try again."));
       }
     } catch (caught: unknown) {
-      setVoiceNote(caught instanceof Error ? caught.message : "Could not send. Try again.");
+      setVoiceNote(caught instanceof Error ? caught.message : p("Could not send. Try again."));
     } finally {
       if (sendingRef.current) {
         setState("idle");
@@ -693,8 +695,14 @@ export default function SaathiCompanionPage() {
           {error ? <p role="alert">{error}</p> : null}
           {voiceNote ? <p role="status">{voiceNote}</p> : null}
           <VoiceContour amplitude={amplitude} seed={personaId} state={state} />
-          {lines.length ? <CaptionStream language={language} lines={lines} /> : null}
-          {clearedMs !== null ? <AudioClearedChip /> : null}
+          {lines.length ? (
+            <CaptionStream
+              copy={{ you: p("You"), saathi: p("Saathi") }}
+              language={p(language)}
+              lines={lines}
+            />
+          ) : null}
+          {clearedMs !== null ? <AudioClearedChip label={p("Audio cleared")} /> : null}
           {keyboard ? (
             <form
               onSubmit={(event) => {
@@ -703,7 +711,7 @@ export default function SaathiCompanionPage() {
               }}
             >
               <label>
-                Message
+                {p("Message")}
                 <input
                   value={typed}
                   onChange={(event) => setTyped(event.target.value)}
@@ -711,18 +719,18 @@ export default function SaathiCompanionPage() {
                 />
               </label>
               <button className="mb-primary" disabled={sending || !typed.trim()} type="submit">
-                {sending ? "Sending..." : "Send"}
+                {p(sending ? "Sending..." : "Send")}
               </button>
               <button
                 className="mb-secondary"
                 disabled={sending}
                 onClick={() => {
                   setKeyboard(false);
-                  setVoiceNote(HOLD_HINT);
+                  setVoiceNote(p(HOLD_HINT));
                 }}
                 type="button"
               >
-                Back to voice
+                {p("Back to voice")}
               </button>
             </form>
           ) : (
@@ -754,7 +762,7 @@ export default function SaathiCompanionPage() {
                 onPointerUp={endHold}
                 type="button"
               >
-                {holding ? "Listening" : "Hold to talk"}
+                {p(holding ? "Listening" : "Hold to talk")}
               </button>
               <button
                 className="mb-secondary"
@@ -764,7 +772,7 @@ export default function SaathiCompanionPage() {
                 }}
                 type="button"
               >
-                Keyboard
+                {p("Keyboard")}
               </button>
               {fixtureId ? (
                 <button
@@ -773,7 +781,7 @@ export default function SaathiCompanionPage() {
                   onClick={() => void playRecorded()}
                   type="button"
                 >
-                  Play recorded check-in
+                  {p("Play recorded check-in")}
                 </button>
               ) : null}
             </div>
@@ -791,9 +799,9 @@ export default function SaathiCompanionPage() {
             }}
             type="button"
           >
-            Save as private journal
+            {p("Save as private journal")}
           </button>
-          {journalSaved ? <p>Saved on this phone. Officers cannot see it.</p> : null}
+          {journalSaved ? <p>{p("Saved on this phone. Officers cannot see it.")}</p> : null}
         </div>
     </ScreenState>
   );

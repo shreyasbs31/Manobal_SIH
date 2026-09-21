@@ -175,7 +175,7 @@ test.describe("demo spine", () => {
     page.on("request", (item) => network.push(item));
     await signIn(page, "commander");
     await page.goto("/command");
-    await page.getByRole("button", { name: "Open copilot" }).click();
+    await page.getByRole("button", { name: "Ask copilot" }).click();
     await page.getByLabel("Question").fill("Charlie Coy mein kaun pareshan hai?");
     await page.getByRole("button", { name: "Ask" }).click();
     await expect(page.getByText(/Main kisi jawan ka naam nahi de sakta/)).toBeVisible({ timeout: 15_000 });

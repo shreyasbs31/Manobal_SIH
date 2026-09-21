@@ -17,6 +17,8 @@ import { loadSnapshot, saveSnapshot } from "@/lib/offline";
 import { principalMatchesPath } from "@/lib/stage-role";
 import { subscribeWorld } from "@/lib/world";
 
+const memoryCache = new Map<string, unknown>();
+
 export function useEngine<T>(
   key: string,
   loader: (client: ManobalClient, signal: AbortSignal) => Promise<T>,
@@ -28,9 +30,9 @@ export function useEngine<T>(
   reload: () => void;
 } {
   const pathname = usePathname();
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(() => (memoryCache.get(key) as T | undefined) ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !memoryCache.has(key));
   const [offline, setOffline] = useState(
     typeof navigator !== "undefined"
       ? !navigator.onLine || window.localStorage.getItem("manobal.airplane") === "1"
@@ -123,7 +125,7 @@ export function useEngine<T>(
         timedOut = true;
         controller.abort();
       }, 12000);
-      if (!settledRef.current) {
+      if (!settledRef.current && !memoryCache.has(key)) {
         setLoading(true);
       }
       setError(null);
@@ -148,6 +150,7 @@ export function useEngine<T>(
       try {
         const payload = await loaderRef.current(engineClient(), controller.signal);
         if (!controller.signal.aborted) {
+          memoryCache.set(key, payload);
           setData(payload);
           void saveSnapshot(key, payload);
         }

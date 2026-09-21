@@ -37,16 +37,18 @@ export function FaceScale({
   label,
   value,
   onChange,
+  levelLabels = FACE_LABELS,
 }: {
   label: string;
   value: number;
   onChange: (next: number) => void;
+  levelLabels?: readonly string[] | undefined;
 }) {
   return (
     <fieldset className="mb-emoji">
       <legend>{label}</legend>
       <div className="mb-emoji-row">
-        {FACE_LABELS.map((faceLabel, index) => {
+        {levelLabels.map((faceLabel, index) => {
           const score = index + 1;
           return (
             <button
@@ -65,8 +67,8 @@ export function FaceScale({
         })}
       </div>
       <div aria-hidden="true" className="mb-emoji-ends">
-        <span>Very low</span>
-        <span>Very good</span>
+        <span>{levelLabels[0]}</span>
+        <span>{levelLabels[4]}</span>
       </div>
     </fieldset>
   );
@@ -76,6 +78,7 @@ export function EmojiScale(props: {
   label: string;
   value: number;
   onChange: (next: number) => void;
+  levelLabels?: readonly string[] | undefined;
 }) {
   return <FaceScale {...props} />;
 }
@@ -134,9 +137,20 @@ const PLAN_DEFAULT: SafetyPlanFields = {
 export function SafetyPlanEditor({
   value,
   onChange,
+  copy,
 }: {
   value?: SafetyPlanFields | undefined;
   onChange?: ((next: SafetyPlanFields) => void) | undefined;
+  copy?:
+    | {
+        warning: string;
+        coping: string;
+        distract: string;
+        help: string;
+        professional: string;
+        environment: string;
+      }
+    | undefined;
 } = {}) {
   const [internal, setInternal] = useState(PLAN_DEFAULT);
   const plan = value ?? internal;
@@ -150,30 +164,30 @@ export function SafetyPlanEditor({
   return (
     <form className="mb-card mb-plan-editor">
       <label>
-        Warning signs I notice
+        {copy?.warning ?? "Warning signs I notice"}
         <textarea onChange={(event) => patch("warning", event.target.value)} value={plan.warning} />
       </label>
       <label>
-        What I can do on my own
+        {copy?.coping ?? "What I can do on my own"}
         <textarea onChange={(event) => patch("coping", event.target.value)} value={plan.coping} />
       </label>
       <label>
-        People and places that help me shift attention
+        {copy?.distract ?? "People and places that help me shift attention"}
         <textarea onChange={(event) => patch("distract", event.target.value)} value={plan.distract} />
       </label>
       <label>
-        People I can ask for help
+        {copy?.help ?? "People I can ask for help"}
         <textarea onChange={(event) => patch("help", event.target.value)} value={plan.help} />
       </label>
       <label>
-        Professionals I can contact
+        {copy?.professional ?? "Professionals I can contact"}
         <textarea
           onChange={(event) => patch("professional", event.target.value)}
           value={plan.professional}
         />
       </label>
       <label>
-        Making my space safer
+        {copy?.environment ?? "Making my space safer"}
         <textarea
           onChange={(event) => patch("environment", event.target.value)}
           value={plan.environment}
@@ -187,10 +201,18 @@ export function LeaveWindowPicker({
   start,
   end,
   onChange,
+  copy,
 }: {
   start?: string | undefined;
   end?: string | undefined;
   onChange?: ((next: { start: string; end: string }) => void) | undefined;
+  copy?:
+    | {
+        start: string;
+        end: string;
+        note: string;
+      }
+    | undefined;
 }) {
   const [innerStart, setInnerStart] = useState("2026-10-04");
   const [innerEnd, setInnerEnd] = useState("2026-10-12");
@@ -199,7 +221,7 @@ export function LeaveWindowPicker({
   return (
     <form className="mb-card mb-leave">
       <label>
-        Suggested window start
+        {copy?.start ?? "Suggested window start"}
         <input
           onChange={(event) => {
             const next = { start: event.target.value, end: endValue };
@@ -211,7 +233,7 @@ export function LeaveWindowPicker({
         />
       </label>
       <label>
-        Suggested window end
+        {copy?.end ?? "Suggested window end"}
         <input
           onChange={(event) => {
             const next = { start: startValue, end: event.target.value };
@@ -222,18 +244,20 @@ export function LeaveWindowPicker({
           value={endValue}
         />
       </label>
-      <p>Unit blackout windows are shown at unit level only. MANOBAL does not submit leave.</p>
+      <p>{copy?.note ?? "Unit blackout windows are shown at unit level only. MANOBAL does not submit leave."}</p>
     </form>
   );
 }
 
 export function ShiftTimeline({
   days,
+  label = "Shift timeline",
 }: {
   days: readonly { label: string; start: number; end: number }[];
+  label?: string | undefined;
 }) {
   return (
-    <div className="mb-shift" aria-label="Shift timeline">
+    <div className="mb-shift" aria-label={label}>
       {days.map((day) => (
         <div className="mb-shift-row" key={day.label}>
           <span>{day.label}</span>

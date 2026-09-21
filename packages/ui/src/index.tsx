@@ -52,6 +52,7 @@ export {
   FairnessBar,
   FormationGrid,
   HiddenTile,
+  LeadTimeChart,
   ReliabilityChart,
 } from "./charts";
 export type { FormationCell, RibbonPoint } from "./charts";

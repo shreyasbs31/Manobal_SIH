@@ -23,6 +23,13 @@ class GrantToken(BaseModel):
     contact_note_due_at: datetime
 
 
+def _grant_private_key(settings: Settings) -> str:
+    configured = settings.grant_private_key_pem.get_secret_value()
+    if configured.strip():
+        return configured
+    return settings.grant_private_key_file.read_text(encoding="utf-8")
+
+
 def mint_grant(
     request: GrantRequest,
     principal: Principal,
@@ -32,7 +39,7 @@ def mint_grant(
     now = datetime.now(UTC)
     expires = now + timedelta(days=request.ttl_days)
     contact_note_due = now + timedelta(hours=24)
-    private_key = active_settings.grant_private_key_file.read_text(encoding="utf-8")
+    private_key = _grant_private_key(active_settings)
     claims = {
         "iss": active_settings.grant_issuer,
         "aud": active_settings.grant_audience,

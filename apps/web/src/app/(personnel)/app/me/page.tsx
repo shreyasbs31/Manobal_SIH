@@ -17,11 +17,16 @@ import { useEffect, useRef, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
+import {
+  normalisePersonnelLang,
+  usePersonnelI18n,
+} from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 const ICONS = [IconHiddenLock, IconLeaveWindow, IconVaultKey] as const;
 
 export default function MePage() {
+  const { p, setLang: setAppLang } = usePersonnelI18n();
   const { data, error, loading, offline, reload } = useEngine("me", async (client, signal) => {
     const [consents, ledger, trends, rights, remembers] = await Promise.all([
       client.meConsents(signal),
@@ -71,75 +76,94 @@ export default function MePage() {
               return (
                 <p className="mb-me-point" key={line}>
                   <Icon height={22} width={22} />
-                  {line}
+                  {p(line)}
                 </p>
               );
             })}
           </div>
-          {lang !== "en" && lang !== "hi" && lang !== "ta" ? <MachineTranslatedBadge /> : null}
+          {lang !== "en" && lang !== "hi" && lang !== "ta" ? (
+            <MachineTranslatedBadge label={p("Machine translated")} />
+          ) : null}
 
-          <h2 className="mb-section-label">My trends</h2>
+          <h2 className="mb-section-label">{p("My trends")}</h2>
           {data ? (
             <BaselineRibbonChart
-              label="Sleep hours against your usual range"
-              takeaway="Your sleep has been below your usual rhythm for 3 nights."
+              copy={{
+                usualRange: p("Your usual range"),
+                dataTable: p("Data table"),
+                day: p("Day"),
+                value: p("Value"),
+                outsideRange: p("is outside the usual range"),
+              }}
+              label={p("Sleep hours against your usual range")}
+              takeaway={p("Your sleep has been below your usual rhythm for 3 nights.")}
               values={data.trends.points}
               variant="detail"
             />
           ) : (
-            <p>Your last saved sleep and mood stay on this phone.</p>
+            <p>{p("Your last saved sleep and mood stay on this phone.")}</p>
           )}
 
           {items.map((item, index) => (
             <ConsentToggleCard
               checked={checked[index] ?? false}
+              copy={{
+                leavesPhone: p("What leaves your phone"),
+                whoCanSee: p("Who can ever see this"),
+                on: p("On"),
+                off: p("Off"),
+              }}
               illustration={<SceneOnboardingPhone />}
               key={item.title}
-              leavesPhone={item.leavesPhone}
+              leavesPhone={p(item.leavesPhone)}
               onChange={(next) => {
                 const copy = [...checked];
                 copy[index] = next;
                 setConsents(copy);
               }}
-              title={item.title}
-              whoCanSee={item.whoCanSee}
+              title={p(item.title)}
+              whoCanSee={p(item.whoCanSee)}
             />
           ))}
 
-          <h2 className="mb-section-label">Who viewed my information</h2>
+          <h2 className="mb-section-label">{p("Who viewed my information")}</h2>
           {data && data.ledger.items.length === 0 ? (
-            <p>No access yet.</p>
+            <p>{p("No access yet.")}</p>
           ) : data ? (
             data.ledger.items.map((item, index) => (
               <AccessLedgerItem
                 actor={
                   item.action === "identity.viewed"
-                    ? (item.actor_label ?? "Welfare Officer, your unit, viewed your identity")
-                    : (item.actor_label ?? item.actor ?? "Officer")
+                    ? p(item.actor_label ?? "Welfare Officer, your unit, viewed your identity")
+                    : p(item.actor_label ?? item.actor ?? "Officer")
                 }
                 key={`${item.action ?? "access"}-${index}`}
                 purpose={
                   item.action === "identity.viewed"
-                    ? "Care contact"
-                    : (item.purpose_code ?? "Care")
+                    ? p("Care contact")
+                    : p(item.purpose_code ?? "Care")
                 }
                 when={item.at ?? ""}
               />
             ))
           ) : (
-            <p>Saved on this phone. Officers cannot see this list while you are offline.</p>
+            <p>{p("Saved on this phone. Officers cannot see this list while you are offline.")}</p>
           )}
-          <ReceiptCard hash={receipt.hash} time={receipt.time} />
+          <ReceiptCard
+            copy={{ title: p("Consent receipt"), download: p("Download") }}
+            hash={receipt.hash}
+            time={receipt.time}
+          />
 
-          <nav aria-label="Your choices" className="mb-rights">
+          <nav aria-label={p("Your choices")} className="mb-rights">
             <Link href="/trust">
-              Privacy notice <span aria-hidden="true">›</span>
+              {p("Privacy notice")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/talk">
-              Talk to a person <span aria-hidden="true">›</span>
+              {p("Talk to a person")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/concerns">
-              Raise a concern <span aria-hidden="true">›</span>
+              {p("Raise a concern")} <span aria-hidden="true">›</span>
             </Link>
             <button
               className="mb-ghost"
@@ -155,61 +179,61 @@ export default function MePage() {
               }}
               type="button"
             >
-              Erase my data <span aria-hidden="true">›</span>
+              {p("Erase my data")} <span aria-hidden="true">›</span>
             </button>
           </nav>
 
-          <h2 className="mb-section-label">This week</h2>
-          <p>Your name is not attached.</p>
+          <h2 className="mb-section-label">{p("This week")}</h2>
+          <p>{p("Your name is not attached.")}</p>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("unit", 1)
-                .then(() => setPulseNote("Saved."));
+                .then(() => setPulseNote(p("Saved.")));
             }}
             type="button"
           >
-            This week felt heavy
+            {p("This week felt heavy")}
           </button>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("unit", 0)
-                .then(() => setPulseNote("Saved."));
+                .then(() => setPulseNote(p("Saved.")));
             }}
             type="button"
           >
-            This week felt steady
+            {p("This week felt steady")}
           </button>
-          <p>I believe this app is here to support me.</p>
+          <p>{p("I believe this app is here to support me.")}</p>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("trust", 1)
-                .then(() => setPulseNote("Saved."));
+                .then(() => setPulseNote(p("Saved.")));
             }}
             type="button"
           >
-            Yes
+            {p("Yes")}
           </button>
           <button
             className="mb-secondary"
             onClick={() => {
               void engineClient()
                 .savePulse("trust", 0)
-                .then(() => setPulseNote("Saved."));
+                .then(() => setPulseNote(p("Saved.")));
             }}
             type="button"
           >
-            Not yet
+            {p("Not yet")}
           </button>
           {pulseNote ? <p>{pulseNote}</p> : null}
 
-          <h2 className="mb-section-label">What Saathi remembers</h2>
-          <p>Off unless you turn it on. Officers never see this.</p>
+          <h2 className="mb-section-label">{p("What Saathi remembers")}</h2>
+          <p>{p("Off unless you turn it on. Officers never see this.")}</p>
           <button
             className="mb-secondary"
             onClick={() => {
@@ -219,10 +243,10 @@ export default function MePage() {
             }}
             type="button"
           >
-            {(data?.remembers.opt_in ?? false) ? "Turn off remembering" : "Turn on remembering"}
+            {p((data?.remembers.opt_in ?? false) ? "Turn off remembering" : "Turn on remembering")}
           </button>
           {(data?.remembers.items ?? []).map((item) => (
-            <p key={item.text}>{item.text}</p>
+            <p key={item.text}>{p(item.text)}</p>
           ))}
           <button
             className="mb-ghost"
@@ -231,23 +255,24 @@ export default function MePage() {
             }}
             type="button"
           >
-            Forget everything
+            {p("Forget everything")}
           </button>
 
-          <h2 className="mb-section-label">Settings</h2>
+          <h2 className="mb-section-label">{p("Settings")}</h2>
           <label className="mb-field">
-            Language
+            {p("Language")}
             <select
               onChange={(event) => {
                 setLang(event.target.value);
                 window.localStorage.setItem("manobal.language", event.target.value);
+                setAppLang(normalisePersonnelLang(event.target.value));
                 void engineClient().savePersonalisation({ language: event.target.value });
               }}
               value={lang}
             >
-              <option value="en">English</option>
-              <option value="hi">Hindi</option>
-              <option value="ta">Tamil</option>
+              <option value="en">{p("English")}</option>
+              <option value="hi">{p("Hindi")}</option>
+              <option value="ta">{p("Tamil")}</option>
             </select>
           </label>
           <label className="mb-check-row">
@@ -260,26 +285,26 @@ export default function MePage() {
               }}
               type="checkbox"
             />
-            Simple mode, larger buttons
+            {p("Simple mode, larger buttons")}
           </label>
-          <nav aria-label="More on this phone" className="mb-rights">
+          <nav aria-label={p("More on this phone")} className="mb-rights">
             <Link href="/app/plan">
-              My safety plan <span aria-hidden="true">›</span>
+              {p("My safety plan")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/buddy">
-              Buddy <span aria-hidden="true">›</span>
+              {p("Buddy")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/family">
-              Family connect <span aria-hidden="true">›</span>
+              {p("Family connect")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/rest">
-              Plan my rest <span aria-hidden="true">›</span>
+              {p("Plan my rest")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/assessments">
-              Assessments <span aria-hidden="true">›</span>
+              {p("Assessments")} <span aria-hidden="true">›</span>
             </Link>
             <Link href="/app/onboarding">
-              Review consent <span aria-hidden="true">›</span>
+              {p("Review consent")} <span aria-hidden="true">›</span>
             </Link>
           </nav>
         </div>

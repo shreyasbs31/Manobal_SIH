@@ -10,24 +10,36 @@ function DiamondIcon() {
   );
 }
 
-export function TierBadge({ tier }: { tier: TierId }) {
+export function TierBadge({
+  tier,
+  caption,
+}: {
+  tier: TierId;
+  caption?: string | undefined;
+}) {
   return (
     <span className="mb-tier" data-tier={tier}>
       <TierGlyph tier={tier} />
       <span>
-        {tier} {TIER_LABELS[tier]}
+        {tier} {caption ?? TIER_LABELS[tier]}
       </span>
     </span>
   );
 }
 
-export function TrajectoryArrow({ direction }: { direction: Trajectory }) {
+export function TrajectoryArrow({
+  direction,
+  labels,
+}: {
+  direction: Trajectory;
+  labels?: { rising: string; easing: string; steady: string } | undefined;
+}) {
   const label =
     direction === "rising"
-      ? "Rising"
+      ? (labels?.rising ?? "Rising")
       : direction === "easing"
-        ? "Easing"
-        : "Steady";
+        ? (labels?.easing ?? "Easing")
+        : (labels?.steady ?? "Steady");
   const mark = direction === "rising" ? "↑" : direction === "easing" ? "↓" : "→";
   return (
     <span className="mb-traj" aria-label={`Trajectory ${label}`}>
@@ -37,8 +49,8 @@ export function TrajectoryArrow({ direction }: { direction: Trajectory }) {
   );
 }
 
-export function LimitedDataTag() {
-  return <span className="mb-limited">Limited data</span>;
+export function LimitedDataTag({ label = "Limited data" }: { label?: string | undefined }) {
+  return <span className="mb-limited">{label}</span>;
 }
 
 export function DomainChip({ label }: { label: string }) {
@@ -66,18 +78,21 @@ export function ModeChip({ mode }: { mode: ManobalMode }) {
 export function StatusChip({
   kind,
   queued = 0,
+  label: customLabel,
 }: {
   kind: "offline" | "syncing" | "demo";
   queued?: number | undefined;
+  label?: string | undefined;
 }) {
   const label =
-    kind === "offline"
+    customLabel ??
+    (kind === "offline"
       ? queued > 0
         ? `Offline. ${queued} check-ins saved on this phone.`
         : "Offline"
       : kind === "syncing"
         ? "Syncing"
-        : "Demo";
+        : "Demo");
   return (
     <span className="mb-status-chip" data-kind={kind}>
       {kind === "offline" ? <span className="mb-status-dot" aria-hidden="true" /> : null}
@@ -89,13 +104,15 @@ export function StatusChip({
 export function SimClock({
   value,
   playing = false,
+  prefix = "",
 }: {
   value: string;
   playing?: boolean | undefined;
+  prefix?: string | undefined;
 }) {
   return (
     <time className="mb-sim mb-type-timer" dateTime={value}>
-              Simulated {value}
+      {prefix ? `${prefix} ` : ""}{value}
     </time>
   );
 }
@@ -120,17 +137,23 @@ export function SyncQueueIndicator({ count }: { count: number }) {
   );
 }
 
-export function AudioClearedChip({ ms }: { ms?: number | undefined } = {}) {
-  const label = ms === undefined ? "Audio cleared" : `Audio cleared in ${ms} ms`;
-  return <span className="mb-audio">{label}</span>;
+export function AudioClearedChip({
+  ms,
+  label,
+}: {
+  ms?: number | undefined;
+  label?: string | undefined;
+} = {}) {
+  const resolved = label ?? (ms === undefined ? "Audio cleared" : `Audio cleared in ${ms} ms`);
+  return <span className="mb-audio">{resolved}</span>;
 }
 
-export function ValidatedBadge() {
-  return <span className="mb-validated">Validated translation</span>;
+export function ValidatedBadge({ label = "Validated translation" }: { label?: string | undefined } = {}) {
+  return <span className="mb-validated">{label}</span>;
 }
 
-export function MachineTranslatedBadge() {
-  return <span className="mb-translated">Machine translated</span>;
+export function MachineTranslatedBadge({ label = "Machine translated" }: { label?: string | undefined } = {}) {
+  return <span className="mb-translated">{label}</span>;
 }
 
 export function ProviderBadge({ name }: { name: string }) {

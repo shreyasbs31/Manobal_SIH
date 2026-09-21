@@ -27,12 +27,21 @@ export default function CounselPage() {
     return (data?.calendar ?? []).map((label, index) => ({
       id: `slot-${index}`,
       when: label.slice(0, 5),
-      label: label.slice(6) || "Free",
+      label: label.slice(6) || tx.freeSlot,
       request_id: null,
     }));
-  }, [data]);
+  }, [data, tx]);
   const active =
     data?.requests.find((item) => String(item.id) === picked) ?? data?.requests[0];
+  const activeId = active ? String(active.id) : "";
+  const activeAnonymous = String(active?.kind) === "anonymous";
+  const activeHindi = String(active?.language) === "hi";
+  const activeSummary =
+    activeId === "req-hi-1" ? tx.counselLeaveSummary : tx.counselPrivateSummary;
+  const activePrivacy = activeAnonymous ? tx.counselNameHidden : tx.counselNameShared;
+  const activeReference = activeAnonymous
+    ? String(active?.reference ?? active?.handle ?? "River-17")
+    : String(active?.reference ?? "CS-1042");
 
   async function run(work: () => Promise<void>) {
     setBusy(true);
@@ -40,37 +49,60 @@ export default function CounselPage() {
       await work();
       reload();
     } catch (caught: unknown) {
-      setStatus(caught instanceof Error ? caught.message : "Could not complete that action.");
+        setStatus(caught instanceof Error ? caught.message : tx.couldNotComplete);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <ScreenState error={error} loading={loading} offline={offline} empty={!data}>
+    <ScreenState
+      error={error}
+      loading={loading}
+      offline={offline}
+      empty={!data}
+      loadingText={tx.loading}
+      offlineText={tx.offlineView}
+    >
       {data ? (
         <div className="mb-desk mb-counsel">
+          <p className="mb-desk-purpose">{tx.counselPurpose}</p>
           <section className="mb-sheet">
-            <h2>{tx.today}</h2>
+            <div className="mb-section-head">
+              <div>
+                <h2>{tx.today}</h2>
+                <p>{tx.counselSelect}</p>
+              </div>
+            </div>
             <div className="mb-slot-grid">
-              {slots.map((slot) => (
-                <button
-                  aria-pressed={slotId === slot.id}
-                  className="mb-slot"
-                  data-state={slot.request_id ? "held" : "free"}
-                  key={slot.id}
-                  onClick={() => {
-                    setSlotId(slot.id);
-                    if (slot.request_id) {
-                      setPicked(slot.request_id);
-                    }
-                  }}
-                  type="button"
-                >
-                  <strong>{slot.when}</strong>
-                  <span>{slot.label}</span>
-                </button>
-              ))}
+              {slots.map((slot) => {
+                const request = data.requests.find((item) => String(item.id) === slot.request_id);
+                const hindi = String(request?.language) === "hi";
+                const anonymous = String(request?.kind) === "anonymous";
+                return (
+                  <button
+                    aria-pressed={slotId === slot.id}
+                    className="mb-slot"
+                    data-state={slot.request_id ? "held" : "free"}
+                    key={slot.id}
+                    onClick={() => {
+                      setSlotId(slot.id);
+                      if (slot.request_id) setPicked(slot.request_id);
+                    }}
+                    type="button"
+                  >
+                    <strong>{slot.when}</strong>
+                    <span>{slot.request_id ? tx.counselReserved : tx.counselAvailable}</span>
+                    {slot.request_id ? (
+                      <em>
+                        {hindi ? tx.counselHindi : tx.counselEnglish}
+                        {" · "}
+                        {anonymous ? tx.counselNameHidden : tx.counselNameShared}
+                      </em>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           </section>
           <section className="mb-sheet">
@@ -85,31 +117,58 @@ export default function CounselPage() {
                   type="button"
                 >
                   <strong>
-                    {String(item.kind) === "named" ? tx.named : tx.anonymous}{" "}
-                    {String(item.language) === "hi" ? tx.langHi : tx.langEn}
+                    {String(item.id) === "req-hi-1" ? tx.counselLeaveSummary : tx.counselPrivateSummary}
                   </strong>
-                  <span>
-                    {item.handle ? String(item.handle) : String(item.summary)}
-                  </span>
+                  <span>{String(item.kind) === "anonymous" ? tx.counselNameHidden : tx.counselNameShared}</span>
+                  <span>{String(item.language) === "hi" ? tx.counselHindi : tx.counselEnglish}</span>
+                  <em>{tx.counselQueued}</em>
                 </button>
               ))}
             </div>
           </section>
           {active ? (
             <section className="mb-counsel-session">
+              <div className="mb-sheet mb-counsel-brief">
+                <div className="mb-section-head">
+                  <div>
+                    <h2>{tx.counselSession}</h2>
+                    <p>{activeSummary}</p>
+                  </div>
+                  <span className="mb-status-pill" data-status="open">{tx.counselQueued}</span>
+                </div>
+                <dl className="mb-fact-list">
+                  <div>
+                    <dt>{tx.counselPrivacy}</dt>
+                    <dd>{activePrivacy}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.acuteLanguage}</dt>
+                    <dd>{activeHindi ? tx.counselHindi : tx.counselEnglish}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.counselPrivateRef}</dt>
+                    <dd>{activeReference}</dd>
+                  </div>
+                  <div>
+                    <dt>{tx.counselMatched}</dt>
+                    <dd>{tx.counselNoNotes}</dd>
+                  </div>
+                </dl>
+              </div>
               <CallPanel
                 joinLabel={tx.joinCall}
+                leaveLabel={tx.leaveCall}
                 onJoin={() => {
                   void engineClient()
                     .callsToken()
                     .then((result) => {
-                      setStatus(result.configured ? "Call is ready." : "Call is not available right now.");
+                      setStatus(result.configured ? tx.callReady : tx.callUnavailable);
                     });
                 }}
-                peer={active.handle ? String(active.handle) : "Named session"}
-                status={status || String(active.summary ?? "")}
+                peer={activeAnonymous ? `${tx.counselPrivateRef} ${activeReference}` : tx.counselNameShared}
+                status={status || tx.counselPrepare}
               />
-              <div className="mb-sheet">
+              <div className="mb-sheet mb-counsel-notes">
                 <label>
                   {tx.privateNote}
                   <textarea onChange={(event) => setNote(event.target.value)} value={note} />
@@ -122,7 +181,7 @@ export default function CounselPage() {
                       onClick={() =>
                         void run(async () => {
                           await engineClient().counselBook(slotId, String(active.id));
-                          setStatus(`Booked ${slotId.replace("slot-", "")}.`);
+                          setStatus(tx.booked);
                         })
                       }
                       type="button"
@@ -139,7 +198,7 @@ export default function CounselPage() {
                           String(active.id),
                           note,
                         );
-                        setStatus("Note saved.");
+                        setStatus(tx.noteSaved);
                       })
                     }
                     type="button"
@@ -154,9 +213,9 @@ export default function CounselPage() {
                         await engineClient().counselSuggest(
                           "MB-4091",
                           "REST_48H",
-                          "A rest cycle may help.",
+                          tx.restReason,
                         );
-                        setStatus("Suggested 48-hour rest.");
+                        setStatus(tx.suggestedRestDone);
                       })
                     }
                     type="button"

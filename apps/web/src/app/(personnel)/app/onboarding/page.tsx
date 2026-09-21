@@ -12,6 +12,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import { engineClient } from "@/lib/engine";
 import { useFlowMeta } from "@/lib/flow-meta";
+import {
+  normalisePersonnelLang,
+  usePersonnelI18n,
+} from "@/lib/personnel-i18n";
 
 const PROMISE = [
   {
@@ -42,6 +46,7 @@ const HELPERS = [
 const STEP_ORDER = [0, 1, 2, 3, 4, 6, 8] as const;
 
 export default function OnboardingPage() {
+  const { p, setLang } = usePersonnelI18n();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [language, setLanguage] = useState("hi");
@@ -62,7 +67,11 @@ export default function OnboardingPage() {
   const [skipPlan, setSkipPlan] = useState(true);
   const [skipWearable, setSkipWearable] = useState(true);
   const stepIndex = STEP_ORDER.indexOf(step as (typeof STEP_ORDER)[number]);
-  useFlowMeta(stepIndex >= 0 ? `${stepIndex + 1} of ${STEP_ORDER.length}` : undefined);
+  useFlowMeta(
+    stepIndex >= 0
+      ? p("{step} of {total}", { step: stepIndex + 1, total: STEP_ORDER.length })
+      : undefined,
+  );
 
   useEffect(() => {
     const onBack = (event: Event) => {
@@ -138,7 +147,7 @@ export default function OnboardingPage() {
       window.localStorage.setItem("manobal.simple_mode", simpleMode ? "1" : "0");
       setStep(8);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not save");
+      setError(caught instanceof Error ? caught.message : p("Could not save"));
     }
   }
 
@@ -146,77 +155,82 @@ export default function OnboardingPage() {
     <div className="mb-home-stack mb-onboard">
       {step === 0 ? (
         <>
-          <h1 className="mb-type-title">Choose your language</h1>
-          <p>Pick the language you want to use.</p>
+          <h1 className="mb-type-title">{p("Choose your language")}</h1>
+          <p>{p("Pick the language you want to use.")}</p>
           <LanguageGrid
             languages={languages.map((item) => ({
               tag: item.tag,
               label: item.label,
               direction: item.direction,
             }))}
-            onChange={setLanguage}
+            onChange={(next) => {
+              setLanguage(next);
+              setLang(normalisePersonnelLang(next));
+            }}
             value={language}
           />
           <button className="mb-primary" onClick={() => setStep(1)} type="button">
-            Continue
+            {p("Continue")}
           </button>
         </>
       ) : null}
 
       {step === 1 ? (
         <>
-          <h1 className="mb-type-title">Before we start</h1>
+          <h1 className="mb-type-title">{p("Before we start")}</h1>
           {PROMISE.map((card) => (
             <article className="mb-context-card" key={card.title}>
               <SceneOnboardingPhone />
               <div>
-                <h2>{card.title}</h2>
-                <p>{card.body}</p>
+                <h2>{p(card.title)}</h2>
+                <p>{p(card.body)}</p>
               </div>
             </article>
           ))}
           <button className="mb-primary" onClick={() => setStep(2)} type="button">
-            Continue
+            {p("Continue")}
           </button>
         </>
       ) : null}
 
       {step === 2 ? (
         <>
-          <h1 className="mb-type-title">What you share</h1>
-          <p>Duty records start on. Everything else starts off. Change anytime.</p>
+          <h1 className="mb-type-title">{p("What you share")}</h1>
+          <p>{p("Duty records start on. Everything else starts off. Change anytime.")}</p>
           {consentCards.map((card) => (
             <ConsentToggleCard
               checked={consents[card.id] ?? false}
+              copy={{
+                leavesPhone: p("What leaves your phone"),
+                whoCanSee: p("Who can ever see this"),
+                on: p("On"),
+                off: p("Off"),
+              }}
               key={card.id}
-              leavesPhone={card.leavesPhone}
+              leavesPhone={p(card.leavesPhone)}
               onChange={(next) => {
                 if (card.id === "hr_derived") {
                   return;
                 }
                 setConsents((current) => ({ ...current, [card.id]: next }));
               }}
-              title={card.title}
-              whoCanSee={card.whoCanSee}
+              title={p(card.title)}
+              whoCanSee={p(card.whoCanSee)}
             />
           ))}
           <button className="mb-primary" onClick={() => setStep(3)} type="button">
-            Continue
+            {p("Continue")}
           </button>
         </>
       ) : null}
 
       {step === 3 ? (
         <>
-          <h1 className="mb-type-title">The one exception</h1>
+          <h1 className="mb-type-title">{p("The one exception")}</h1>
           <article className="mb-context-card">
             <SceneOnboardingPhone />
             <div>
-              <p>
-                If you are in immediate danger, a welfare officer and a medical officer are asked
-                to reach you. That is the one exception. Your commander still does not see your
-                check-ins or talks with Saathi.
-              </p>
+              <p>{p("If you are in immediate danger, a welfare officer and a medical officer are asked to reach you. That is the one exception. Your commander still does not see your check-ins or talks with Saathi.")}</p>
             </div>
           </article>
           <button
@@ -225,7 +239,7 @@ export default function OnboardingPage() {
             onClick={() => setUnderstood(true)}
             type="button"
           >
-            I understand
+            {p("I understand")}
           </button>
           <button
             className="mb-primary"
@@ -233,22 +247,22 @@ export default function OnboardingPage() {
             onClick={() => setStep(4)}
             type="button"
           >
-            Continue
+            {p("Continue")}
           </button>
         </>
       ) : null}
 
       {step === 4 ? (
         <>
-          <h1 className="mb-type-title">Optional extras</h1>
-          <p>All of these can wait. Skipping still takes you to Home.</p>
+          <h1 className="mb-type-title">{p("Optional extras")}</h1>
+          <p>{p("All of these can wait. Skipping still takes you to Home.")}</p>
           <label className="mb-check-row">
             <input
               checked={!skipBuddy}
               onChange={(event) => setSkipBuddy(!event.target.checked)}
               type="checkbox"
             />
-            Set up a buddy now
+            {p("Set up a buddy now")}
           </label>
           <label className="mb-check-row">
             <input
@@ -256,7 +270,7 @@ export default function OnboardingPage() {
               onChange={(event) => setSkipPlan(!event.target.checked)}
               type="checkbox"
             />
-            Write a safety plan now
+            {p("Write a safety plan now")}
           </label>
           <label className="mb-check-row">
             <input
@@ -264,27 +278,27 @@ export default function OnboardingPage() {
               onChange={(event) => setSkipWearable(!event.target.checked)}
               type="checkbox"
             />
-            Connect a watch or band now
+            {p("Connect a watch or band now")}
           </label>
           <button className="mb-primary" onClick={() => setStep(6)} type="button">
-            Continue
+            {p("Continue")}
           </button>
           <button className="mb-ghost" onClick={() => setStep(6)} type="button">
-            Skip extras
+            {p("Skip extras")}
           </button>
         </>
       ) : null}
 
       {step === 6 ? (
         <>
-          <h1 className="mb-type-title">How you like to use apps</h1>
+          <h1 className="mb-type-title">{p("How you like to use apps")}</h1>
           <button
             aria-pressed={simpleMode}
             className={simpleMode ? "mb-primary" : "mb-secondary"}
             onClick={() => setSimpleMode(true)}
             type="button"
           >
-            Fewer words, larger buttons
+            {p("Fewer words, larger buttons")}
           </button>
           <button
             aria-pressed={!simpleMode}
@@ -292,9 +306,9 @@ export default function OnboardingPage() {
             onClick={() => setSimpleMode(false)}
             type="button"
           >
-            Show more detail
+            {p("Show more detail")}
           </button>
-          <h2 className="mb-section-label">What helps me</h2>
+          <h2 className="mb-section-label">{p("What helps me")}</h2>
           <div className="mb-chip-row">
             {HELPERS.map((helper) => (
               <button
@@ -310,33 +324,37 @@ export default function OnboardingPage() {
                 }}
                 type="button"
               >
-                {helper}
+                {p(helper)}
               </button>
             ))}
           </div>
           <label>
-            Family context, optional
+            {p("Family context, optional")}
             <select onChange={(event) => setFamily(event.target.value)} value={family}>
-              <option value="">Skip</option>
-              <option value="partner_and_child">Partner and child</option>
-              <option value="children_with_grandparents">Children with grandparents</option>
-              <option value="bereavement_return">Returning after a loss</option>
+              <option value="">{p("Skip")}</option>
+              <option value="partner_and_child">{p("Partner and child")}</option>
+              <option value="children_with_grandparents">{p("Children with grandparents")}</option>
+              <option value="bereavement_return">{p("Returning after a loss")}</option>
             </select>
           </label>
           {error ? <p role="alert">{error}</p> : null}
           <button className="mb-primary" onClick={() => void finish()} type="button">
-            Save and show receipt
+            {p("Save and show receipt")}
           </button>
         </>
       ) : null}
 
       {step === 8 && receipt ? (
         <>
-          <h1 className="mb-type-title">Your consent receipt</h1>
-          <ReceiptCard hash={receipt.hash} time={receipt.time} />
-          <p>Skipped extras do not block Home. You can set them up later in Me.</p>
+          <h1 className="mb-type-title">{p("Your consent receipt")}</h1>
+          <ReceiptCard
+            copy={{ title: p("Consent receipt"), download: p("Download") }}
+            hash={receipt.hash}
+            time={receipt.time}
+          />
+          <p>{p("Skipped extras do not block Home. You can set them up later in Me.")}</p>
           <button className="mb-primary" onClick={() => router.push("/app")} type="button">
-            Go to Home
+            {p("Go to Home")}
           </button>
         </>
       ) : null}

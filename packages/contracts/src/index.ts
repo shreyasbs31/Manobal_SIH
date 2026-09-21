@@ -532,7 +532,17 @@ export class ManobalClient {
   }
 
   medicalReferrals(signal?: AbortSignal): Promise<{
-    items: { from: string; case_id: string; context: string }[];
+    items: {
+      from: string;
+      case_id: string;
+      context: string;
+      opened?: string;
+      language?: string;
+      channel?: string;
+      location?: string;
+      privacy?: string;
+      last_action?: string;
+    }[];
     guide: { title: string; steps: string[]; note: string };
   }> {
     return this.request("/api/v1/medical/referrals", { signal });

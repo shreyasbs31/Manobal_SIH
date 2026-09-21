@@ -1,18 +1,18 @@
 "use client";
 
-import { t } from "@manobal/i18n";
 import { ContourTexture } from "@manobal/ui";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useState } from "react";
 
 import { engineClient, subjectToken } from "@/lib/engine";
 import { drainQueue, enqueue, planStore } from "@/lib/offline";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { announceWorld } from "@/lib/world";
 
 export default function SafetyPage() {
+  const { lang, p } = usePersonnelI18n();
   const [muted, setMuted] = useState(false);
-  const [status, setStatus] = useState("Trying to reach your unit");
-  const [lang, setLang] = useState("en");
+  const [status, setStatus] = useState(p("Trying to reach your unit"));
   const hasPlan = typeof window !== "undefined" ? Boolean(planStore()) : false;
   const sms = "sms:+910000000000?body=SOS%20from%20Saathi";
 
@@ -30,16 +30,14 @@ export default function SafetyPage() {
   }, []);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("manobal.language") ?? "en";
-    setLang(stored);
-    const audio = new Audio(`/audio/safety.${stored === "hi" ? "hi" : stored === "ta" ? "ta" : "en"}.wav`);
+    const audio = new Audio(`/audio/safety.${lang}.wav`);
     audio.volume = 0.35;
     if (!muted) {
       void audio.play().catch(() => undefined);
     }
     const retry = window.setInterval(() => {
       if (!navigator.onLine || window.localStorage.getItem("manobal.airplane") === "1") {
-        setStatus("Trying to reach your unit");
+        setStatus(p("Trying to reach your unit"));
         return;
       }
       void drainQueue(async (kind, payload, id) => {
@@ -49,7 +47,7 @@ export default function SafetyPage() {
       }, ["acute"]).then((count) => {
         if (count > 0) {
           announceWorld("acute");
-          setStatus("A person is being asked to reach you.");
+          setStatus(p("A person is being asked to reach you."));
         }
       });
     }, 10_000);
@@ -57,18 +55,18 @@ export default function SafetyPage() {
       audio.pause();
       window.clearInterval(retry);
     };
-  }, [muted]);
+  }, [lang, muted, p]);
 
   return (
     <main className="mb-safety">
       <div className="mb-safety-inner">
         <ContourTexture height={640} opacity={0.2} seed="MB-6604" width={390} />
-        <h1>{t("safety.title", lang === "hi" || lang === "ta" ? lang : "en")}</h1>
-        <p>{t("safety.reaching", lang === "hi" || lang === "ta" ? lang : "en")}</p>
+        <h1>{p("You are not alone.")}</h1>
+        <p>{p("Someone is being asked to reach you.")}</p>
         <div aria-hidden="true" className="mb-breath-ring" />
-        <p>Breathe in with the ring</p>
+        <p>{p("Breathe in with the ring")}</p>
         <a className="mb-btn mb-call-btn" href="tel:14416">
-          Call Tele-MANAS 14416
+          {p("Call Tele-MANAS 14416")}
         </a>
         <button
           aria-pressed="true"
@@ -78,47 +76,47 @@ export default function SafetyPage() {
             const body = {
               token: token ?? "st_unknown",
               trigger: "sos_call_me",
-              lang: "hi-Latn",
+              lang: lang === "hi" ? "hi-Latn" : lang,
               channel: "app",
             };
             if (typeof navigator !== "undefined" && !navigator.onLine) {
               void enqueue("acute", body);
-              setStatus("Trying to reach your unit");
+              setStatus(p("Trying to reach your unit"));
               return;
             }
             if (!token) {
-              setStatus("Sign in to ask for a call.");
+              setStatus(p("Sign in to ask for a call."));
               return;
             }
             void engineClient()
               .postAcute({
                 token,
                 trigger: "sos_call_me",
-                lang: "hi-Latn",
+                lang: lang === "hi" ? "hi-Latn" : lang,
                 channel: "app",
               })
               .then((result) => {
                 announceWorld("acute");
-                setStatus("A person is being asked to reach you.");
+                setStatus(p("A person is being asked to reach you."));
               })
               .catch(() => {
                 void enqueue("acute", body);
-                setStatus("Trying to reach your unit");
+                setStatus(p("Trying to reach your unit"));
               });
           }}
           type="button"
         >
-          Ask my welfare officer to call me
+          {p("Ask my welfare officer to call me")}
         </button>
         <a className="mb-btn mb-outline-btn mb-sms-btn" href={sms}>
-          Send SOS by SMS
+          {p("Send SOS by SMS")}
         </a>
         <Link className="mb-ghost" href="/app/plan">
-          {hasPlan ? "Open my safety plan" : "Make a safety plan"}
+          {p(hasPlan ? "Open my safety plan" : "Make a safety plan")}
         </Link>
         <p>{status}</p>
         <button className="mb-ghost" onClick={() => setMuted((value) => !value)} type="button">
-          {muted ? "Unmute audio" : "Mute audio"}
+          {p(muted ? "Unmute audio" : "Mute audio")}
         </button>
       </div>
     </main>

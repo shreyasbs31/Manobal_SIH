@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Deterministic synthetic world generator"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "azure-identity>=1.25.0",
+  "azure-postgresql-auth[psycopg3]>=1.0.0",
   "faker>=37.6.0",
   "httpx>=0.28.1",
   "numpy>=2.3.2",

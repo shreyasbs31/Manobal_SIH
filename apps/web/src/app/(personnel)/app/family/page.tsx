@@ -5,9 +5,11 @@ import { useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 export default function FamilyPage() {
+  const { p } = usePersonnelI18n();
   const { data, error, loading, offline, reload } = useEngine("family", (client, signal) =>
     client.meFamily(signal),
   );
@@ -20,7 +22,7 @@ export default function FamilyPage() {
           <article className="mb-context-card">
             <SceneFamilyCall />
             <div>
-              <p>Reminders stay on this phone. The family page does not include your name.</p>
+              <p>{p("Reminders stay on this phone. The family page does not include your name.")}</p>
             </div>
           </article>
           <div className="mb-action-row">
@@ -33,11 +35,15 @@ export default function FamilyPage() {
                 }}
                 type="button"
               >
-                {day === "sunday" ? "Sunday call" : day === "wednesday" ? "Wednesday call" : "Friday call"}
+                {p(day === "sunday" ? "Sunday call" : day === "wednesday" ? "Wednesday call" : "Friday call")}
               </button>
             ))}
           </div>
-          <p>{data.reminder ? `Reminder set: ${data.reminder}` : "No reminder yet."}</p>
+          <p>
+            {data.reminder
+              ? p("Reminder set: {day}", { day: p(data.reminder) })
+              : p("No reminder yet.")}
+          </p>
           <button
             className="mb-secondary"
             onClick={() => {
@@ -46,11 +52,11 @@ export default function FamilyPage() {
             }}
             type="button"
           >
-            {copied ? "Link copied" : "Copy family resources link"}
+            {p(copied ? "Link copied" : "Copy family resources link")}
           </button>
           <ul>
             {data.resources.map((line) => (
-              <li key={line}>{line}</li>
+              <li key={line}>{p(line)}</li>
             ))}
           </ul>
         </div>

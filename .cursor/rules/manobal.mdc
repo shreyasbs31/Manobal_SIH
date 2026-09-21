@@ -9,7 +9,6 @@ alwaysApply: true
 - Privacy is enforced server-side. Welfare, Counsellor and Command UIs never show numeric stress scores or rank people. Command and HQ routes never accept token, case, or person parameters. The engine never holds vault DB access or vault keys.
 - No Anthropic SDKs or APIs. Language models are Microsoft Foundry deployments addressed by class (main, fast, open, alt) via the openai SDK with Entra auth. alt (Grok) is never used for personnel-facing or safety tasks.
 - The companion voice path is a cascade: STT, gates, LLM, TTS. Classifier errors fail safe to crisis. The acute path cannot be disabled.
-- Offline claims must be true: anything shown in an offline state must work with the network off.
 - Personalisation never feeds scoring, forecasting, or officer views.
 - Model ids, voice names and language lists live in config.
 - UI: follow docs/04_MANOBAL_UI_DIRECTION.md exactly, including the banned list and the review loop in its section 9. No default shadcn look, no identical card grids, no all-caps, no eyebrow labels, no emoji faces, no AI sparkles, no red except T4 and call buttons.

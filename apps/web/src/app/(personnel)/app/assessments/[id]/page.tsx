@@ -9,6 +9,7 @@ import { assessmentTitle } from "@/lib/assessment-titles";
 import { engineClient } from "@/lib/engine";
 import { useFlowMeta } from "@/lib/flow-meta";
 import { enqueue } from "@/lib/offline";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 const OPTIONS = ["Not at all", "Several days", "More than half the days", "Nearly every day"];
@@ -113,6 +114,7 @@ function bundledAssessment(id: string) {
 }
 
 export default function AssessmentItemPage() {
+  const { lang, p } = usePersonnelI18n();
   const params = useParams<{ id: string }>();
   const id = typeof params.id === "string" ? params.id : "pss10";
   const router = useRouter();
@@ -124,7 +126,11 @@ export default function AssessmentItemPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [conversational, setConversational] = useState(false);
   const [done, setDone] = useState(false);
-  useFlowMeta(done || !view.prompts.length ? undefined : `${step + 1} of ${view.prompts.length}`);
+  useFlowMeta(
+    done || !view.prompts.length
+      ? undefined
+      : p("{step} of {total}", { step: step + 1, total: view.prompts.length }),
+  );
 
   useEffect(() => {
     const onBack = (event: Event) => {
@@ -178,42 +184,45 @@ export default function AssessmentItemPage() {
     <ScreenState error={error && !view ? error : null} loading={loading && !view} offline={offline} empty={false}>
       {done ? (
         <div className="mb-home-stack">
-          <h1 className="mb-type-title">{assessmentTitle(view.id, view.title)} saved</h1>
+          <h1 className="mb-type-title">{p(assessmentTitle(view.id, view.title))} {p("saved")}</h1>
           <p>
             {view.self_only
-              ? "This stays on this phone. Officers never see it."
-              : "Saved. You can talk it through if you want."}
+              ? p("This stays on this phone. Officers never see it.")
+              : p("Saved. You can talk it through if you want.")}
           </p>
           <p>
-            You answered {view.prompts.length} questions
-            {offline ? " and they are waiting on this phone." : "."}
+            {offline
+              ? p("You answered {n} questions and they are waiting on this phone.", {
+                  n: view.prompts.length,
+                })
+              : p("You answered {n} questions.", { n: view.prompts.length })}
           </p>
           <Link className="mb-primary" href="/app/saathi">
-            Talk with Saathi
+            {p("Talk with Saathi")}
           </Link>
           <Link className="mb-secondary" href="/app/talk">
-            Talk to a person
+            {p("Talk to a person")}
           </Link>
           <Link className="mb-ghost" href="/app/assessments">
-            Back to assessments
+            {p("Back to assessments")}
           </Link>
         </div>
       ) : prompt ? (
         <div className="mb-checkin">
-          {view.self_only ? <p className="mb-self-only">Stays on this phone.</p> : null}
-          <h1>{prompt}</h1>
-          <audio controls preload="auto" src="/audio/grounding.en.wav">
-            Read aloud
+          {view.self_only ? <p className="mb-self-only">{p("Stays on this phone.")}</p> : null}
+          <h1>{p(prompt)}</h1>
+          <audio controls preload="auto" src={`/audio/grounding.${lang === "hi" ? "hi" : "en"}.wav`}>
+            {p("Read aloud")}
           </audio>
           <div className="mb-option-stack">
             {view.options.map((option, index) => (
               <button className="mb-secondary" key={option} onClick={() => void answer(index)} type="button">
-                {option}
+                {p(option)}
               </button>
             ))}
           </div>
           <button className="mb-ghost" onClick={() => setConversational(true)} type="button">
-            Have Saathi ask this
+            {p("Have Saathi ask this")}
           </button>
         </div>
       ) : null}
