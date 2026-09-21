@@ -232,6 +232,13 @@ demo_access_limiter = DemoAccessLimiter()
 
 
 def request_client_key(request: Request) -> str:
+    # Behind Front Door the gateway copies the edge-observed socket IP into this header.
+    # Front Door overwrites any client-supplied X-Azure-SocketIP and the gateway is not
+    # reachable except through Front Door, so the value cannot be forged. Without it
+    # (local development) fall back to the forwarded chain, then the direct peer.
+    gateway_ip = request.headers.get("x-manobal-client-ip", "").strip()
+    if gateway_ip:
+        return gateway_ip
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
         return forwarded.split(",", 1)[0].strip()

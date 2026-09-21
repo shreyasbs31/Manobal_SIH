@@ -15,8 +15,11 @@
 	respond /healthz 200
 
 	@engine path /api/v1/*
+	# X-Azure-SocketIP is set by Front Door and overwritten if a client sends it. Pass it to
+	# the engine under our own name so the access-code throttle is per visitor.
 	reverse_proxy @engine http://{$ENGINE_APP_NAME} {
 		header_up Host {$ENGINE_APP_NAME}
+		header_up X-Manobal-Client-IP {http.request.header.X-Azure-SocketIP}
 	}
 
 	@realtime path /realtime/*

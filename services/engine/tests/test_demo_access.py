@@ -9,6 +9,7 @@ from app.demo_access import (
     decode_demo_gate,
     make_access_code_hash,
     mint_demo_gate,
+    request_client_key,
     require_demo_role,
     validate_demo_gate_settings,
 )
@@ -30,10 +31,12 @@ def _settings(**updates: object) -> Settings:
     return Settings.model_construct(**values)
 
 
-def _request(cookie: str | None = None) -> Request:
+def _request(cookie: str | None = None, extra: dict[str, str] | None = None) -> Request:
     headers: list[tuple[bytes, bytes]] = []
     if cookie:
         headers.append((b"cookie", cookie.encode("utf-8")))
+    for name, value in (extra or {}).items():
+        headers.append((name.encode("latin-1"), value.encode("latin-1")))
     return Request(
         {
             "type": "http",
@@ -83,3 +86,25 @@ def test_required_gate_validates_all_secret_names() -> None:
     assert "DEMO_GATE_ACCESS_HASH" in message
     assert "DEMO_GATE_OPERATOR_HASH" in message
     assert "DEMO_GATE_JWT_SECRET" in message
+
+
+def test_client_key_prefers_the_gateway_supplied_address() -> None:
+    request = _request(
+        extra={
+            "x-manobal-client-ip": "203.0.113.7",
+            "x-forwarded-for": "6.6.6.6, 100.100.0.1",
+        }
+    )
+    assert request_client_key(request) == "203.0.113.7"
+
+
+def test_client_key_ignores_a_blank_gateway_header() -> None:
+    request = _request(
+        extra={"x-manobal-client-ip": "  ", "x-forwarded-for": "198.51.100.9, 10.0.0.1"}
+    )
+    assert request_client_key(request) == "198.51.100.9"
+
+
+def test_client_key_falls_back_to_the_direct_peer() -> None:
+    assert request_client_key(_request()) == "127.0.0.1"
+
