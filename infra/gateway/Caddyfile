@@ -3,14 +3,28 @@
 	auto_https off
 }
 
+# Container Apps picks the destination app from the Host header, so each upstream must
+# receive its own app name as Host. Forwarding the incoming Host would route the request
+# straight back to this gateway and time out.
 :8080 {
+	log {
+		output stdout
+		format json
+	}
+
 	respond /healthz 200
 
 	@engine path /api/v1/*
-	reverse_proxy @engine http://{$ENGINE_APP_NAME}
+	reverse_proxy @engine http://{$ENGINE_APP_NAME} {
+		header_up Host {$ENGINE_APP_NAME}
+	}
 
 	@realtime path /realtime/*
-	reverse_proxy @realtime http://{$REALTIME_APP_NAME}
+	reverse_proxy @realtime http://{$REALTIME_APP_NAME} {
+		header_up Host {$REALTIME_APP_NAME}
+	}
 
-	reverse_proxy http://{$WEB_APP_NAME}
+	reverse_proxy http://{$WEB_APP_NAME} {
+		header_up Host {$WEB_APP_NAME}
+	}
 }

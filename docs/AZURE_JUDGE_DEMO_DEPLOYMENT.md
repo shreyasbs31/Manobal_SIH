@@ -214,6 +214,9 @@ hyphen.
 
 Save both codes in a password manager. Share only the judge code with judges.
 
+After this step run `make azure-pin-token-key`. The demo personas have fixed subject tokens
+that only match the local dev token key, so the vault must use it. See section 21.
+
 Re-running the command preserves generated internal secrets. Provider secrets are refreshed.
 Access codes are preserved unless `--rotate-access` is explicitly used.
 
@@ -499,3 +502,67 @@ Do not reuse this judge environment for real users.
 A real-user pilot requires a custom domain, complete officer identity integration, durable passkey
 storage, removal of demo login and Director controls, externalized process state, multi-replica
 testing, formal data-residency review, security testing, and an approved operational support model.
+
+## 21. Lessons from the first deployment
+
+Read this before re-running anything. Each item below cost a failed attempt.
+
+### The vault token key must match the local dev key
+
+The eight demo personas carry hard-coded subject tokens derived from
+`infra/keys/dev-vault-keys.json`. The seed refuses to run (`Persona token mismatch`) unless the
+Azure vault reproduces them. `make azure-secrets` generates a random token key, so run
+`make azure-pin-token-key` afterwards. It copies the local key into the identity Key Vault
+without printing it and restarts the vault. The previous secret version stays in Key Vault for
+rollback. This is acceptable only because the environment holds synthetic data.
+
+### The seed runs once
+
+The seed loads with plain `COPY` inserts and does not clear existing rows. The load is one
+transaction, so a failed run rolls back and can be repeated. After a success, do not run it
+again. A re-seed needs the core database reset first.
+
+A failed seed can leave unused rows in the vault database (`identity` table). They are harmless
+because tokens are keyed by the token key, but they can be cleared while `resolve_log` is empty.
+
+### Internal URLs never carry a port
+
+On Container Apps HTTP ingress, `http://<app>:<targetPort>` times out. Use `http://<app>`
+(port 80), which routes to the target port. This applies to every service-to-service URL.
+
+### Front Door takes time to publish a newly enabled route
+
+Right after `PUBLIC_ENDPOINT_ENABLED=true` the public URL can return Front Door's own
+"Page not found" (about 266 KB of HTML, `x-cache: CONFIG_NOCACHE`) for 10 to 20 minutes.
+That is propagation and not an application error. Wait before debugging.
+
+### Job and exec commands
+
+- `az containerapp exec` needs an interactive terminal. Non-interactive shells can wrap it with
+  `script -q /dev/null az containerapp exec ...`.
+- `az containerapp job execution show` takes the job as `--name` and the run as
+  `--job-execution-name`.
+- A one-off command on an existing job can be started with `az containerapp job start --yaml`,
+  which avoids the argument parser treating `-c` as a flag.
+
+### Rolling out a code change
+
+1. Commit. The build refuses a dirty tree and tags images with the commit id.
+2. `make azure-build`, which builds all six images remotely and records `IMAGE_TAG`.
+3. `azd provision --no-prompt` to move the apps and jobs to the new tag.
+4. Run jobs as needed.
+
+### Testing the seed without Azure
+
+Run the real schema in a separate compose project, for example `docker compose -p manobal_seedtest`,
+so your own `manobal` volumes are not touched. Two Azure conditions are not reproduced by the stock
+compose file and matter: the loader is not a superuser, and row-level security is forced on some
+tables. Use a non-superuser role that owns the tables to reproduce both.
+
+### CI
+
+`ci.yml` installs every workspace package and creates the gitignored key files with
+`scripts/ci-dev-keys.py`. Add the optional repository secret `DEV_VAULT_KEYS_JSON` (the contents of
+`infra/keys/dev-vault-keys.json`) to run the persona-token tests. Without it CI uses a random key
+and skips those tests.
+
