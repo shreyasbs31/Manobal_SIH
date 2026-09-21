@@ -18,6 +18,8 @@ async function reset(request: APIRequestContext) {
 }
 
 async function runSpine(page: import("@playwright/test").Page) {
+  // page.request shares cookies with the browser page; the separate request fixture does not.
+  await grantDemoAccess(page.request);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByText("Support, not surveillance.")).toBeVisible();
