@@ -607,6 +607,8 @@ module coreDbAdmin './postgres-admin.bicep' = {
   }
 }
 
+// Azure PostgreSQL processes one server operation at a time and rejects the rest with
+// ServerIsBusy, so the admin, extensions and preload changes are chained, not parallel.
 resource coreExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
   parent: coreDb
   name: 'azure.extensions'
@@ -614,6 +616,9 @@ resource coreExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configuration
     source: 'user-override'
     value: 'TIMESCALEDB,vector,ltree,pgcrypto,uuid-ossp'
   }
+  dependsOn: [
+    coreDbAdmin
+  ]
 }
 
 resource corePreload 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
@@ -623,6 +628,9 @@ resource corePreload 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2
     source: 'user-override'
     value: 'timescaledb'
   }
+  dependsOn: [
+    coreExtensions
+  ]
 }
 
 resource vaultDb 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
@@ -688,6 +696,9 @@ resource vaultExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configuratio
     source: 'user-override'
     value: 'pgcrypto'
   }
+  dependsOn: [
+    vaultDbAdmin
+  ]
 }
 
 resource redis 'Microsoft.Cache/redisEnterprise@2025-07-01' = {
@@ -1593,7 +1604,6 @@ resource engineApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode
     acrPullAssignments
     engineAppSecrets
     engineBlobRole
-    engineAiRoles
   ]
 }
 
