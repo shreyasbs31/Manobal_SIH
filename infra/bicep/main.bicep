@@ -768,7 +768,7 @@ var synthImage = '${registry.properties.loginServer}/manobal/synth:${imageTag}'
 var foundryEndpoint = 'https://${foundryName}.services.ai.azure.com/api/projects/${foundryProjectName}'
 var speechEndpoint = 'https://${location}.api.cognitive.microsoft.com'
 var translatorEndpoint = 'https://api.cognitive.microsofttranslator.com'
-var contentSafetyEndpoint = 'https://${contentSafetyName}.cognitiveservices.azure.com'
+var contentSafetyEndpoint = engineAiRoles.outputs.contentSafetyEndpoint
 var acsEndpoint = 'https://${acsName}.communication.azure.com'
 var redisUrl = 'rediss://:${uriComponent(redisDatabase.listKeys().primaryKey)}@${redisName}.${location}.redis.azure.net:10000/0'
 var coreAsyncUrl = 'postgresql+asyncpg://${engineIdentity.name}@${coreDb.properties.fullyQualifiedDomainName}/manobal_core?sslmode=require'
@@ -924,7 +924,7 @@ resource webApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode) {
             }
             {
               name: 'ENGINE_INTERNAL_URL'
-              value: 'http://${engineName}:8000'
+              value: 'http://${engineName}'
             }
           ]
           probes: [
@@ -1381,11 +1381,11 @@ resource engineApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode
             }
             {
               name: 'VAULT_API_URL'
-              value: 'http://${vaultName}:8100'
+              value: 'http://${vaultName}'
             }
             {
               name: 'REALTIME_URL'
-              value: 'ws://${realtimeName}:8080'
+              value: 'ws://${realtimeName}'
             }
             {
               name: 'ACCESS_JWT_SECRET'
@@ -1682,11 +1682,11 @@ resource acuteApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode)
             }
             {
               name: 'VAULT_API_URL'
-              value: 'http://${vaultName}:8100'
+              value: 'http://${vaultName}'
             }
             {
               name: 'REALTIME_URL'
-              value: 'ws://${realtimeName}:8080'
+              value: 'ws://${realtimeName}'
             }
             {
               name: 'ACCESS_JWT_SECRET'
@@ -1963,7 +1963,7 @@ resource seedJob 'Microsoft.App/jobs@2025-07-01' = if (!bootstrapMode) {
             }
             {
               name: 'VAULT_API_URL'
-              value: 'http://${vaultName}:8100'
+              value: 'http://${vaultName}'
             }
             {
               name: 'TOKENISE_INGEST_SECRET'
@@ -1971,7 +1971,7 @@ resource seedJob 'Microsoft.App/jobs@2025-07-01' = if (!bootstrapMode) {
             }
             {
               name: 'ENGINE_API_URL'
-              value: 'http://${engineName}:8000'
+              value: 'http://${engineName}'
             }
           ]
           resources: {
@@ -2055,7 +2055,7 @@ resource frontDoorRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2025-04-15' 
   ]
 }
 
-resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2020-11-01' = if (!bootstrapMode) {
+resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2024-02-01' = if (!bootstrapMode) {
   name: wafPolicyName
   location: 'global'
   tags: commonTags
@@ -2068,11 +2068,98 @@ resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@20
       mode: wafMode
       requestBodyCheck: 'Enabled'
     }
+    customRules: {
+      rules: [
+        {
+          name: 'AccessCodeRateLimit'
+          priority: 100
+          enabledState: 'Enabled'
+          ruleType: 'RateLimitRule'
+          rateLimitDurationInMinutes: 1
+          rateLimitThreshold: 30
+          action: 'Block'
+          matchConditions: [
+            {
+              matchVariable: 'RequestMethod'
+              operator: 'Equal'
+              negateCondition: false
+              matchValue: [
+                'POST'
+              ]
+            }
+            {
+              matchVariable: 'RequestUri'
+              operator: 'Contains'
+              negateCondition: false
+              matchValue: [
+                '/api/v1/auth/demo-access'
+              ]
+              transforms: [
+                'Lowercase'
+              ]
+            }
+          ]
+        }
+        {
+          name: 'DemoLoginRateLimit'
+          priority: 110
+          enabledState: 'Enabled'
+          ruleType: 'RateLimitRule'
+          rateLimitDurationInMinutes: 1
+          rateLimitThreshold: 60
+          action: 'Block'
+          matchConditions: [
+            {
+              matchVariable: 'RequestMethod'
+              operator: 'Equal'
+              negateCondition: false
+              matchValue: [
+                'POST'
+              ]
+            }
+            {
+              matchVariable: 'RequestUri'
+              operator: 'Contains'
+              negateCondition: false
+              matchValue: [
+                '/api/v1/auth/demo-login'
+              ]
+              transforms: [
+                'Lowercase'
+              ]
+            }
+          ]
+        }
+        {
+          name: 'VoiceSessionRateLimit'
+          priority: 120
+          enabledState: 'Enabled'
+          ruleType: 'RateLimitRule'
+          rateLimitDurationInMinutes: 1
+          rateLimitThreshold: 120
+          action: 'Block'
+          matchConditions: [
+            {
+              matchVariable: 'RequestUri'
+              operator: 'Contains'
+              negateCondition: false
+              matchValue: [
+                '/api/v1/voice/session'
+              ]
+              transforms: [
+                'Lowercase'
+              ]
+            }
+          ]
+        }
+      ]
+    }
     managedRules: {
       managedRuleSets: [
         {
-          ruleSetType: 'DefaultRuleSet'
+          ruleSetType: 'Microsoft_DefaultRuleSet'
           ruleSetVersion: '2.1'
+          ruleSetAction: 'Block'
         }
         {
           ruleSetType: 'Microsoft_BotManagerRuleSet'

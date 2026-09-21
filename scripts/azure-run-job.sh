@@ -18,8 +18,8 @@ attempt=0
 while [ "$attempt" -lt 240 ]; do
   status=$(az containerapp job execution show \
     --resource-group "$resource_group" \
-    --job-name "$job_name" \
-    --name "$execution_name" \
+    --name "$job_name" \
+    --job-execution-name "$execution_name" \
     --query properties.status \
     --output tsv)
   case "$status" in
@@ -31,8 +31,8 @@ while [ "$attempt" -lt 240 ]; do
       echo "Container Apps job failed: ${job_name} (${status})" >&2
       az containerapp job execution show \
         --resource-group "$resource_group" \
-        --job-name "$job_name" \
-        --name "$execution_name" \
+        --name "$job_name" \
+        --job-execution-name "$execution_name" \
         --output json >&2
       exit 1
       ;;

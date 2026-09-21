@@ -144,6 +144,18 @@ async function waitLoaded(page, frameName, selector, { timeout = 12000 } = {}) {
   return Date.now() - started;
 }
 
+/** Console desks scroll .mb-command-body, not the window. */
+async function scrollConsole(page, top, smooth = true) {
+  const frame = frameOf(page, "mb-console");
+  await frame.evaluate(
+    ({ t, s }) => {
+      const body = document.querySelector(".mb-command-body");
+      if (body) body.scrollTo({ top: t, behavior: s ? "smooth" : "auto" });
+    },
+    { t: top, s: smooth },
+  );
+}
+
 async function scrollFrame(page, frameName, top, smooth = true) {
   const frame = frameOf(page, frameName);
   await frame.evaluate(
@@ -289,35 +301,48 @@ function buildScript(page, elapsed) {
   add(seg("S1", 11.6), "check-in: tags + continue", () => advanceCheckIn(page));
   add(seg("S1", 13.6), "check-in: save", () => advanceCheckIn(page));
 
-  // ---- S2  Saathi voice, then the language switch -------------------------
-  add(seg("S2", 0.5), "phone: open Saathi", async () => {
-    await nav(page, P, "/app/saathi");
-    await waitLoaded(page, P, "button:has-text('Hold to talk')");
+  // ---- S2  a real spoken turn: transcript, reply, audio cleared ----------
+  // The fixture only supplies the audio and transcript, so it does not have to
+  // match the signed-in persona. Arjun has no open acute case, which keeps the
+  // phone on Saathi instead of jumping to his safety screen.
+  add(seg("S2"), "phone: open Saathi with the recorded Hindi turn", async () => {
+    await nav(page, P, "/app/saathi?fixture=arjun-hi");
+    await waitLoaded(page, P, "button:has-text('Play recorded check-in'), button:has-text('रिकॉर्ड')");
   });
-  add(seg("S2", 3.0), "phone: hold to talk", () =>
-    click(page, P, "button:has-text('Hold to talk'), button:has-text('Play recorded')",
-      "saathi voice button"));
-  add(seg("S2", 8.5), "phone: switch to Hindi", () => setPhoneLang(page, "hi"));
-  add(seg("S2", 11.5), "phone: back to English", () => setPhoneLang(page, "en"));
-
-  // ---- S3  the case workspace --------------------------------------------
-  add(seg("S3", -4.0), "console: open case MB-4091", async () => {
+  add(seg("S2", 3.0), "phone: play the recorded check-in", () =>
+    click(page, P, "button:has-text('Play recorded check-in'), button:has-text('रिकॉर्ड')",
+      "play recorded"));
+  add(seg("S2", 5.0), "console: welfare queue tabs", () =>
+    click(page, C, "button:has-text('Incident check-ins')", "queue tab"));
+  add(seg("S2", 7.5), "console: back to the queue", () =>
+    click(page, C, "button:has-text('Queue')", "queue tab back"));
+  // The case workspace is the slowest screen in the demo (~10s), so start it
+  // here, nine seconds before the narration reaches it, rather than on the
+  // segment boundary where it would still be showing "Loading."
+  add(seg("S2", 9.0), "console: start loading case MB-4091", async () => {
     await nav(page, C, "/welfare/cases/MB-4091");
     await waitLoaded(page, C, "button:has-text('Reveal to contact')", { timeout: 16000 });
   });
-  add(seg("S3", 2.0), "phone: toolkit", async () => {
+  add(seg("S2", 15.0), "phone: confirm Saathi replied", async () => {
+    const frame = frameOf(page, P);
+    await frame.waitForSelector("text=Saathi:", { timeout: 4000 }).catch(() => {});
+  });
+
+  // ---- S3  the case workspace --------------------------------------------
+  add(seg("S3", 2.0), "console: pick the 48-hour rest lever", () =>
+    click(page, C, "input[name='lever']", "recommended action radio"));
+  add(seg("S3", 5.0), "phone: toolkit", async () => {
     await nav(page, P, "/app/toolkit");
     await waitLoaded(page, P, "a[href^='/app/toolkit/']");
   });
-  add(seg("S3", 6.5), "console: pick the 48-hour rest lever", () =>
-    click(page, C, "input[name='lever']", "recommended action radio"));
-  add(seg("S3", 9.0), "phone: scroll the practices", () => scrollFrame(page, P, 620));
-  add(seg("S3", 12.0), "console: request the sleep trend", () =>
+  add(seg("S3", 8.0), "console: request the sleep trend", () =>
     click(page, C, "button:has-text('Request sleep trend')", "trend sharing"));
-  add(seg("S3", 15.0), "phone: scroll further", () => scrollFrame(page, P, 1400));
+  add(seg("S3", 11.0), "phone: scroll the practices", () => scrollFrame(page, P, 620));
+  add(seg("S3", 14.0), "console: scroll the case brief", () => scrollConsole(page, 240));
 
-  // ---- S4  purpose-bound reveal, and the ledger on the phone --------------
+  // ---- S4  purpose-bound reveal and the phone ledger ---------------------
   add(seg("S4"), "console: write the care justification", async () => {
+    await scrollConsole(page, 0);
     const frame = frameOf(page, C);
     const box = await frame.$("textarea");
     if (!box) throw new Error("reveal: justification textarea missing");
@@ -338,10 +363,10 @@ function buildScript(page, elapsed) {
     await nav(page, C, "/command");
     await waitLoaded(page, C, "button:has-text('Ask copilot')");
   });
-  add(seg("S5", 4.5), "console: open a suppressed tile", () =>
+  add(seg("S5", 4.0), "console: open a suppressed tile", () =>
     click(page, C, "button:has-text('Fewer than 10 people')", "suppressed tile"));
-  add(seg("S5", 8.0), "phone: consent receipt", () => scrollFrame(page, P, 1500));
-  add(seg("S5", 11.0), "console: a banded tile", () =>
+  add(seg("S5", 7.5), "phone: consent receipt", () => scrollFrame(page, P, 1500));
+  add(seg("S5", 10.0), "console: a banded tile", () =>
     click(page, C, "button:has-text('20 to 30%')", "banded tile"));
 
   // ---- S6  the copilot refusal -------------------------------------------
@@ -351,64 +376,49 @@ function buildScript(page, elapsed) {
     click(page, C, "button:has-text('Who is under strain?')", "copilot preset"));
   add(seg("S6", 4.2), "console: send it", () =>
     click(page, C, "button:text-is('Ask')", "copilot ask"));
-  add(seg("S6", 9.0), "phone: settings", () => scrollFrame(page, P, 2200));
+  add(seg("S6", 8.5), "phone: settings", () => scrollFrame(page, P, 2200));
 
   // ---- S7  roster balancer ------------------------------------------------
   add(seg("S7", -4.0), "console: roster balancer", async () => {
     await nav(page, C, "/command/roster");
     await waitLoaded(page, C, "button:has-text('Project 14 days')");
   });
-  add(seg("S7", 3.0), "console: ease the night share", () =>
+  add(seg("S7", 2.0), "console: ease the night share", () =>
     click(page, C, "button:has-text('Ease night share')", "ease night share"));
-  add(seg("S7", 6.0), "phone: plan my rest", async () => {
-    await nav(page, P, "/app/rest");
-    await waitLoaded(page, P, "h1");
-  });
-  add(seg("S7", 8.0), "console: project 14 days", () =>
+  add(seg("S7", 5.0), "console: project 14 days", () =>
     click(page, C, "button:has-text('Project 14 days')", "project 14 days"));
-  add(seg("S7", 10.5), "console: create the draft order", () =>
-    click(page, C, "button:has-text('Create draft order')", "create draft order"));
+  add(seg("S7", 7.5), "console: scroll to leave pressure", () => scrollConsole(page, 420));
+  add(seg("S7", 10.0), "console: create the draft order", async () => {
+    await scrollConsole(page, 0);
+    await click(page, C, "button:has-text('Create draft order')", "create draft order");
+  });
 
-  // ---- S8  the acute path -------------------------------------------------
-  add(seg("S8"), "phone: back to Saathi", async () => {
-    await nav(page, P, "/app/saathi");
-    await waitLoaded(page, P, "button:has-text('Keyboard')");
+  // ---- S8  the acute path, spoken ----------------------------------------
+  add(seg("S8"), "phone: Saathi with the recorded distress turn", async () => {
+    await nav(page, P, "/app/saathi?fixture=deepak-distress");
+    await waitLoaded(page, P, "button:has-text('Play recorded check-in'), button:has-text('रिकॉर्ड')");
   });
-  add(seg("S8", 2.2), "phone: switch to the keyboard", () =>
-    click(page, P, "button:has-text('Keyboard'), button:has-text('कीबोर्ड')", "keyboard"));
-  add(seg("S8", 4.0), "phone: type the acute phrase", async () => {
+  add(seg("S8", 3.5), "phone: play the distress turn", () =>
+    click(page, P, "button:has-text('Play recorded check-in'), button:has-text('रिकॉर्ड')",
+      "play distress"));
+  add(seg("S8", 7.0), "phone: confirm the safety screen", async () => {
     const frame = frameOf(page, P);
-    // The Saathi input carries no type attribute, so [type='text'] would miss it.
-    const input = await frame.waitForSelector("form input", { state: "visible", timeout: 6000 });
-    await input.click();
-    await input.type("main jeena nahi chahta", { delay: 85 });
+    await frame.waitForSelector("a[href='tel:14416']", { state: "visible", timeout: 9000 });
   });
-  add(seg("S8", 7.5), "phone: send it", async () => {
-    const frame = frameOf(page, P);
-    const send = await frame.waitForSelector(
-      "button:has-text('Send'), button:has-text('भेजें')",
-      { state: "visible", timeout: 6000 },
-    );
-    await send.click({ timeout: 8000 });
-  });
-  add(seg("S8", 11.0), "phone: confirm the safety screen", async () => {
-    const frame = frameOf(page, P);
-    await frame.waitForSelector("a[href='tel:14416']", { state: "visible", timeout: 8000 });
-  });
-  add(seg("S8", 12.5), "phone: the safety screen", () => scrollFrame(page, P, 260));
-  add(seg("S8", 15.0), "phone: back to the top of the safety screen", () =>
+  add(seg("S8", 10.0), "phone: the safety options", () => scrollFrame(page, P, 260));
+  add(seg("S8", 13.0), "phone: back to the top of the safety screen", () =>
     scrollFrame(page, P, 0));
 
   // ---- S9  medical acute board -------------------------------------------
-  add(seg("S9", -5.0), "console: acute board", async () => {
+  add(seg("S9", -4.0), "console: acute board", async () => {
     await nav(page, C, "/medical");
     await waitLoaded(page, C, "button:has-text('Acknowledge')");
   });
-  add(seg("S9", 4.0), "phone: hold on the safety screen", () =>
-    scrollFrame(page, P, 120));
+  add(seg("S9", 6.0), "console: hold on the minimum context", () => scrollConsole(page, 180));
 
   // ---- S10 counsellor desk -----------------------------------------------
   add(seg("S10", -4.0), "console: counsellor desk", async () => {
+    await scrollConsole(page, 0);
     await nav(page, C, "/counsel");
     await waitLoaded(page, C, "button:has-text('Join call')");
   });
@@ -418,95 +428,107 @@ function buildScript(page, elapsed) {
     await nav(page, P, "/app/talk");
     await waitLoaded(page, P, "button:has-text('Request')");
   });
-  add(seg("S10", 8.5), "phone: scroll the request options", () => scrollFrame(page, P, 420));
+  add(seg("S10", 8.5), "console: scroll the desk", () => scrollConsole(page, 260));
 
-  // ---- S11 governance, the audit chain -----------------------------------
-  add(seg("S11", -5.0), "console: governance", async () => {
+  // ---- S11 Force HQ -------------------------------------------------------
+  add(seg("S11", -4.0), "console: Force HQ", async () => {
+    await scrollConsole(page, 0);
+    await nav(page, C, "/hq");
+    await waitLoaded(page, C, "button:has-text('Project this policy')");
+  });
+  add(seg("S11", 3.0), "console: compare the North theatre", () =>
+    click(page, C, "button:has-text('North')", "theatre north"));
+  add(seg("S11", 6.0), "console: trial the policy", () =>
+    click(page, C, "button:has-text('Project this policy')", "project policy"));
+  add(seg("S11", 8.5), "phone: scroll the request options", () => scrollFrame(page, P, 420));
+
+  // ---- S12 governance, the audit chain -----------------------------------
+  add(seg("S12", -4.0), "console: governance", async () => {
     await nav(page, C, "/governance");
     await waitLoaded(page, C, "button:has-text('Tamper')");
   });
-  add(seg("S11", 3.0), "console: verify the chain", () =>
+  add(seg("S12", 2.5), "console: verify the chain", () =>
     click(page, C, "button:has-text('Verify')", "verify"));
-  add(seg("S11", 7.0), "console: tamper with the chain", () =>
+  add(seg("S12", 6.0), "console: tamper with the chain", () =>
     click(page, C, "button:has-text('Tamper')", "tamper"));
-  add(seg("S11", 12.0), "console: restore the chain", () =>
+  add(seg("S12", 10.0), "console: restore the chain", () =>
     click(page, C, "button:has-text('Restore')", "restore"));
-  add(seg("S11", 15.0), "phone: assessments", async () => {
+  add(seg("S12", 12.5), "phone: assessments", async () => {
     await nav(page, P, "/app/assessments");
     await waitLoaded(page, P, "a[href^='/app/assessments/']");
   });
 
-  // ---- S12 DPO centre -----------------------------------------------------
-  add(seg("S12", -3.0), "console: DPO centre", async () => {
+  // ---- S13 DPO centre -----------------------------------------------------
+  add(seg("S13", -3.0), "console: DPO centre", async () => {
     await nav(page, C, "/dpo");
     await waitLoaded(page, C, "button:has-text('Publish')");
   });
-  add(seg("S12", 3.5), "console: close a rights request", () =>
+  add(seg("S13", 3.0), "console: close a rights request", () =>
     click(page, C, "button:has-text('Close')", "rights queue close"));
-  add(seg("S12", 6.5), "phone: scroll the assessments", () => scrollFrame(page, P, 500));
-  add(seg("S12", 5.5), "console: publish a privacy notice", () =>
+  add(seg("S13", 5.5), "console: publish a privacy notice", () =>
     click(page, C, "button:has-text('Publish')", "publish notice"));
+  add(seg("S13", 8.0), "console: scroll to retention", () => scrollConsole(page, 300));
+  // The phone had no action between the assessments and family connect, leaving
+  // it visibly static for twenty seconds while the console carried two desks.
+  add(seg("S13", 4.0), "phone: scroll the assessments", () => scrollFrame(page, P, 460));
+  add(seg("S13", 8.5), "phone: plan my rest", async () => {
+    await nav(page, P, "/app/rest");
+    await waitLoaded(page, P, "h1");
+  });
 
-  // ---- S13 integrations ---------------------------------------------------
-  add(seg("S13", -5.0), "console: integrations", async () => {
+  // ---- S14 integrations ---------------------------------------------------
+  add(seg("S14", -3.0), "console: integrations", async () => {
+    await scrollConsole(page, 0);
     await nav(page, C, "/integrations");
     await waitLoaded(page, C, "button:has-text('Run now')");
   });
-  add(seg("S13", 3.5), "console: run the roster feed", () =>
+  add(seg("S14", 3.0), "console: run the roster feed", () =>
     click(page, C, "button:has-text('Run now')", "run now"));
-  add(seg("S13", 5.5), "console: test that names are blocked", () =>
-    click(page, C, "button:has-text('Test that names are blocked')", "name block test"));
-  add(seg("S13", 9.5), "phone: family connect", async () => {
+  add(seg("S14", 6.0), "console: scroll to names removed", () => scrollConsole(page, 320));
+  add(seg("S14", 4.5), "phone: scroll the rest plan", () => scrollFrame(page, P, 260));
+  add(seg("S14", 8.0), "phone: family connect", async () => {
     await nav(page, P, "/app/family");
     await waitLoaded(page, P, "button:has-text('call')");
   });
 
-  // ---- S14 validation lab -------------------------------------------------
-  add(seg("S14", -4.0), "console: validation lab", async () => {
+  // ---- S15 administration -------------------------------------------------
+  add(seg("S15", -3.0), "console: administration", async () => {
+    await scrollConsole(page, 0);
+    await nav(page, C, "/admin");
+    await waitLoaded(page, C, "button:has-text('Save assignment')");
+  });
+  add(seg("S15", 3.5), "console: pick a company scope", () =>
+    click(page, C, "button:has-text('Charlie Coy')", "org scope"));
+  add(seg("S15", 6.5), "console: scroll the assignments", () => scrollConsole(page, 340));
+
+  // ---- S16 validation lab -------------------------------------------------
+  add(seg("S16", -3.0), "console: validation lab", async () => {
+    await scrollConsole(page, 0);
     await nav(page, C, "/lab");
     await waitLoaded(page, C, "button:has-text('Shifted world')");
   });
-  add(seg("S14", 4.0), "console: the shifted world", () =>
+  add(seg("S16", 3.5), "console: the shifted world", () =>
     click(page, C, "button:has-text('Shifted world')", "shifted world"));
-  add(seg("S14", 7.0), "phone: my safety plan", async () => {
+  add(seg("S16", 6.5), "console: scroll to the lead time", () => scrollConsole(page, 380));
+  add(seg("S16", 9.5), "phone: my safety plan", async () => {
     await nav(page, P, "/app/plan");
     await waitLoaded(page, P, "textarea");
   });
-  add(seg("S14", 9.5), "console: back to the primary world", () =>
-    click(page, C, "button:has-text('Primary world')", "primary world"));
-  add(seg("S14", 12.0), "phone: scroll the safety plan", () => scrollFrame(page, P, 320));
 
-  // ---- S15 architecture ---------------------------------------------------
-  add(seg("S15", -4.0), "console: architecture", async () => {
-    await nav(page, C, "/architecture");
-    await waitLoaded(page, C, "button:has-text('Run self-test')");
+  // ---- S17 close ----------------------------------------------------------
+  add(seg("S17"), "console: back to the primary world", async () => {
+    await scrollConsole(page, 0);
+    await click(page, C, "button:has-text('Primary world')", "primary world");
   });
-  add(seg("S15", 4.0), "console: zone 2, patterns", () =>
-    click(page, C, "button:has-text('Zone 2')", "zone 2"));
-  add(seg("S15", 8.0), "console: zone X, never connected", () =>
-    click(page, C, "button:has-text('Zone X')", "zone X"));
-  add(seg("S15", 11.5), "console: run the self-test", () =>
-    click(page, C, "button:has-text('Run self-test')", "self test"));
-  add(seg("S15", 1.0), "phone: a breathing practice", async () => {
-    await nav(page, P, "/app/toolkit/breathe");
-    await waitLoaded(page, P, "h1");
-  });
-  add(seg("S15", 9.0), "phone: raise a concern", async () => {
-    await nav(page, P, "/app/concerns");
-    await waitLoaded(page, P, "button:has-text('Send')");
-  });
-  add(seg("S15", 13.0), "phone: scroll the concern form", () => scrollFrame(page, P, 260));
-
-  // ---- S16 close ----------------------------------------------------------
-  add(seg("S16"), "phone: home", async () => {
+  add(seg("S17", 3.0), "phone: home", async () => {
     await nav(page, P, "/app");
     await waitLoaded(page, P, "a[href='/app/check-in']");
   });
-  add(seg("S16", 4.0), "console: back to the welfare queue", async () => {
+  add(seg("S17", 6.0), "console: back to the welfare queue", async () => {
     await nav(page, C, "/welfare");
     await waitLoaded(page, C, "a[href^='/welfare/cases/']");
   });
-  add(seg("S16", 8.0), "phone: gentle scroll to close", () => scrollFrame(page, P, 300));
+  add(seg("S17", 9.5), "phone: gentle scroll to close", () => scrollFrame(page, P, 300));
 
   S.sort((a, b) => a.t - b.t);
   return S;
@@ -517,10 +539,10 @@ function buildScript(page, elapsed) {
 async function prewarm(browser) {
   const routes = [
     "/", "/stage?phone=/app&console=/welfare",
-    "/app", "/app/check-in", "/app/saathi", "/app/toolkit", "/app/me", "/app/rest",
-    "/app/talk", "/app/assessments", "/app/family", "/app/plan", "/app/safety",
+    "/app", "/app/check-in", "/app/saathi", "/app/toolkit", "/app/me", "/app/talk",
+    "/app/assessments", "/app/family", "/app/plan", "/app/safety",
     "/welfare", "/welfare/cases/MB-4091", "/command", "/command/roster", "/medical",
-    "/counsel", "/governance", "/dpo", "/integrations", "/lab", "/architecture", "/hq",
+    "/counsel", "/hq", "/governance", "/dpo", "/integrations", "/admin", "/lab",
   ];
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
@@ -541,8 +563,8 @@ async function prewarm(browser) {
     await page.goto(`${BASE}/stage?phone=/app&console=/welfare`, { waitUntil: "domcontentloaded" });
     await page.waitForSelector('iframe[name="mb-console"]', { timeout: 20000 });
     await page.waitForTimeout(7000);
-    for (const r of ["/welfare/cases/MB-4091", "/medical", "/counsel", "/governance",
-                     "/dpo", "/integrations", "/lab", "/architecture", "/hq",
+    for (const r of ["/welfare/cases/MB-4091", "/medical", "/counsel", "/hq",
+                     "/governance", "/dpo", "/integrations", "/admin", "/lab",
                      "/command", "/command/roster", "/welfare"]) {
       await page.evaluate(
         (route) => document.querySelector('iframe[name="mb-console"]')

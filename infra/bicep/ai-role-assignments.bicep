@@ -66,3 +66,5 @@ resource contentSafetyRole 'Microsoft.Authorization/roleAssignments@2022-04-01' 
     roleDefinitionId: cognitiveServicesUserRoleId
   }
 }
+
+output contentSafetyEndpoint string = contentSafety.properties.endpoint
