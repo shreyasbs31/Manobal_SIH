@@ -1,0 +1,20 @@
+title = "MANOBAL secret scanning"
+
+[extend]
+useDefault = true
+
+# Every entry below was reviewed by hand. Nothing here is a credential.
+[allowlist]
+description = "Reviewed false positives"
+paths = [
+  # Synthetic ruleset-signing fixtures, tracked on purpose. They sign only the
+  # demo rulesets in infra/rulesets and protect nothing of value.
+  '''services/engine/app/scoring/dev_keys/.*\.pem$''',
+]
+regexes = [
+  # Pseudonymous subject tokens (st_ + 16 base32 characters). They are identifiers
+  # of synthetic people, not credentials.
+  '''st_[a-z2-7]{16}''',
+  # The public, documented Azurite storage emulator key used by docker compose.
+  '''Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==''',
+]

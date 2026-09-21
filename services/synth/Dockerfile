@@ -24,6 +24,8 @@ RUN uv sync \
 
 COPY services/synth services/synth
 
-RUN useradd --create-home --uid 10003 manobal
+RUN useradd --create-home --uid 10003 manobal \
+    && mkdir -p /workspace/services/synth/artifacts \
+    && chown -R manobal:manobal /workspace/services/synth/artifacts
 USER manobal
 ENTRYPOINT ["python", "-m", "manobal_synth.cli"]

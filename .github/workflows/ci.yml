@@ -19,8 +19,14 @@ jobs:
         run: corepack enable
       - name: Install
         run: |
-          uv sync
+          uv sync --all-packages
           corepack pnpm install
+      - name: Development keys
+        # DEV_VAULT_KEYS_JSON is optional. Without it CI uses a random token key
+        # and skips only the tests that assert fixed demo-persona tokens.
+        env:
+          DEV_VAULT_KEYS_JSON: ${{ secrets.DEV_VAULT_KEYS_JSON }}
+        run: uv run python scripts/ci-dev-keys.py
       - name: Lint
         run: make lint
       - name: Copy lint

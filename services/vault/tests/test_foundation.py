@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -25,6 +26,12 @@ PERSONAS = (
 )
 
 
+needs_project_token_key = pytest.mark.skipif(
+    os.environ.get("MANOBAL_CI_RANDOM_KEYS") == "1",
+    reason="Persona tokens derive from the project's private dev token key; CI has a random one.",
+)
+
+
 def local_settings() -> Settings:
     return Settings(
         local_key_file=ROOT / "infra/keys/dev-vault-keys.json",
@@ -37,6 +44,7 @@ def provider() -> LocalKeyProvider:
     return LocalKeyProvider(local_settings())
 
 
+@needs_project_token_key
 @pytest.mark.parametrize(("service_no", "token"), PERSONAS)
 async def test_tokens_are_deterministic(
     provider: LocalKeyProvider,
@@ -46,6 +54,7 @@ async def test_tokens_are_deterministic(
     assert await subject_token(service_no, provider) == token
 
 
+@needs_project_token_key
 async def test_identity_roundtrip_keeps_fields_token_bound(
     provider: LocalKeyProvider,
 ) -> None:
