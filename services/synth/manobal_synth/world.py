@@ -443,7 +443,13 @@ def generate_world(
         units=units,
         subjects=subjects,
         duty=duty,
-        leave_event=pl.DataFrame(leave_rows) if leave_rows else _empty_leave(),
+        # The id hashes (token, start, kind, status), so a life event and a scheduled
+        # leave that share all four collide on the primary key. Keep the first.
+        leave_event=(
+            pl.DataFrame(leave_rows).unique(subset=["id"], keep="first", maintain_order=True)
+            if leave_rows
+            else _empty_leave()
+        ),
         leave_balance=leave_balance,
         org_event=pl.DataFrame(org_rows) if org_rows else _empty_org(),
         deployment_event=pl.DataFrame(deployments) if deployments else _empty_deployment(),
