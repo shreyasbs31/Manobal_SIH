@@ -15,6 +15,7 @@ import polars as pl
 import psycopg
 from azure.identity import DefaultAzureCredential
 from azure_postgresql_auth.psycopg3 import EntraConnection
+from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from .org import build_units
@@ -50,6 +51,34 @@ def _entra_enabled() -> bool:
         "1",
         "true",
     }
+
+
+# Tables the seed bulk-loads that carry FORCE ROW LEVEL SECURITY. COPY FROM is refused
+# whenever row-level security applies to the connected role, and FORCE makes it apply to
+# the table owner too, unless that owner is a superuser or has BYPASSRLS. Azure's
+# migration identity is neither, so the load relaxes FORCE for these tables and puts it
+# back before commit. Both statements run in the seed's single transaction, so no other
+# session ever sees the relaxed state and a failure rolls back to the original.
+FORCED_RLS_LOAD_TABLES = ("grievance",)
+
+
+def _relax_forced_rls(cursor: psycopg.Cursor) -> tuple[str, ...]:
+    cursor.execute("SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user")
+    row = cursor.fetchone()
+    if row is not None and row[0]:
+        return ()
+    for table in FORCED_RLS_LOAD_TABLES:
+        cursor.execute(
+            sql.SQL("ALTER TABLE {} NO FORCE ROW LEVEL SECURITY").format(sql.Identifier(table))
+        )
+    return FORCED_RLS_LOAD_TABLES
+
+
+def _restore_forced_rls(cursor: psycopg.Cursor, tables: tuple[str, ...]) -> None:
+    for table in tables:
+        cursor.execute(
+            sql.SQL("ALTER TABLE {} FORCE ROW LEVEL SECURITY").format(sql.Identifier(table))
+        )
 
 
 @contextmanager
@@ -184,6 +213,7 @@ def persist_world(world: World, database_url: str) -> None:
         with connection.cursor() as cursor:
             if not _entra_enabled():
                 cursor.execute("SET session_replication_role = replica")
+            relaxed_rls = _relax_forced_rls(cursor)
             for name in SECONDARY_INDEXES:
                 cursor.execute(f"DROP INDEX IF EXISTS {name}")
             for unit in units:
@@ -250,6 +280,7 @@ def persist_world(world: World, database_url: str) -> None:
                 ),
             )
             _recreate_indexes(cursor)
+            _restore_forced_rls(cursor, relaxed_rls)
             if not _entra_enabled():
                 cursor.execute("SET session_replication_role = origin")
         connection.commit()
