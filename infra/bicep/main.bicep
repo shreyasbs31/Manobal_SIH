@@ -98,6 +98,7 @@ var vaultMigrateJobName = '${stem}-vault-migrate'
 var seedJobName = '${stem}-seed'
 var frontDoorProfileName = '${stem}-afd'
 var frontDoorEndpointName = take('${stem}-${uniqueSuffix}', 46)
+var wafPolicyName = take(replace('${stem}waf', '-', ''), 128)
 
 var placeholderSecretNames = {
   accessJwt: 'access-jwt'
@@ -1191,7 +1192,7 @@ resource vaultApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode)
                 scheme: 'HTTP'
               }
               failureThreshold: 30
-              initialDelaySeconds: 120
+              initialDelaySeconds: 60
               periodSeconds: 10
             }
           ]
@@ -1570,7 +1571,7 @@ resource engineApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode
                 scheme: 'HTTP'
               }
               failureThreshold: 30
-              initialDelaySeconds: 120
+              initialDelaySeconds: 60
               periodSeconds: 10
             }
           ]
@@ -2054,8 +2055,8 @@ resource frontDoorRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2025-04-15' 
   ]
 }
 
-resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2024-02-01' = if (!bootstrapMode) {
-  name: '${stem}-waf'
+resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2020-11-01' = if (!bootstrapMode) {
+  name: wafPolicyName
   location: 'global'
   tags: commonTags
   sku: {
@@ -2082,7 +2083,7 @@ resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@20
   }
 }
 
-resource frontDoorSecurityPolicy 'Microsoft.Cdn/profiles/securityPolicies@2025-04-15' = if (!bootstrapMode) {
+resource frontDoorSecurityPolicy 'Microsoft.Cdn/profiles/securityPolicies@2021-06-01' = if (!bootstrapMode) {
   parent: frontDoorProfile
   name: 'waf'
   properties: {
