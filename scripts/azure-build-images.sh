@@ -27,7 +27,7 @@ az acr build \
   --platform linux/amd64 \
   --image "manobal/web:${image_tag}" \
   --file apps/web/Dockerfile \
-  --build-arg DEMO_GATE_REQUIRED=true \
+  --build-arg DEMO_GATE_REQUIRED=false \
   --build-arg NEXT_PUBLIC_MANOBAL_MODE=demo \
   .
 

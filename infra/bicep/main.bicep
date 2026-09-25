@@ -933,7 +933,7 @@ resource webApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode) {
             }
             {
               name: 'DEMO_GATE_REQUIRED'
-              value: 'true'
+              value: 'false'
             }
             {
               name: 'ENGINE_INTERNAL_URL'
@@ -1422,7 +1422,7 @@ resource engineApp 'Microsoft.App/containerApps@2025-07-01' = if (!bootstrapMode
             }
             {
               name: 'DEMO_GATE_REQUIRED'
-              value: '1'
+              value: '0'
             }
             {
               name: 'DEMO_GATE_ACCESS_HASH'

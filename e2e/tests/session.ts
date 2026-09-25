@@ -16,6 +16,9 @@ export async function grantDemoAccess(
   const response = await request.post(`${ENGINE}/api/v1/auth/demo-access`, {
     data: { code },
   });
+  if (response.status() === 404) {
+    return; // Gate disabled on this deployment; everything is already open.
+  }
   if (!response.ok()) {
     throw new Error(`Demo ${level} access failed with ${response.status()}.`);
   }
