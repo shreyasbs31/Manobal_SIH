@@ -53,7 +53,7 @@ fi
 WEB_URL="$web_url" \
 ENGINE_URL="$web_url" \
 AZURE_WEB_URL="$web_url" \
-corepack pnpm --filter @manobal/e2e exec playwright test tests/demo-spine.spec.ts
+corepack pnpm --filter @manobal/e2e exec playwright test tests/demo-spine.spec.ts --workers=1
 
 if [ "$(azd env get-value WAF_MODE)" != "Prevention" ]; then
   azd env set WAF_MODE Prevention

@@ -36,6 +36,10 @@ export async function signIn(
       persona_id: personaId ?? null,
     },
   });
+  if (!response.ok()) {
+    const body = (await response.text()).replace(/\s+/g, " ").slice(0, 300);
+    throw new Error(`Demo login as ${role} failed with ${response.status()}: ${body}`);
+  }
   const login = (await response.json()) as {
     access_token: string;
     principal: unknown;
