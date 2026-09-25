@@ -10,10 +10,11 @@ function gateRequired(): boolean {
 export function middleware(request: NextRequest) {
   // The deployed demo opens straight onto Stage (phone + console side by side).
   // Temporary redirect so browsers do not cache it if the landing page returns.
-  if (request.nextUrl.pathname === "/") {
+  const onAccessPage = request.nextUrl.pathname.startsWith("/access");
+  if (request.nextUrl.pathname === "/" || (onAccessPage && !gateRequired())) {
     return NextResponse.redirect(new URL("/stage", request.url));
   }
-  if (!gateRequired() || request.nextUrl.pathname.startsWith("/access")) {
+  if (!gateRequired() || onAccessPage) {
     return NextResponse.next();
   }
   if (request.cookies.has(COOKIE_NAME)) {
