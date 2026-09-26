@@ -200,16 +200,27 @@ export function LeverOption({
   rationale,
   hint,
   index = 1,
+  checked,
+  onSelect,
 }: {
   title: string;
   rationale: string;
   hint: string;
   index?: number | undefined;
+  checked?: boolean | undefined;
+  onSelect?: (() => void) | undefined;
 }) {
   return (
-    <label className="mb-lever">
+    <label className="mb-lever" data-checked={checked ? "true" : "false"}>
       <span>
-        <input name="lever" type="radio" value={title} /> {index}. {title}
+        <input
+          checked={checked}
+          name="lever"
+          onChange={() => onSelect?.()}
+          type="radio"
+          value={title}
+        />
+        {index}. {title}
       </span>
       <p>{rationale}</p>
       <p>{hint}</p>

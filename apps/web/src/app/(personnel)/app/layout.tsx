@@ -5,7 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { engineClient } from "@/lib/engine";
 import {
+  normalisePersonnelLang,
   PersonnelLanguageProvider,
   usePersonnelI18n,
 } from "@/lib/personnel-i18n";
@@ -78,7 +80,6 @@ function LocalisedSaathiShell({
   chrome,
   greeting,
   shiftLine,
-  language,
   offline,
   queued,
   simple,
@@ -89,17 +90,16 @@ function LocalisedSaathiShell({
   chrome: "full" | "flow" | "none";
   greeting?: string | undefined;
   shiftLine?: string | undefined;
-  language?: string | undefined;
   offline: boolean;
   queued: number;
   simple: boolean;
   stepMeta: string;
 }) {
   const router = useRouter();
-  const { lang, p } = usePersonnelI18n();
+  const { lang, p, setLang } = usePersonnelI18n();
   const isHome = pathname === "/app";
   const flowLabel = screenTitle(pathname, p);
-  const flowMeta = pathname === "/app/saathi" ? languageLabel(language, p) : stepMeta || undefined;
+  const flowMeta = pathname === "/app/saathi" ? languageLabel(lang, p) : stepMeta || undefined;
   const homeGreeting =
     lang === "hi" ? p("Good morning") : lang === "ta" ? (greeting ?? p("Saathi")) : "Good morning";
   const offlineLabel =
@@ -130,6 +130,28 @@ function LocalisedSaathiShell({
       offline={offline}
       onNavigate={(href) => router.push(href)}
       pathname={pathname}
+      languageCode={lang}
+      languageCopy={
+        chrome === "full"
+          ? {
+              label: p("Language"),
+              english: p("English"),
+              hindi: p("Hindi"),
+              tamil: p("Tamil"),
+            }
+          : undefined
+      }
+      onLanguageChange={
+        chrome === "full"
+          ? (code) => {
+              const next = normalisePersonnelLang(code);
+              setLang(next);
+              void engineClient()
+                .savePersonalisation({ language: next })
+                .catch(() => undefined);
+            }
+          : undefined
+      }
       queued={queued}
       shiftLine={isHome && shiftLine ? p(shiftLine) : undefined}
       simple={simple}
@@ -173,11 +195,10 @@ export default function SaathiLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <PersonnelLanguageProvider fallback={data?.language}>
+    <PersonnelLanguageProvider>
       <LocalisedSaathiShell
         chrome={chrome}
         greeting={data?.greeting}
-        language={data?.language}
         offline={offline}
         pathname={pathname}
         queued={queued}

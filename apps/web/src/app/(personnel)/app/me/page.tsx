@@ -9,7 +9,6 @@ import {
   IconHiddenLock,
   IconLeaveWindow,
   IconVaultKey,
-  MachineTranslatedBadge,
   ReceiptCard,
 } from "@manobal/ui";
 import Link from "next/link";
@@ -17,16 +16,28 @@ import { useEffect, useRef, useState } from "react";
 
 import { ScreenState } from "@/components/screen-state";
 import { engineClient } from "@/lib/engine";
-import {
-  normalisePersonnelLang,
-  usePersonnelI18n,
-} from "@/lib/personnel-i18n";
+import { usePersonnelI18n } from "@/lib/personnel-i18n";
 import { useEngine } from "@/lib/use-engine";
 
 const ICONS = [IconHiddenLock, IconLeaveWindow, IconVaultKey] as const;
 
+function formatAccessWhen(value: string, lang: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  const locale = lang === "hi" ? "hi-IN" : lang === "ta" ? "ta-IN" : "en-GB";
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export default function MePage() {
-  const { p, setLang: setAppLang } = usePersonnelI18n();
+  const { lang, p } = usePersonnelI18n();
   const { data, error, loading, offline, reload } = useEngine("me", async (client, signal) => {
     const [consents, ledger, trends, rights, remembers] = await Promise.all([
       client.meConsents(signal),
@@ -41,9 +52,6 @@ export default function MePage() {
   const [receipt, setReceipt] = useState(mePrivacy.receipt);
   const [simple, setSimple] = useState(
     typeof window === "undefined" ? false : window.localStorage.getItem("manobal.simple_mode") === "1",
-  );
-  const [lang, setLang] = useState(
-    typeof window === "undefined" ? "en" : window.localStorage.getItem("manobal.language") ?? "en",
   );
   const [pulseNote, setPulseNote] = useState("");
   const items = data?.consents.items ?? [];
@@ -81,10 +89,6 @@ export default function MePage() {
               );
             })}
           </div>
-          {lang !== "en" && lang !== "hi" && lang !== "ta" ? (
-            <MachineTranslatedBadge label={p("Machine translated")} />
-          ) : null}
-
           <h2 className="mb-section-label">{p("My trends")}</h2>
           {data ? (
             <BaselineRibbonChart
@@ -143,7 +147,7 @@ export default function MePage() {
                     ? p("Care contact")
                     : p(item.purpose_code ?? "Care")
                 }
-                when={item.at ?? ""}
+                when={formatAccessWhen(item.at ?? "", lang)}
               />
             ))
           ) : (
@@ -185,51 +189,55 @@ export default function MePage() {
 
           <h2 className="mb-section-label">{p("This week")}</h2>
           <p>{p("Your name is not attached.")}</p>
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              void engineClient()
-                .savePulse("unit", 1)
-                .then(() => setPulseNote(p("Saved.")));
-            }}
-            type="button"
-          >
-            {p("This week felt heavy")}
-          </button>
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              void engineClient()
-                .savePulse("unit", 0)
-                .then(() => setPulseNote(p("Saved.")));
-            }}
-            type="button"
-          >
-            {p("This week felt steady")}
-          </button>
+          <div className="mb-action-row">
+            <button
+              className="mb-secondary"
+              onClick={() => {
+                void engineClient()
+                  .savePulse("unit", 1)
+                  .then(() => setPulseNote(p("Saved.")));
+              }}
+              type="button"
+            >
+              {p("This week felt heavy")}
+            </button>
+            <button
+              className="mb-secondary"
+              onClick={() => {
+                void engineClient()
+                  .savePulse("unit", 0)
+                  .then(() => setPulseNote(p("Saved.")));
+              }}
+              type="button"
+            >
+              {p("This week felt steady")}
+            </button>
+          </div>
           <p>{p("I believe this app is here to support me.")}</p>
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              void engineClient()
-                .savePulse("trust", 1)
-                .then(() => setPulseNote(p("Saved.")));
-            }}
-            type="button"
-          >
-            {p("Yes")}
-          </button>
-          <button
-            className="mb-secondary"
-            onClick={() => {
-              void engineClient()
-                .savePulse("trust", 0)
-                .then(() => setPulseNote(p("Saved.")));
-            }}
-            type="button"
-          >
-            {p("Not yet")}
-          </button>
+          <div className="mb-action-row">
+            <button
+              className="mb-secondary"
+              onClick={() => {
+                void engineClient()
+                  .savePulse("trust", 1)
+                  .then(() => setPulseNote(p("Saved.")));
+              }}
+              type="button"
+            >
+              {p("Yes")}
+            </button>
+            <button
+              className="mb-secondary"
+              onClick={() => {
+                void engineClient()
+                  .savePulse("trust", 0)
+                  .then(() => setPulseNote(p("Saved.")));
+              }}
+              type="button"
+            >
+              {p("Not yet")}
+            </button>
+          </div>
           {pulseNote ? <p>{pulseNote}</p> : null}
 
           <h2 className="mb-section-label">{p("What Saathi remembers")}</h2>
@@ -259,22 +267,6 @@ export default function MePage() {
           </button>
 
           <h2 className="mb-section-label">{p("Settings")}</h2>
-          <label className="mb-field">
-            {p("Language")}
-            <select
-              onChange={(event) => {
-                setLang(event.target.value);
-                window.localStorage.setItem("manobal.language", event.target.value);
-                setAppLang(normalisePersonnelLang(event.target.value));
-                void engineClient().savePersonalisation({ language: event.target.value });
-              }}
-              value={lang}
-            >
-              <option value="en">{p("English")}</option>
-              <option value="hi">{p("Hindi")}</option>
-              <option value="ta">{p("Tamil")}</option>
-            </select>
-          </label>
           <label className="mb-check-row">
             <input
               checked={simple}

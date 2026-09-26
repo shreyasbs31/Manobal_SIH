@@ -71,6 +71,9 @@ export function SaathiShell({
   onNavigate,
   navItems = SAATHI_TABS,
   copy,
+  languageCode,
+  onLanguageChange,
+  languageCopy,
 }: {
   children: ReactNode;
   pathname: string;
@@ -97,6 +100,16 @@ export function SaathiShell({
         offline: string;
         syncing: string;
         demo: string;
+      }
+    | undefined;
+  languageCode?: string | undefined;
+  onLanguageChange?: ((code: string) => void) | undefined;
+  languageCopy?:
+    | {
+        label: string;
+        english: string;
+        hindi: string;
+        tamil: string;
       }
     | undefined;
 }) {
@@ -180,6 +193,21 @@ export function SaathiShell({
             />
           </>
         )}
+        {onLanguageChange && languageCopy ? (
+          <div className="mb-saathi-lang">
+            <label className="mb-lang-switch">
+              <span>{languageCopy.label}</span>
+              <select
+                onChange={(event) => onLanguageChange(event.target.value)}
+                value={languageCode ?? "en"}
+              >
+                <option value="en">{languageCopy.english}</option>
+                <option value="hi">{languageCopy.hindi}</option>
+                <option value="ta">{languageCopy.tamil}</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
         {showTabs && isHome ? (
           <div className="mb-saathi-status">
             {offline ? <StatusChip kind="offline" label={copy?.offline} queued={queued} /> : null}

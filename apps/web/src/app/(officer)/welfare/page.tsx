@@ -232,19 +232,12 @@ export default function WelfarePage() {
           />
         ) : null}
         {tab === "followUps" ? (
-          <TabCards
-            actionLabel={tx.markDone}
-            closedLabel={tx.closedLabel}
-            digestLabel={tx.digestItem}
+          <FollowUps
             done={done}
-            dueLabel={tx.due}
-            empty={tx.emptyFollow}
             items={asObjects(meta.followups)}
-            kind="followup"
-            openLabel={tx.open}
-            talkLabel={tx.askedTalk}
-            soonLabel={tx.soon}
-            onAction={(caseId) => void act(caseId, "done", tx.markDone)}
+            queue={queue}
+            tx={tx}
+            onDone={(caseId) => void act(caseId, "done", tx.markDone)}
           />
         ) : null}
         {tab === "closed" ? (
@@ -352,6 +345,83 @@ function QueueAside({
         </button>
       </div>
     </aside>
+  );
+}
+
+function FollowUps({
+  items,
+  queue,
+  done,
+  tx,
+  onDone,
+}: {
+  items: Record<string, unknown>[];
+  queue: WelfareCase[];
+  done: Record<string, string>;
+  tx: ConsoleCopy;
+  onDone: (caseId: string) => void;
+}) {
+  if (items.length === 0) {
+    return <p>{tx.emptyFollow}</p>;
+  }
+  return (
+    <ul className="mb-work-list">
+      {items.map((item, index) => {
+        const caseId = String(item.case_id ?? `row-${index}`);
+        const match = queue.find((entry) => entry.case_id === caseId);
+        const due = String(item.due ?? tx.soon);
+        const reason = String(item.reason ?? "");
+        const reasonText =
+          reason === "REST_48H check" ? tx.followRestCheck : reason ? localisePhrase(tx, reason) : "";
+        const marked = done[caseId];
+        return (
+          <li className="mb-follow" key={`${caseId}-${index}`}>
+            {match ? (
+              <CaseCard
+                caseId={match.case_id}
+                domains={match.drivers.map((domain) => localiseDomain(tx, domain))}
+                drift={localisePhrase(tx, match.drift)}
+                lever={match.lever_title ? localisePhrase(tx, match.lever_title) : undefined}
+                limited={match.limited}
+                limitedLabel={tx.limitedData}
+                remainingRatio={match.remaining_ratio}
+                sla={match.sla_label}
+                slaLabel={tx.sla}
+                source={match.source}
+                status={match.status}
+                tier={match.tier}
+                tierCaption={tierCaption(tx, match.tier)}
+                trajectory={match.trajectory}
+                trajectoryLabels={trajectoryCopy(tx)}
+              />
+            ) : (
+              <article className="mb-case" data-tier="T2">
+                <div className="mb-case-head">
+                  <h2>{caseId}</h2>
+                </div>
+              </article>
+            )}
+            <div className="mb-sheet mb-follow-note">
+              <p>
+                {tx.due} {due}
+              </p>
+              {reasonText ? <p>{reasonText}</p> : null}
+              {marked ? <p role="status">{marked}</p> : null}
+              <div className="mb-action-row">
+                <a className="mb-primary" href={`/welfare/cases/${caseId}`}>
+                  {tx.openCase}
+                </a>
+                {marked ? null : (
+                  <button className="mb-secondary" onClick={() => onDone(caseId)} type="button">
+                    {tx.markDone}
+                  </button>
+                )}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

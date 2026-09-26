@@ -84,16 +84,18 @@ export default function CaseWorkspacePage() {
     >
       {data ? (
         <div className="mb-case-work">
-          <header className="mb-action-row">
-            <strong>{data.case_id}</strong>
-            <TierBadge caption={tierCaption(tx, data.tier)} tier={data.tier} />
-            <TrajectoryArrow direction={data.trajectory} labels={trajectoryCopy(tx)} />
-            <SlaTimer
-              label={tx.sla}
-              remainingLabel={data.sla_label}
-              remainingRatio={data.remaining_ratio}
-              tier={data.tier}
-            />
+          <header className="mb-sheet mb-case-banner">
+            <div className="mb-case-head">
+              <h2 className="mb-case-title">{data.case_id}</h2>
+              <TierBadge caption={tierCaption(tx, data.tier)} tier={data.tier} />
+              <TrajectoryArrow direction={data.trajectory} labels={trajectoryCopy(tx)} />
+              <SlaTimer
+                label={tx.sla}
+                remainingLabel={data.sla_label}
+                remainingRatio={data.remaining_ratio}
+                tier={data.tier}
+              />
+            </div>
           </header>
           <CaseStrip
             actions={data.actions}
@@ -102,14 +104,13 @@ export default function CaseWorkspacePage() {
             onsetDay={data.onset_day}
           />
           <div className="mb-case-cols">
-            <section>
+            <section className="mb-sheet">
               <h2>{tx.whatChanged}</h2>
-                  {data.what_changed.map((row) => (
-                <p key={row.title}>
+              {data.what_changed.map((row) => (
+                <div className="mb-change" key={row.title}>
                   <strong>{localisePhrase(tx, row.title)}</strong>
-                  <br />
-                  {localisePhrase(tx, row.detail)}
-                </p>
+                  <p>{localisePhrase(tx, row.detail)}</p>
+                </div>
               ))}
               <h2>{tx.trendSharing}</h2>
               <p>{trend || tx.trendSleep}</p>
@@ -125,13 +126,21 @@ export default function CaseWorkspacePage() {
                 {tx.requestSleep}
               </button>
             </section>
-            <section>
+            <section className="mb-sheet">
               <h2>{tx.recommendedActions}</h2>
               {data.levers.map((item, index) => (
                 <LeverOption
+                  checked={item.code ? lever === item.code : false}
                   hint={localisePhrase(tx, item.hint)}
                   index={index + 1}
                   key={item.title}
+                  onSelect={
+                    item.code
+                      ? () => {
+                          setLever(item.code ?? "");
+                        }
+                      : undefined
+                  }
                   rationale={localisePhrase(tx, item.rationale)}
                   title={localisePhrase(tx, item.title)}
                 />
@@ -146,7 +155,7 @@ export default function CaseWorkspacePage() {
                 </ol>
               </BriefPanel>
             </section>
-            <section>
+            <section className="mb-sheet">
               <h2>{tx.identity}</h2>
               {reveal ? (
                 <div className="mb-identity-card">
@@ -176,7 +185,7 @@ export default function CaseWorkspacePage() {
               ) : (
                 <>
                   <p>{tx.identityLocked}</p>
-                  <label>
+                  <label className="mb-field">
                     {tx.purpose}
                     <select onChange={(event) => setPurpose(event.target.value)} value={purpose}>
                       <option value="care_contact">{tx.careContact}</option>
@@ -184,7 +193,7 @@ export default function CaseWorkspacePage() {
                       <option value="follow_up">{tx.followUp}</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="mb-field">
                     {tx.whyReach}
                     <textarea
                       onChange={(event) => setJustification(event.target.value)}
@@ -232,7 +241,7 @@ export default function CaseWorkspacePage() {
                   { role: tx.roleCounsellor, status: tx.statusWaiting, time: "" },
                 ]}
               />
-              <label>
+              <label className="mb-field">
                 {tx.contacted}
                 <select onChange={(event) => setMode(event.target.value)} value={mode}>
                   <option value="call">{tx.call}</option>
@@ -240,19 +249,29 @@ export default function CaseWorkspacePage() {
                   <option value="message">{tx.message}</option>
                 </select>
               </label>
-              <label>
+              <label className="mb-field">
                 {tx.decision}
                 <select onChange={(event) => setLever(event.target.value)} value={lever}>
                   <option value="REST_48H">{tx.rest48}</option>
                   <option value="NO_ACTION">{tx.noAction}</option>
                   <option value="COUNSELLOR_REFERRAL">{tx.referCounsellor}</option>
+                  {data.levers.map((item) =>
+                    item.code &&
+                    item.code !== "REST_48H" &&
+                    item.code !== "NO_ACTION" &&
+                    item.code !== "COUNSELLOR_REFERRAL" ? (
+                      <option key={item.code} value={item.code}>
+                        {localisePhrase(tx, item.title)}
+                      </option>
+                    ) : null,
+                  )}
                 </select>
               </label>
-              <label>
+              <label className="mb-field">
                 {tx.followUpField}
                 <input onChange={(event) => setFollowUp(event.target.value)} value={followUp} />
               </label>
-              <label>
+              <label className="mb-field">
                 {tx.refer}
                 <select onChange={(event) => setRefer(event.target.value)} value={refer}>
                   <option value="">{tx.none}</option>
@@ -260,43 +279,45 @@ export default function CaseWorkspacePage() {
                   <option value="mo">{tx.medicalOfficer}</option>
                 </select>
               </label>
-              <button
-                className="mb-secondary"
-                onClick={() => {
-                  void engineClient()
-                    .welfareAction(caseId, {
-                      mode,
-                      lever,
-                      outcome: "open",
-                      follow_up: followUp,
-                      refer,
-                    })
-                    .then(() => {
-                      setMessage(tx.actionRecorded);
-                      reload();
-                    });
-                }}
-                type="button"
-              >
-                {tx.recordAction}
-              </button>
-              <button
-                className="mb-secondary"
-                onClick={() => {
-                  void engineClient()
-                    .welfareAction(caseId, {
-                      mode,
-                      lever,
-                      outcome: "closed",
-                      follow_up: followUp,
-                      refer,
-                    })
-                    .then(() => setMessage(tx.caseClosed));
-                }}
-                type="button"
-              >
-                {tx.closeCase}
-              </button>
+              <div className="mb-action-row">
+                <button
+                  className="mb-primary"
+                  onClick={() => {
+                    void engineClient()
+                      .welfareAction(caseId, {
+                        mode,
+                        lever,
+                        outcome: "open",
+                        follow_up: followUp,
+                        refer,
+                      })
+                      .then(() => {
+                        setMessage(tx.actionRecorded);
+                        reload();
+                      });
+                  }}
+                  type="button"
+                >
+                  {tx.recordAction}
+                </button>
+                <button
+                  className="mb-secondary"
+                  onClick={() => {
+                    void engineClient()
+                      .welfareAction(caseId, {
+                        mode,
+                        lever,
+                        outcome: "closed",
+                        follow_up: followUp,
+                        refer,
+                      })
+                      .then(() => setMessage(tx.caseClosed));
+                  }}
+                  type="button"
+                >
+                  {tx.closeCase}
+                </button>
+              </div>
               {message ? <p role="status">{message}</p> : null}
             </section>
           </div>

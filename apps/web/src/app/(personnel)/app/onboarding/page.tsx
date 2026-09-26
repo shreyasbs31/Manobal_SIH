@@ -49,7 +49,7 @@ export default function OnboardingPage() {
   const { p, setLang } = usePersonnelI18n();
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [language, setLanguage] = useState("hi");
+  const [language, setLanguage] = useState("en");
   const [consents, setConsents] = useState<Record<string, boolean>>({
     hr_derived: true,
     self_report: false,
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
       });
       setReceipt(result.receipt);
       window.localStorage.setItem("manobal.onboarding_done", "1");
-      window.localStorage.setItem("manobal.language", language);
+      setLang(normalisePersonnelLang(language));
       window.localStorage.setItem("manobal.simple_mode", simpleMode ? "1" : "0");
       setStep(8);
     } catch (caught) {

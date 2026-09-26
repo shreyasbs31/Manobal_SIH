@@ -102,7 +102,7 @@ const HI: Record<string, string> = {
   "Settling back": "फिर लय में आना",
   "Three quiet days to find your rhythm again.": "अपनी लय फिर पाने के लिए तीन शांत दिन।",
   "You are returning from leave. This card is only for you.": "आप छुट्टी से लौट रहे हैं। यह कार्ड केवल आपके लिए है।",
-  "Shortcuts": "छोटे रास्ते",
+  "Shortcuts": "त्वरित पहुँच",
   "Talk": "बात करें",
   "Breathe": "साँस अभ्यास",
   "Breathe in": "साँस लें",
@@ -120,7 +120,7 @@ const HI: Record<string, string> = {
   "How is your mood right now?": "अभी आपका मन कैसा है?",
   "How is your energy right now?": "अभी आपकी ऊर्जा कैसी है?",
   "How was your sleep?": "आपकी नींद कैसी थी?",
-  "Done": "पूरा",
+  "Done": "हो गया",
   "Mood": "मन",
   "Energy": "ऊर्जा",
   "Sleep": "नींद",
@@ -575,29 +575,20 @@ export function personnelText(
   return value;
 }
 
-export function PersonnelLanguageProvider({
-  children,
-  fallback,
-}: {
-  children: ReactNode;
-  fallback?: string | undefined;
-}) {
-  const [lang, setLanguage] = useState<PersonnelLang>(() => {
-    if (typeof window === "undefined") return "en";
-    const stored = window.localStorage.getItem("manobal.language");
-    return normalisePersonnelLang(stored ?? fallback);
-  });
+const LANGUAGE_CHOSEN = "manobal.language.chosen";
+
+function readChosenLang(): PersonnelLang {
+  if (typeof window === "undefined") return "en";
+  if (window.localStorage.getItem(LANGUAGE_CHOSEN) !== "1") return "en";
+  return normalisePersonnelLang(window.localStorage.getItem("manobal.language"));
+}
+
+export function PersonnelLanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLanguage] = useState<PersonnelLang>("en");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("manobal.language");
-    if (!stored && fallback) setLanguage(normalisePersonnelLang(fallback));
-  }, [fallback]);
-
-  useEffect(() => {
-    const sync = () => {
-      const stored = window.localStorage.getItem("manobal.language");
-      if (stored) setLanguage(normalisePersonnelLang(stored));
-    };
+    const sync = () => setLanguage(readChosenLang());
+    sync();
     window.addEventListener("manobal-language", sync);
     window.addEventListener("storage", sync);
     return () => {
@@ -608,6 +599,7 @@ export function PersonnelLanguageProvider({
 
   const setLang = useCallback((next: PersonnelLang) => {
     window.localStorage.setItem("manobal.language", next);
+    window.localStorage.setItem(LANGUAGE_CHOSEN, "1");
     setLanguage(next);
     window.dispatchEvent(new Event("manobal-language"));
   }, []);
